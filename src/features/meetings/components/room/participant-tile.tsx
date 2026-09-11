@@ -8,7 +8,6 @@ import {
   useConnectionQualityIndicator,
   useFocusToggle,
   useIsSpeaking,
-  useParticipantAttribute,
   useTrackMutedIndicator,
   useTrackRefContext,
   VideoTrack,
@@ -23,8 +22,8 @@ import {
 } from "lucide-react";
 
 import { useTranslation } from "@/features/core/i18n/client";
-import { PARTICIPANT_ATTRIBUTE_ROLE } from "@/integrations/livekit/attributes";
 import { cn } from "@/lib/utils";
+import { useHostIdentity } from "./host-identity";
 import { useHandRaised } from "./use-hand-raise";
 
 /**
@@ -51,9 +50,7 @@ function ParticipantTileInner({
   const isSpeaking = useIsSpeaking(participant);
   const isHandRaised = useHandRaised(participant);
   const { quality } = useConnectionQualityIndicator({ participant });
-  const role = useParticipantAttribute(PARTICIPANT_ATTRIBUTE_ROLE, {
-    participant,
-  });
+  const isHost = participant.identity === useHostIdentity();
 
   const { isMuted: isMicMuted } = useTrackMutedIndicator({
     participant,
@@ -121,7 +118,7 @@ function ParticipantTileInner({
               className="size-2 shrink-0 rounded-full bg-warning"
             />
           )}
-          {role === "host" && !isScreenShare && (
+          {isHost && !isScreenShare && (
             <span className="rounded-sm bg-primary/90 px-1 text-[0.625rem] font-semibold uppercase tracking-wide text-primary-foreground">
               {t("meetings.room.host")}
             </span>

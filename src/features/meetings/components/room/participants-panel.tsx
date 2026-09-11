@@ -2,7 +2,6 @@
 
 import {
   useIsSpeaking,
-  useParticipantAttribute,
   useParticipants,
   useTrackMutedIndicator,
 } from "@livekit/components-react";
@@ -28,9 +27,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "@/features/core/i18n/client";
-import { PARTICIPANT_ATTRIBUTE_ROLE } from "@/integrations/livekit/attributes";
 import { useTRPC } from "@/integrations/trpc/client";
 import { cn } from "@/lib/utils";
+import { useHostIdentity } from "./host-identity";
 import { useHandRaised } from "./use-hand-raise";
 import { WaitingQueue, type WaitingQueueState } from "./waiting-queue";
 
@@ -96,9 +95,7 @@ function ParticipantRow({ participant, code, isHost }: ParticipantRowProps) {
   const trpc = useTRPC();
   const isSpeaking = useIsSpeaking(participant);
   const isHandRaised = useHandRaised(participant);
-  const role = useParticipantAttribute(PARTICIPANT_ATTRIBUTE_ROLE, {
-    participant,
-  });
+  const isParticipantHost = participant.identity === useHostIdentity();
   const { isMuted: isMicMuted } = useTrackMutedIndicator({
     participant,
     source: Track.Source.Microphone,
@@ -146,7 +143,7 @@ function ParticipantRow({ participant, code, isHost }: ParticipantRowProps) {
             <HandIcon className="size-4 shrink-0 text-warning" />
           )}
         </span>
-        {role === "host" && (
+        {isParticipantHost && (
           <span className="block text-[0.6875rem] uppercase tracking-wide text-primary">
             {t("meetings.room.host")}
           </span>

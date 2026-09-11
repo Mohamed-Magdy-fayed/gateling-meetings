@@ -38,7 +38,7 @@ describe("buildIcs", () => {
     expect(ics).toContain("DTSTART:20260915T143000Z");
     expect(ics).toContain("DTEND:20260915T150000Z");
     expect(ics).toContain("DTSTAMP:20260911T100000Z");
-    expect(ics).toContain("ORGANIZER;CN=Test Host:mailto:host@example.test");
+    expect(ics).toContain('ORGANIZER;CN="Test Host":mailto:host@example.test');
     expect(ics).toContain("URL:https://meet.gateling.com/m/abc-defg-hij");
   });
 

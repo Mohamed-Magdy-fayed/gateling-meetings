@@ -73,8 +73,19 @@ export const onLiveKitWebhook = inngest.createFunction(
         const userId = participant.identity.startsWith("user:")
           ? participant.identity.slice("user:".length)
           : null;
-        await step.run("log-join", () =>
-          db.insert(MeetingParticipantsTable).values({
+        await step.run("log-join", async () => {
+          // Belt and braces alongside the event id: the same connection is
+          // never logged twice even if a duplicate slips through.
+          const existing = await db.query.MeetingParticipantsTable.findFirst({
+            where: and(
+              eq(MeetingParticipantsTable.meetingId, meeting.id),
+              eq(MeetingParticipantsTable.identity, participant.identity),
+              eq(MeetingParticipantsTable.joinedAt, at),
+            ),
+            columns: { id: true },
+          });
+          if (existing) return;
+          await db.insert(MeetingParticipantsTable).values({
             meetingId: meeting.id,
             identity: participant.identity,
             displayName: participant.name || participant.identity,
@@ -83,8 +94,8 @@ export const onLiveKitWebhook = inngest.createFunction(
               participant.attributes[PARTICIPANT_ATTRIBUTE_ROLE] ??
               "participant",
             joinedAt: at,
-          }),
-        );
+          });
+        });
         return { handled: "participant_joined" };
       }
 

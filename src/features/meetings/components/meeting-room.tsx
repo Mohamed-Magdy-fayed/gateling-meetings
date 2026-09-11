@@ -43,6 +43,7 @@ import { BreakoutBanner } from "./room/breakout-banner";
 import { BreakoutPanel } from "./room/breakout-panel";
 import { ChatPanel } from "./room/chat-panel";
 import { ControlBar, type SidePanel } from "./room/control-bar";
+import { HostIdentityProvider } from "./room/host-identity";
 import { HostSettings } from "./room/host-settings";
 import { ParticipantsPanel } from "./room/participants-panel";
 import { ReactionsOverlay, useReactions } from "./room/reactions";
@@ -166,18 +167,20 @@ export function MeetingRoom({
         className="flex min-h-0 flex-1 flex-col"
       >
         <RoomAudioRenderer />
-        <RoomShell
-          meeting={meeting}
-          session={session}
-          onMove={handleMove}
-          onLeave={() => {
-            leaveReasonRef.current = "left";
-            room.disconnect();
-          }}
-          onEnded={() => {
-            leaveReasonRef.current = "ended";
-          }}
-        />
+        <HostIdentityProvider value={meeting.hostIdentity}>
+          <RoomShell
+            meeting={meeting}
+            session={session}
+            onMove={handleMove}
+            onLeave={() => {
+              leaveReasonRef.current = "left";
+              room.disconnect();
+            }}
+            onEnded={() => {
+              leaveReasonRef.current = "ended";
+            }}
+          />
+        </HostIdentityProvider>
       </LiveKitRoom>
     </div>
   );
@@ -206,6 +209,10 @@ function RoomShell({
   // Self-hosted breakout move: the server hands this participant a token
   // for the destination room over the data channel.
   useDataChannel(MOVE_TOPIC, (message) => {
+    // Messages sent by RoomServiceClient carry no sender; anything a peer
+    // publishes on this topic has one and is ignored — otherwise any
+    // participant could disconnect anyone by forging a "move".
+    if (message.from != null) return;
     try {
       const { token } = JSON.parse(decoder.decode(message.payload)) as {
         token?: string;

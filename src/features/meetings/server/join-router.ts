@@ -18,6 +18,7 @@ import {
 import {
   getRequestIp,
   isRateLimited,
+  meetingCodeRatelimit,
   meetingJoinRatelimit,
 } from "@/integrations/ratelimit";
 import {
@@ -116,7 +117,10 @@ export const joinRouter = createTRPCRouter({
     .input(joinRequestSchema)
     .mutation(async ({ ctx, input }) => {
       const ip = await getRequestIp();
-      if (await isRateLimited(meetingJoinRatelimit, `${ip}:${input.code}`)) {
+      if (
+        (await isRateLimited(meetingJoinRatelimit, `${ip}:${input.code}`)) ||
+        (await isRateLimited(meetingCodeRatelimit, input.code))
+      ) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
           message: ctx.t("meetings.errors.rateLimited"),

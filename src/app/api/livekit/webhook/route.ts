@@ -28,8 +28,11 @@ export async function POST(request: Request) {
   const room = event.room?.name;
   if (!room) return new Response("ignored", { status: 202 });
 
-  await inngest.send(
-    liveKitWebhookEvent.create({
+  // `id` makes the send idempotent: LiveKit retries a delivery it did not
+  // get a 200 for, and the same id must not become a second run (and a
+  // duplicate attendance row).
+  await inngest.send({
+    ...liveKitWebhookEvent.create({
       event: event.event,
       room,
       createdAt: Number(event.createdAt),
@@ -41,7 +44,8 @@ export async function POST(request: Request) {
           }
         : undefined,
     }),
-  );
+    id: event.id,
+  });
 
   return new Response("ok", { status: 200 });
 }

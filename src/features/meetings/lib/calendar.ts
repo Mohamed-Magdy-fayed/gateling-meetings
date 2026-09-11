@@ -73,7 +73,7 @@ export function buildIcs(event: CalendarEvent, now = new Date()): string {
     `URL:${event.url}`,
     `LOCATION:${escapeText(event.url)}`,
     event.organizer
-      ? `ORGANIZER;CN=${escapeText(event.organizer.name)}:mailto:${event.organizer.email}`
+      ? `ORGANIZER;CN="${event.organizer.name.replace(/["\r\n]/g, "")}":mailto:${event.organizer.email}`
       : null,
     "STATUS:CONFIRMED",
     "END:VEVENT",

@@ -2,7 +2,6 @@ import "server-only";
 
 import { DataPacket_Kind, TrackSource } from "livekit-server-sdk";
 
-import { PARTICIPANT_ATTRIBUTE_ROLE } from "./attributes";
 import { getRoomService } from "./client";
 import { createMeetingToken, type MeetingRole } from "./token";
 
@@ -21,11 +20,17 @@ export type MoveInstruction = { room: string; token: string };
  * exactly that participant over a reliable data message, and let the
  * client disconnect and reconnect itself (see `MeetingRoom`). Same result
  * either way; the person just sees a second of "Connecting…" on OSS.
+ *
+ * `role` is the *caller's* verdict (host identity from the database), never
+ * read back from the participant: attributes are client-writable, so a
+ * guest who set `role=host` on themself must not be minted a `roomAdmin`
+ * token here.
  */
 export async function moveParticipant(
   from: string,
   identity: string,
   to: string,
+  role: MeetingRole,
 ): Promise<boolean> {
   const service = getRoomService();
   try {
@@ -40,10 +45,6 @@ export async function moveParticipant(
 
   try {
     const participant = await service.getParticipant(from, identity);
-    const role: MeetingRole =
-      participant.attributes[PARTICIPANT_ATTRIBUTE_ROLE] === "host"
-        ? "host"
-        : "participant";
     const token = await createMeetingToken({
       roomName: to,
       identity,

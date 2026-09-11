@@ -39,24 +39,30 @@ export function HostSettings({ code, initial }: HostSettingsProps) {
 
   const update = useMutation(
     trpc.meetings.updateSettings.mutationOptions({
+      // Optimistic: flip now, and on failure restore exactly the value this
+      // request replaced (not "the opposite of whatever is there now").
+      onMutate: (variables) => {
+        const [key] = Object.keys(
+          variables.settings,
+        ) as (keyof MeetingSettings)[];
+        const previous = key ? settings[key] : undefined;
+        setSettings((current) => ({ ...current, ...variables.settings }));
+        return { key, previous };
+      },
       onSuccess: (next) => setSettings(next),
-      onError: (error, variables) => {
+      onError: (error, _variables, context) => {
         toast.error(error.message);
-        setSettings((current) => ({
-          ...current,
-          ...Object.fromEntries(
-            Object.keys(variables.settings).map((key) => [
-              key,
-              !current[key as keyof MeetingSettings],
-            ]),
-          ),
-        }));
+        if (context?.key !== undefined && context.previous !== undefined) {
+          setSettings((current) => ({
+            ...current,
+            [context.key]: context.previous,
+          }));
+        }
       },
     }),
   );
 
   function toggle(key: keyof MeetingSettings, value: boolean) {
-    setSettings((current) => ({ ...current, [key]: value }));
     update.mutate({ code, settings: { [key]: value } });
   }
 

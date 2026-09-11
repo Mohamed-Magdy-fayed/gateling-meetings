@@ -67,8 +67,21 @@ async function findParticipantRoom(
   return null;
 }
 
-/** Best-effort move: a participant who has since left is not an error for the others. */
-const moveIfPresent = moveParticipant;
+/**
+ * Best-effort move: a participant who has since left is not an error for
+ * the others. The role handed to the new token is decided here from the
+ * meeting's host id — participant attributes are client-writable and are
+ * never consulted for anything security-relevant.
+ */
+function moveIfPresent(
+  meeting: { hostId: string },
+  from: string,
+  identity: string,
+  to: string,
+) {
+  const role = identity === `user:${meeting.hostId}` ? "host" : "participant";
+  return moveParticipant(from, identity, to, role);
+}
 
 export const breakoutsRouter = createTRPCRouter({
   list: protectedProcedure.input(codeInput).query(async ({ ctx, input }) => {
@@ -184,7 +197,12 @@ export const breakoutsRouter = createTRPCRouter({
           input.identity,
         );
         if (from && from !== target.liveKitRoomName) {
-          await moveIfPresent(from, input.identity, target.liveKitRoomName);
+          await moveIfPresent(
+            meeting,
+            from,
+            input.identity,
+            target.liveKitRoomName,
+          );
         }
       }
       return { ok: true };
@@ -261,6 +279,7 @@ export const breakoutsRouter = createTRPCRouter({
       for (const assignment of room.assignments) {
         if (
           await moveIfPresent(
+            meeting,
             meeting.code,
             assignment.identity,
             room.liveKitRoomName,
@@ -301,6 +320,7 @@ export const breakoutsRouter = createTRPCRouter({
         await Promise.all(
           participants.map((participant) =>
             moveIfPresent(
+              meeting,
               room.liveKitRoomName,
               participant.identity,
               meeting.code,
@@ -346,7 +366,9 @@ export const breakoutsRouter = createTRPCRouter({
         hostIdentity,
       );
       if (!from) throw new TRPCError({ code: "PRECONDITION_FAILED" });
-      if (from !== target) await moveIfPresent(from, hostIdentity, target);
+      if (from !== target) {
+        await moveIfPresent(meeting, from, hostIdentity, target);
+      }
       return { ok: true };
     }),
 
@@ -388,7 +410,7 @@ export const breakoutsRouter = createTRPCRouter({
       }
       const meeting = await ctx.db.query.MeetingsTable.findFirst({
         where: (table, { eq }) => eq(table.code, input.code),
-        columns: { id: true, code: true },
+        columns: { id: true, code: true, hostId: true },
       });
       if (!meeting) throw new TRPCError({ code: "NOT_FOUND" });
       const rooms = await activeRooms(ctx.db, meeting.id);
@@ -398,7 +420,7 @@ export const breakoutsRouter = createTRPCRouter({
         input.identity,
       );
       if (from && from !== meeting.code) {
-        await moveIfPresent(from, input.identity, meeting.code);
+        await moveIfPresent(meeting, from, input.identity, meeting.code);
       }
       return { ok: true };
     }),

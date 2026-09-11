@@ -1,8 +1,12 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
-import { DEFAULT_MEETING_SETTINGS, MeetingsTable } from "@/drizzle/schema";
+import {
+  DEFAULT_MEETING_SETTINGS,
+  MeetingsTable,
+  meetingSettingsSchema,
+} from "@/drizzle/schema";
 import {
   generateSalt,
   hashPassword,
@@ -244,6 +248,8 @@ export const meetingsRouter = createTRPCRouter({
         title: meeting.title,
         status: meeting.status,
         hostName: meeting.host.name ?? meeting.host.email,
+        /** LiveKit identity of the host — clients badge by this, never by attributes. */
+        hostIdentity: `user:${meeting.hostId}`,
         scheduledAt: meeting.scheduledAt,
         requiresPasscode: meeting.passcodeHash != null && !isHost,
         allowGuests: meeting.settings.allowGuests,
@@ -301,12 +307,17 @@ export const meetingsRouter = createTRPCRouter({
     .input(updateMeetingSettingsSchema)
     .mutation(async ({ ctx, input }) => {
       const meeting = await requireHostedMeeting(ctx, input.code);
-      const settings = { ...meeting.settings, ...input.settings };
-      await ctx.db
+      // Merged in SQL (`||`) so two switches flipped in quick succession
+      // each write only their own key instead of the last read winning.
+      const [updated] = await ctx.db
         .update(MeetingsTable)
-        .set({ settings, updatedBy: ctx.session.user.id })
-        .where(eq(MeetingsTable.id, meeting.id));
-      return settings;
+        .set({
+          settings: sql`${MeetingsTable.settings} || ${JSON.stringify(input.settings)}::jsonb`,
+          updatedBy: ctx.session.user.id,
+        })
+        .where(eq(MeetingsTable.id, meeting.id))
+        .returning({ settings: MeetingsTable.settings });
+      return meetingSettingsSchema.parse(updated?.settings ?? meeting.settings);
     }),
 
   /**

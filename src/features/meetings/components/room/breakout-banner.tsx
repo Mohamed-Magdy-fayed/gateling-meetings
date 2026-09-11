@@ -28,6 +28,9 @@ export function BreakoutBanner({ code, session }: BreakoutBannerProps) {
   const current = useCurrentRoom();
 
   useDataChannel(BROADCAST_TOPIC, (message) => {
+    // Server-sent only (no `from`): a peer must not be able to impersonate
+    // the host's broadcast banner.
+    if (message.from != null) return;
     toast(t("meetings.breakouts.broadcastFrom"), {
       description: decoder.decode(message.payload),
       icon: <MegaphoneIcon className="size-4" />,

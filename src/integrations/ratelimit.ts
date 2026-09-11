@@ -59,6 +59,18 @@ export const meetingJoinRatelimit = new Ratelimit({
 });
 
 /**
+ * Second budget keyed on the meeting alone. `x-forwarded-for` is only as
+ * trustworthy as the proxy in front of the app, so a passcode guesser who
+ * rotates that header must still run out of attempts *per meeting*. Sized
+ * for a big meeting's worth of genuine joins in ten minutes.
+ */
+export const meetingCodeRatelimit = new Ratelimit({
+  redis: redisClient,
+  limiter: Ratelimit.slidingWindow(300, "10 m"),
+  prefix: "ratelimit:meeting-code",
+});
+
+/**
  * Trusts `x-forwarded-for`/`x-real-ip` as set by the platform's own edge
  * network (this app deploys on Vercel) — Vercel's routing layer overwrites
  * these headers with the real client IP before a request reaches the
