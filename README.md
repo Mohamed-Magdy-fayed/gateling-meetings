@@ -57,3 +57,26 @@ persists meetings, scheduling and the waiting-room queue.
 Schema-first: edit `src/drizzle/schemas/**`, then `npm run db:generate` and
 `npm run db:migrate`. Never hand-write a migration for a shape change; never
 `db:push`.
+
+## Features
+
+- **Instant meetings** — one click, straight into the room; share `/m/abc-defg-hij`.
+- **Guests need no account** — pre-join lobby with camera/mic preview, join by name.
+- **Waiting room** — host admits/denies (toast with an Admit action), or turns it off.
+- **Host controls** — mute one / mute all, remove, lower hands, lock the meeting, mute-on-entry, allow/deny screen share and guests — all from a settings popover in the room.
+- **Room** — grid or speaker view, pin any tile, auto-focused screen share, chat, reactions, hand raise (M / V / H shortcuts), connection-quality warning, RTL Arabic.
+- **Scheduling** — date/time + zone, duration, optional passcode, invitees by email; each gets a link that skips the passcode and waiting room, an `.ics` attachment, an "Add to Google Calendar" link, and a reminder 10 minutes before.
+- **Personal room** — a permanent link per host.
+- **Breakout rooms** — create, assign or shuffle, open, visit, broadcast to all rooms, close all. Seamless on LiveKit Cloud; a quick reconnect on the open-source server.
+- **Attendance log** — from LiveKit webhooks (`/api/livekit/webhook`), via Inngest.
+
+## Deploying (all free tiers)
+
+1. **LiveKit Cloud** — create a project; copy the `wss://…livekit.cloud` URL and an API key/secret. Add a webhook pointing at `https://<your-app>/api/livekit/webhook`.
+2. **Neon** — a Postgres database; `DATABASE_URL`. Run `npm run db:migrate` against it once.
+3. **Upstash** — a Redis database; `REDIS_URL` + `REDIS_TOKEN`.
+4. **Inngest** — create an app; `INNGEST_SIGNING_KEY` + `INNGEST_EVENT_KEY`. After the first deploy, sync the app at `https://<your-app>/api/inngest`.
+5. **SMTP** — any provider (`SMTP_*`) for invite/reminder/verification emails.
+6. **Vercel** — import the repo, set every variable above plus `BASE_URL`, `OAUTH_REDIRECT_URL_BASE` (`<BASE_URL>/api/oauth`) and, optionally, `GOOGLE_CLIENT_ID/SECRET`. The env module fails the build if a required production value is missing.
+
+Self-hosting LiveKit instead: run `livekit/livekit-server` with a real config (open UDP range, TURN), and point `LIVEKIT_URL`/key/secret at it. Nothing in the app changes.

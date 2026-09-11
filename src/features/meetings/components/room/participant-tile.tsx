@@ -5,6 +5,7 @@ import {
   type TrackReferenceOrPlaceholder,
 } from "@livekit/components-core";
 import {
+  useConnectionQualityIndicator,
   useFocusToggle,
   useIsSpeaking,
   useParticipantAttribute,
@@ -12,7 +13,7 @@ import {
   useTrackRefContext,
   VideoTrack,
 } from "@livekit/components-react";
-import { Track } from "livekit-client";
+import { ConnectionQuality, Track } from "livekit-client";
 import {
   HandIcon,
   MicOffIcon,
@@ -49,6 +50,7 @@ function ParticipantTileInner({
   const isScreenShare = trackRef.source === Track.Source.ScreenShare;
   const isSpeaking = useIsSpeaking(participant);
   const isHandRaised = useHandRaised(participant);
+  const { quality } = useConnectionQualityIndicator({ participant });
   const role = useParticipantAttribute(PARTICIPANT_ATTRIBUTE_ROLE, {
     participant,
   });
@@ -110,6 +112,15 @@ function ParticipantTileInner({
           <span className="truncate">
             {isLocal ? t("meetings.room.you") : name}
           </span>
+          {(quality === ConnectionQuality.Poor ||
+            quality === ConnectionQuality.Lost) && (
+            <span
+              role="img"
+              aria-label={t("meetings.room.poorConnection")}
+              title={t("meetings.room.poorConnection")}
+              className="size-2 shrink-0 rounded-full bg-warning"
+            />
+          )}
           {role === "host" && !isScreenShare && (
             <span className="rounded-sm bg-primary/90 px-1 text-[0.625rem] font-semibold uppercase tracking-wide text-primary-foreground">
               {t("meetings.room.host")}

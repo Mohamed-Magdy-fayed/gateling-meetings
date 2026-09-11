@@ -99,6 +99,7 @@ export const meetingsEn = {
     lowerHand: "Lower hand (H)",
     handRaised: "Hand raised",
     reactions: "Send a reaction",
+    poorConnection: "Poor connection",
     mutedByHost: "The host muted you.",
   },
   waiting: {

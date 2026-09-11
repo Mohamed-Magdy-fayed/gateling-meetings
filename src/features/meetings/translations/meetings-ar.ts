@@ -106,6 +106,7 @@ export const meetingsAr = {
     lowerHand: "خفض اليد (H)",
     handRaised: "اليد مرفوعة",
     reactions: "إرسال تفاعل",
+    poorConnection: "اتصال ضعيف",
     mutedByHost: "قام المضيف بكتم صوتك.",
   },
   waiting: {

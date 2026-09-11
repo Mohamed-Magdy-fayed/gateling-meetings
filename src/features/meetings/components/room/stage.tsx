@@ -13,21 +13,25 @@ import {
   TrackRefContext,
   useCreateLayoutContext,
   usePinnedTracks,
+  useSpeakingParticipants,
   useTracks,
 } from "@livekit/components-react";
 import { RoomEvent, Track } from "livekit-client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ParticipantTile } from "./participant-tile";
+
+export type StageLayout = "grid" | "speaker";
 
 /**
  * The video area. Grid by default; the moment someone shares a screen it is
  * pinned and the layout switches to focus + rail, and un-pins when the share
  * stops. A person can also pin any tile by hand (see `ParticipantTile`).
- * Mirrors the decision logic of LiveKit's `VideoConference` prefab, minus the
- * prefab's chrome.
+ * "Speaker" layout keeps the focus slot on whoever spoke last (a manual pin
+ * or a screen share still wins). Mirrors the decision logic of LiveKit's
+ * `VideoConference` prefab, minus the prefab's chrome.
  */
-export function Stage() {
+export function Stage({ layout }: { layout: StageLayout }) {
   const layoutContext = useCreateLayoutContext();
 
   const tracks = useTracks(
@@ -42,7 +46,33 @@ export function Stage() {
     .filter(isTrackReference)
     .find((track) => track.publication.source === Track.Source.ScreenShare);
 
-  const focusTrack = usePinnedTracks(layoutContext)[0];
+  const pinnedTrack = usePinnedTracks(layoutContext)[0];
+
+  // Speaker layout: remember the last person who spoke so the focus slot
+  // doesn't flicker back to nobody during pauses.
+  const speaking = useSpeakingParticipants();
+  const [lastSpeakerIdentity, setLastSpeakerIdentity] = useState<string | null>(
+    null,
+  );
+  useEffect(() => {
+    const remote = speaking.find((participant) => !participant.isLocal);
+    if (remote) setLastSpeakerIdentity(remote.identity);
+  }, [speaking]);
+
+  const speakerTrack =
+    layout === "speaker"
+      ? (tracks.find(
+          (track) =>
+            track.source === Track.Source.Camera &&
+            track.participant.identity === lastSpeakerIdentity,
+        ) ??
+        tracks.find(
+          (track) =>
+            track.source === Track.Source.Camera && !track.participant.isLocal,
+        ))
+      : undefined;
+
+  const focusTrack = pinnedTrack ?? speakerTrack;
   const carouselTracks = tracks.filter(
     (track) => !isEqualTrackRef(track, focusTrack),
   );
@@ -52,7 +82,7 @@ export function Stage() {
   const autoPinnedRef = useRef<TrackReferenceOrPlaceholder | null>(null);
   useEffect(() => {
     const { pin } = layoutContext;
-    if (screenShareTrack && !focusTrack) {
+    if (screenShareTrack && !pinnedTrack) {
       autoPinnedRef.current = screenShareTrack;
       pin.dispatch?.({ msg: "set_pin", trackReference: screenShareTrack });
       return;
@@ -60,20 +90,20 @@ export function Stage() {
     if (
       !screenShareTrack &&
       autoPinnedRef.current &&
-      isEqualTrackRef(focusTrack, autoPinnedRef.current)
+      isEqualTrackRef(pinnedTrack, autoPinnedRef.current)
     ) {
       autoPinnedRef.current = null;
       pin.dispatch?.({ msg: "clear_pin" });
     }
-    // The focus track is a stale reference once the share ends — drop it.
+    // The pinned track is a stale reference once its owner left — drop it.
     if (
-      focusTrack &&
-      isTrackReference(focusTrack) &&
-      !tracks.some((track) => isEqualTrackRef(track, focusTrack))
+      pinnedTrack &&
+      isTrackReference(pinnedTrack) &&
+      !tracks.some((track) => isEqualTrackRef(track, pinnedTrack))
     ) {
       pin.dispatch?.({ msg: "clear_pin" });
     }
-  }, [screenShareTrack, focusTrack, layoutContext, tracks]);
+  }, [screenShareTrack, pinnedTrack, layoutContext, tracks]);
 
   return (
     <LayoutContextProvider value={layoutContext}>
