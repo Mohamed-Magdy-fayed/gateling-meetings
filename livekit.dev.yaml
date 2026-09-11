@@ -1,0 +1,20 @@
+# Local-only LiveKit server config, used by `npm run livekit` (scripts/livekit-dev.mjs).
+# Never deploy this: the API key/secret are the well-known dev pair.
+port: 7880
+keys:
+  devkey: secret
+rtc:
+  tcp_port: 7881
+  # A narrow UDP range — Docker Desktop publishes each port individually, so
+  # LiveKit's default 50000-60000 takes minutes to start. 100 ports is plenty
+  # for a laptop's worth of participants.
+  port_range_start: 50000
+  port_range_end: 50100
+  # Advertise the host loopback as the ICE candidate. Inside Docker the
+  # container's own address is unreachable from a browser on the host;
+  # 127.0.0.1 is where Docker's port forwards actually listen. ICE/TCP on
+  # 7881 is the fallback when UDP forwarding is flaky.
+  node_ip: 127.0.0.1
+  use_external_ip: false
+logging:
+  level: info

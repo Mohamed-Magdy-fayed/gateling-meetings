@@ -1,0 +1,52 @@
+import { type Browser, test } from "@playwright/test";
+
+import { joinRoom, signIn } from "./helpers";
+
+/**
+ * Not an assertion suite — captures the room at the breakpoints and locale
+ * that matter so a person can eyeball them (`test-results/visual/`). Kept
+ * separate from meeting.spec.ts so the functional test stays fast.
+ */
+test("room screenshots: RTL desktop + mobile", async ({ browser }) => {
+  const host = await newPage(browser, { width: 1280, height: 720 });
+  await signIn(host);
+  await host
+    .context()
+    .addCookies([
+      { name: "NEXT_LOCALE", value: "ar", url: "http://localhost:3000" },
+    ]);
+  await host.goto("/dashboard");
+  await host.screenshot({ path: "test-results/visual/dashboard-ar.png" });
+  await host.getByRole("button", { name: /اجتماع جديد/ }).click();
+  await host.waitForURL(/\/m\//);
+  const url = host.url();
+  await host.screenshot({ path: "test-results/visual/prejoin-ar.png" });
+  await host.getByPlaceholder(/بماذا نناديك/).fill("المضيف");
+  await host.getByRole("button", { name: /انضم الآن/ }).click();
+  await host
+    .getByRole("button", { name: /إنهاء للجميع/ })
+    .waitFor({ timeout: 20_000 });
+
+  const mobile = await newPage(browser, { width: 390, height: 844 });
+  await mobile.goto(url);
+  await mobile.screenshot({ path: "test-results/visual/prejoin-mobile.png" });
+  await joinRoom(mobile, "Guest");
+  await mobile.waitForTimeout(1500);
+  await host.waitForTimeout(500);
+  await host.screenshot({ path: "test-results/visual/room-ar-desktop.png" });
+  await mobile.screenshot({ path: "test-results/visual/room-mobile.png" });
+  await mobile.getByRole("button", { name: /^chat$/i }).click();
+  await mobile.waitForTimeout(500);
+  await mobile.screenshot({ path: "test-results/visual/room-mobile-chat.png" });
+});
+
+async function newPage(
+  browser: Browser,
+  viewport: { width: number; height: number },
+) {
+  const context = await browser.newContext({
+    viewport,
+    permissions: ["camera", "microphone"],
+  });
+  return context.newPage();
+}

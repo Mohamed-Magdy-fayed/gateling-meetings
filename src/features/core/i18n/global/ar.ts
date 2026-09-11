@@ -1,3 +1,4 @@
+import { meetingsAr } from "@/features/meetings/translations/meetings-ar";
 import type { LanguageMessages } from "../lib";
 
 export default {
@@ -123,7 +124,7 @@ export default {
     },
     signUp: {
       title: "أنشئ حسابك",
-      description: "ابدأ إدارة مركزك التدريبي مجانًا.",
+      description: "استضف اجتماعاتك بنفسك — مجانًا وبلا حدود زمنية.",
       nameLabel: "الاسم الكامل",
       emailLabel: "البريد الإلكتروني",
       phoneLabel: "رقم الهاتف",
@@ -230,4 +231,5 @@ export default {
       },
     },
   },
+  meetings: meetingsAr,
 } as const satisfies LanguageMessages;

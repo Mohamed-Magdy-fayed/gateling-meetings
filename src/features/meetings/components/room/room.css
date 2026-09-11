@@ -1,0 +1,46 @@
+/*
+ * LiveKit's layout engine (GridLayout / FocusLayout / CarouselLayout) is
+ * driven by CSS custom properties. Only the layout stylesheet is imported —
+ * every tile, control and panel is our own component — so these are the only
+ * `--lk-*` values that matter, scoped to the room so nothing leaks out.
+ */
+.meeting-room {
+  --lk-grid-gap: 0.5rem;
+  /* The control bar is a sibling flex item, not part of LiveKit's math. */
+  --lk-control-bar-height: 0px;
+}
+
+@media (min-width: 640px) {
+  .meeting-room {
+    --lk-grid-gap: 0.75rem;
+  }
+}
+
+.meeting-room .lk-grid-layout-wrapper,
+.meeting-room .lk-focus-layout-wrapper {
+  height: 100%;
+}
+
+/* Focus layout: the stage takes the room, the carousel is a narrow rail
+   beside it on wide screens and a strip under it on phones. */
+.meeting-room .lk-focus-layout {
+  height: 100%;
+  grid-template-columns: minmax(0, 1fr) clamp(8rem, 18vw, 14rem);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+@media (max-width: 767px) {
+  .meeting-room .lk-focus-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) 6rem;
+  }
+}
+
+.meeting-room .lk-carousel {
+  scrollbar-width: none;
+}
+
+/* Mirror the local camera the way a mirror would; never screen share or remote video. */
+.meeting-room [data-mirror="true"] video {
+  transform: scaleX(-1);
+}

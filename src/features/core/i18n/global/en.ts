@@ -1,3 +1,4 @@
+import { meetingsEn } from "@/features/meetings/translations/meetings-en";
 import type { LanguageMessages } from "../lib";
 
 export default {
@@ -124,7 +125,7 @@ export default {
     },
     signUp: {
       title: "Create your account",
-      description: "Start managing your training center for free.",
+      description: "Host your own meetings — free, no time limits.",
       nameLabel: "Full name",
       emailLabel: "Email",
       phoneLabel: "Phone number",
@@ -230,4 +231,5 @@ export default {
       },
     },
   },
+  meetings: meetingsEn,
 } as const satisfies LanguageMessages;
