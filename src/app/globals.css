@@ -1,0 +1,324 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans:
+    var(--font-inter), var(--font-arabic), ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-display:
+    var(--font-manrope), var(--font-arabic), ui-sans-serif, system-ui,
+    sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SF Mono", monospace;
+
+  /* Motion — snappy with a little spring */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Soft, warm-tinted elevation (replaces Tailwind's default gray shadows) */
+  --shadow-xs: 0 1px 2px rgba(54, 46, 38, 0.06);
+  --shadow-sm:
+    0 1px 2px rgba(54, 46, 38, 0.06), 0 2px 6px rgba(54, 46, 38, 0.06);
+  --shadow-md:
+    0 2px 4px rgba(54, 46, 38, 0.05), 0 6px 16px rgba(54, 46, 38, 0.09);
+  --shadow-lg:
+    0 8px 24px rgba(54, 46, 38, 0.1), 0 2px 6px rgba(54, 46, 38, 0.06);
+  --shadow-xl:
+    0 18px 48px rgba(54, 46, 38, 0.14), 0 6px 14px rgba(54, 46, 38, 0.08);
+  --shadow-brand-sm: 0 3px 10px rgba(253, 95, 2, 0.28);
+  --shadow-brand: 0 8px 22px rgba(253, 95, 2, 0.3);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-overlay: var(--overlay);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Full Gateling brand scale, available as bg-orange-500, text-mint-600, etc. */
+  --color-orange-50: var(--orange-50);
+  --color-orange-100: var(--orange-100);
+  --color-orange-200: var(--orange-200);
+  --color-orange-300: var(--orange-300);
+  --color-orange-400: var(--orange-400);
+  --color-orange-500: var(--orange-500);
+  --color-orange-600: var(--orange-600);
+  --color-orange-700: var(--orange-700);
+  --color-orange-800: var(--orange-800);
+  --color-orange-900: var(--orange-900);
+  --color-sky-50: var(--sky-50);
+  --color-sky-100: var(--sky-100);
+  --color-sky-200: var(--sky-200);
+  --color-sky-300: var(--sky-300);
+  --color-sky-400: var(--sky-400);
+  --color-sky-500: var(--sky-500);
+  --color-sky-600: var(--sky-600);
+  --color-sky-700: var(--sky-700);
+  --color-sky-800: var(--sky-800);
+  --color-sky-900: var(--sky-900);
+  --color-mint-50: var(--mint-50);
+  --color-mint-100: var(--mint-100);
+  --color-mint-200: var(--mint-200);
+  --color-mint-300: var(--mint-300);
+  --color-mint-400: var(--mint-400);
+  --color-mint-500: var(--mint-500);
+  --color-mint-600: var(--mint-600);
+  --color-mint-700: var(--mint-700);
+  --color-mint-800: var(--mint-800);
+  --color-mint-900: var(--mint-900);
+  --color-neutral-0: var(--neutral-0);
+  --color-neutral-25: var(--neutral-25);
+  --color-neutral-50: var(--neutral-50);
+  --color-neutral-100: var(--neutral-100);
+  --color-neutral-200: var(--neutral-200);
+  --color-neutral-300: var(--neutral-300);
+  --color-neutral-400: var(--neutral-400);
+  --color-neutral-500: var(--neutral-500);
+  --color-neutral-600: var(--neutral-600);
+  --color-neutral-700: var(--neutral-700);
+  --color-neutral-800: var(--neutral-800);
+  --color-neutral-900: var(--neutral-900);
+  --color-yellow-100: var(--yellow-100);
+  --color-yellow-400: var(--yellow-400);
+  --color-yellow-600: var(--yellow-600);
+  --color-red-100: var(--red-100);
+  --color-red-400: var(--red-400);
+  --color-red-500: var(--red-500);
+  --color-red-600: var(--red-600);
+  --color-violet-100: var(--violet-100);
+  --color-violet-500: var(--violet-500);
+  --color-violet-600: var(--violet-600);
+
+  /* Radius scale — friendly & rounded. Controls 12px, cards 16px, modals 22px. */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-2xl: 30px;
+}
+
+:root {
+  color-scheme: light;
+
+  /* ---- Gateling brand scale ---- */
+  --orange-50: #fff4ec;
+  --orange-100: #ffe4d1;
+  --orange-200: #ffc4a3;
+  --orange-300: #ff9d6b;
+  --orange-400: #ff7d3a;
+  --orange-500: #fd5f02;
+  --orange-600: #e04e00;
+  --orange-700: #b83e00;
+  --orange-800: #8f3105;
+  --orange-900: #6b2708;
+
+  --sky-50: #eef7ff;
+  --sky-100: #d8ecff;
+  --sky-200: #b3d9ff;
+  --sky-300: #7cbfff;
+  --sky-400: #3ea0ff;
+  --sky-500: #1783f5;
+  --sky-600: #0a67d4;
+  --sky-700: #0a51a8;
+  --sky-800: #0d4585;
+  --sky-900: #0f3a6d;
+
+  --mint-50: #eafaf1;
+  --mint-100: #cdf2de;
+  --mint-200: #9de6bf;
+  --mint-300: #62d59a;
+  --mint-400: #2fbd77;
+  --mint-500: #12a35f;
+  --mint-600: #0a834c;
+  --mint-700: #0a683e;
+  --mint-800: #0b5334;
+  --mint-900: #0a442c;
+
+  --neutral-0: #ffffff;
+  --neutral-25: #fffaf6;
+  --neutral-50: #faf6f2;
+  --neutral-100: #f3ede7;
+  --neutral-200: #e7ded6;
+  --neutral-300: #d6cabe;
+  --neutral-400: #b3a597;
+  --neutral-500: #8b7d70;
+  --neutral-600: #6a5d51;
+  --neutral-700: #4f4439;
+  --neutral-800: #362e26;
+  --neutral-900: #221c16;
+
+  --yellow-100: #fff2cc;
+  --yellow-400: #f5b800;
+  --yellow-600: #c98a00;
+  --red-100: #ffe1dd;
+  --red-400: #f5654d;
+  --red-500: #e8482d;
+  --red-600: #c73620;
+  --violet-100: #ece7ff;
+  --violet-500: #6d55e0;
+  --violet-600: #5840c9;
+
+  --overlay: rgba(34, 28, 22, 0.5);
+  --ring-brand: color-mix(in oklch, var(--orange-500) 35%, transparent);
+
+  /* ---- shadcn-equivalent semantic tokens, mapped onto the brand scale ---- */
+  --radius: 0.75rem;
+  --background: var(--neutral-25);
+  --foreground: var(--neutral-800);
+  --card: var(--neutral-0);
+  --card-foreground: var(--neutral-900);
+  --popover: var(--neutral-0);
+  --popover-foreground: var(--neutral-900);
+  --primary: var(--orange-500);
+  --primary-foreground: var(--neutral-900);
+  --secondary: var(--neutral-100);
+  --secondary-foreground: var(--neutral-900);
+  --accent: var(--orange-100);
+  --accent-foreground: var(--orange-700);
+  --muted: var(--neutral-50);
+  --muted-foreground: var(--neutral-500);
+  --destructive: var(--red-500);
+  --destructive-foreground: var(--neutral-900);
+  --success: var(--mint-600);
+  --success-foreground: #ffffff;
+  --info: var(--sky-600);
+  --info-foreground: #ffffff;
+  --warning: var(--yellow-600);
+  --warning-foreground: var(--neutral-900);
+  --border: var(--neutral-200);
+  --input: var(--neutral-300);
+  --ring: var(--orange-500);
+  --chart-1: var(--orange-500);
+  --chart-2: var(--sky-500);
+  --chart-3: var(--mint-500);
+  --chart-4: var(--orange-300);
+  --chart-5: var(--sky-300);
+
+  /* ---- Sidebar panel — a shade off the page background so it reads as its own surface ---- */
+  --sidebar: var(--neutral-50);
+  --sidebar-foreground: var(--neutral-800);
+  --sidebar-primary: var(--orange-500);
+  --sidebar-primary-foreground: var(--neutral-900);
+  --sidebar-accent: var(--orange-100);
+  --sidebar-accent-foreground: var(--orange-700);
+  --sidebar-border: var(--neutral-200);
+  --sidebar-ring: var(--orange-500);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: var(--neutral-900);
+  --foreground: var(--neutral-100);
+  --card: #2a2119;
+  --card-foreground: var(--neutral-100);
+  --popover: #2a2119;
+  --popover-foreground: var(--neutral-100);
+  --primary: var(--orange-400);
+  --primary-foreground: var(--neutral-900);
+  --secondary: #33291f;
+  --secondary-foreground: var(--neutral-100);
+  --muted: #33291f;
+  --muted-foreground: var(--neutral-400);
+  --accent: #3d2c1c;
+  --accent-foreground: var(--orange-300);
+  --destructive: var(--red-400);
+  --destructive-foreground: var(--neutral-900);
+  --success: var(--mint-400);
+  --success-foreground: var(--neutral-900);
+  --info: var(--sky-400);
+  --info-foreground: var(--neutral-900);
+  --warning: var(--yellow-400);
+  --warning-foreground: var(--neutral-900);
+  --border: #40342769;
+  --input: #4f4439;
+  --ring: var(--orange-400);
+  --overlay: rgba(0, 0, 0, 0.6);
+  --chart-1: var(--orange-400);
+  --chart-2: var(--sky-400);
+  --chart-3: var(--mint-400);
+  --chart-4: var(--orange-300);
+  --chart-5: var(--sky-300);
+
+  /* ---- Sidebar panel — matches the elevated card surface for depth against the darker page background ---- */
+  --sidebar: #2a2119;
+  --sidebar-foreground: var(--neutral-100);
+  --sidebar-primary: var(--orange-400);
+  --sidebar-primary-foreground: var(--neutral-900);
+  --sidebar-accent: #3d2c1c;
+  --sidebar-accent-foreground: var(--orange-300);
+  --sidebar-border: #40342769;
+  --sidebar-ring: var(--orange-400);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-foreground);
+  }
+}
+
+/* Arabic-first font stacks when the document is RTL — Inter/Manrope carry no
+   Arabic glyphs, so without this the browser would fall back per-glyph. */
+[dir="rtl"] {
+  --font-sans: var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+}
