@@ -1,4 +1,5 @@
 import {
+  breakoutsRouter,
   hostRouter,
   invitesRouter,
   joinRouter,
@@ -13,6 +14,7 @@ export const appRouter = createTRPCRouter({
   join: joinRouter,
   host: hostRouter,
   invites: invitesRouter,
+  breakouts: breakoutsRouter,
 });
 
 export type AppRouter = typeof appRouter;

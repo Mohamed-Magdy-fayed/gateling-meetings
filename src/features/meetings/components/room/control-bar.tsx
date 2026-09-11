@@ -4,6 +4,7 @@ import { useTrackToggle } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import {
   HandIcon,
+  LayoutGridIcon,
   MessageSquareIcon,
   MicIcon,
   MicOffIcon,
@@ -38,7 +39,7 @@ import { cn } from "@/lib/utils";
 import { ReactionPicker } from "./reactions";
 import { useLocalHandRaise } from "./use-hand-raise";
 
-export type SidePanel = "chat" | "participants" | null;
+export type SidePanel = "chat" | "participants" | "breakouts" | null;
 
 type ControlBarProps = {
   isHost: boolean;
@@ -162,6 +163,18 @@ export function ControlBar({
       >
         <UsersIcon />
       </ControlButton>
+
+      {isHost && (
+        <ControlButton
+          label={t("meetings.breakouts.title")}
+          active
+          onClick={() => onTogglePanel("breakouts")}
+          highlight={panel === "breakouts"}
+          className="hidden sm:grid"
+        >
+          <LayoutGridIcon />
+        </ControlButton>
+      )}
 
       <ControlButton
         label={t("meetings.room.chat")}

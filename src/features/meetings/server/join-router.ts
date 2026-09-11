@@ -10,6 +10,7 @@ import {
 } from "@/drizzle/schema";
 import { comparePasswords } from "@/features/core/auth/core/passwordHasher";
 import { getLiveKitConfig } from "@/integrations/livekit/client";
+import { signParticipantIdentity } from "@/integrations/livekit/participant-key";
 import {
   createMeetingToken,
   type MeetingRole,
@@ -47,6 +48,8 @@ type AdmittedSession = {
   identity: string;
   role: MeetingRole;
   muteOnEntry: boolean;
+  /** Proves identity on later self-service requests (see participant-key.ts). */
+  participantKey: string;
 };
 
 async function admit(
@@ -69,6 +72,7 @@ async function admit(
     identity,
     role,
     muteOnEntry: role !== "host" && meeting.settings.muteOnEntry,
+    participantKey: signParticipantIdentity(identity),
   };
 }
 

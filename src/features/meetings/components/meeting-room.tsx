@@ -8,6 +8,7 @@ import {
   RoomAudioRenderer,
   useChat,
   useConnectionState,
+  useDataChannel,
   useParticipants,
 } from "@livekit/components-react";
 import { useMutation } from "@tanstack/react-query";
@@ -18,7 +19,7 @@ import {
   VideoPresets,
 } from "livekit-client";
 import { CopyIcon, XIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,8 @@ import type {
   MeetingSummary,
 } from "./meeting-client";
 import type { PreJoinValues } from "./pre-join";
+import { BreakoutBanner } from "./room/breakout-banner";
+import { BreakoutPanel } from "./room/breakout-panel";
 import { ChatPanel } from "./room/chat-panel";
 import { ControlBar, type SidePanel } from "./room/control-bar";
 import { HostSettings } from "./room/host-settings";
@@ -104,30 +107,69 @@ export function MeetingRoom({
   // don't let the SFU's follow-up disconnect event overwrite it.
   const leaveReasonRef = useRef<LeaveReason | null>(null);
 
-  const startWithAudio = choices.audioEnabled && !session.muteOnEntry;
+  // The token can change mid-call: on a self-hosted server a breakout
+  // "move" is a reconnect with a token for the other room (see
+  // integrations/livekit/move.ts). Mute state is carried across.
+  const [token, setToken] = useState(session.token);
+  const [media, setMedia] = useState({
+    audio: choices.audioEnabled && !session.muteOnEntry,
+    video: choices.videoEnabled,
+  });
+  const movingRef = useRef(false);
+
+  const handleMove = useCallback(
+    async (nextToken: string) => {
+      movingRef.current = true;
+      const nextMedia = {
+        audio: room.localParticipant.isMicrophoneEnabled,
+        video: room.localParticipant.isCameraEnabled,
+      };
+      // `Room.connect` is a no-op while connected, so drop first. Both
+      // states are set in the same tick afterwards: a render between the
+      // disconnect and the new token would let LiveKitRoom's connect effect
+      // reconnect to the *old* room.
+      await room.disconnect();
+      setMedia(nextMedia);
+      setToken(nextToken);
+    },
+    [room],
+  );
+
+  // Stable handlers: LiveKitRoom re-runs its connect effect whenever these
+  // change identity, and an inline arrow changes every render.
+  const handleDisconnected = useCallback(
+    (reason?: DisconnectReason) => {
+      if (movingRef.current) {
+        movingRef.current = false;
+        return;
+      }
+      onLeave(leaveReasonRef.current ?? leaveReasonFor(reason));
+    },
+    [onLeave],
+  );
+  const handleError = useCallback((error: Error) => {
+    console.error("[livekit]", error);
+    toast.error(error.message);
+  }, []);
 
   return (
     <div className="meeting-room dark flex h-svh flex-col bg-neutral-900 text-foreground">
       <LiveKitRoom
         room={room}
         serverUrl={session.serverUrl}
-        token={session.token}
+        token={token}
         connect
-        audio={startWithAudio}
-        video={choices.videoEnabled}
-        onDisconnected={(reason) =>
-          onLeave(leaveReasonRef.current ?? leaveReasonFor(reason))
-        }
-        onError={(error) => {
-          console.error("[livekit]", error);
-          toast.error(error.message);
-        }}
+        audio={media.audio}
+        video={media.video}
+        onDisconnected={handleDisconnected}
+        onError={handleError}
         className="flex min-h-0 flex-1 flex-col"
       >
         <RoomAudioRenderer />
         <RoomShell
           meeting={meeting}
           session={session}
+          onMove={handleMove}
           onLeave={() => {
             leaveReasonRef.current = "left";
             room.disconnect();
@@ -144,12 +186,35 @@ export function MeetingRoom({
 type RoomShellProps = {
   meeting: MeetingSummary;
   session: JoinSession;
+  onMove: (token: string) => void;
   onLeave: () => void;
   onEnded: () => void;
 };
 
-function RoomShell({ meeting, session, onLeave, onEnded }: RoomShellProps) {
+const MOVE_TOPIC = "move";
+const decoder = new TextDecoder();
+
+function RoomShell({
+  meeting,
+  session,
+  onMove,
+  onLeave,
+  onEnded,
+}: RoomShellProps) {
   const { t } = useTranslation();
+
+  // Self-hosted breakout move: the server hands this participant a token
+  // for the destination room over the data channel.
+  useDataChannel(MOVE_TOPIC, (message) => {
+    try {
+      const { token } = JSON.parse(decoder.decode(message.payload)) as {
+        token?: string;
+      };
+      if (token) onMove(token);
+    } catch {
+      // Not a move instruction we understand — ignore.
+    }
+  });
   const trpc = useTRPC();
   const isMobile = useIsMobile();
   const connectionState = useConnectionState();
@@ -190,7 +255,9 @@ function RoomShell({ meeting, session, onLeave, onEnded }: RoomShellProps) {
   const panelTitle =
     panel === "chat"
       ? t("meetings.room.chat")
-      : t("meetings.room.participants");
+      : panel === "breakouts"
+        ? t("meetings.breakouts.title")
+        : t("meetings.room.participants");
   const panelContent =
     panel === "chat" ? (
       <ChatPanel {...chat} />
@@ -200,6 +267,8 @@ function RoomShell({ meeting, session, onLeave, onEnded }: RoomShellProps) {
         isHost={isHost}
         waitingQueue={waitingQueue}
       />
+    ) : panel === "breakouts" && isHost ? (
+      <BreakoutPanel code={meeting.code} hostIdentity={session.identity} />
     ) : null;
 
   return (
@@ -237,6 +306,8 @@ function RoomShell({ meeting, session, onLeave, onEnded }: RoomShellProps) {
           </span>
         </span>
       </header>
+
+      <BreakoutBanner code={meeting.code} session={session} />
 
       {/* Stage + side panel */}
       <div className="relative flex min-h-0 flex-1">

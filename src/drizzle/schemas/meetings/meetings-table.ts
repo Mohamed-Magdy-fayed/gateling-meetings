@@ -22,6 +22,7 @@ import {
   updatedAt,
   updatedBy,
 } from "@/drizzle/schemas/helpers";
+import { BreakoutRoomsTable } from "./breakout-rooms-table";
 import { JoinRequestsTable } from "./join-requests-table";
 import { MeetingInvitesTable } from "./meeting-invites-table";
 import { MeetingParticipantsTable } from "./meeting-participants-table";
