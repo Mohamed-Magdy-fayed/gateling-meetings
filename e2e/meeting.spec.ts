@@ -1,4 +1,4 @@
-import { type Browser, expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import { expectInRoom, joinRoom, signIn, submitPreJoin } from "./helpers";
 
@@ -9,8 +9,8 @@ import { expectInRoom, joinRoom, signIn, submitPreJoin } from "./helpers";
  * on the other side, host mutes the guest, chat crosses the data channel,
  * lock refuses a newcomer, and "End for all" disconnects everyone.
  */
-test("host and guest meet in the same room", async ({ browser }) => {
-  const host = await newPage(browser);
+test("host and guest meet in the same room", async ({ newPage }) => {
+  const host = await newPage();
   await signIn(host);
   await host.goto("/dashboard");
   await host.getByRole("button", { name: /new meeting/i }).click();
@@ -21,7 +21,7 @@ test("host and guest meet in the same room", async ({ browser }) => {
   await expect(host.getByText(/1 participant$/)).toBeVisible();
 
   // Waiting room (on by default): the guest waits, the host admits.
-  const guest = await newPage(browser);
+  const guest = await newPage();
   await guest.goto(meetingUrl);
   await submitPreJoin(guest, "Guest Gina");
   await expect(guest.getByText(/waiting for the host/i)).toBeVisible();
@@ -74,7 +74,7 @@ test("host and guest meet in the same room", async ({ browser }) => {
   await host.getByRole("button", { name: /^settings$/i }).click();
   await host.getByRole("switch", { name: /lock meeting/i }).click();
   await expect(host.getByText(/^locked$/i)).toBeVisible();
-  const late = await newPage(browser);
+  const late = await newPage();
   await late.goto(meetingUrl);
   await submitPreJoin(late, "Late Larry");
   await expect(late.getByText(/host has locked/i)).toBeVisible();
@@ -97,10 +97,3 @@ test("host and guest meet in the same room", async ({ browser }) => {
   await late.reload();
   await expect(late.getByText(/this meeting has ended/i)).toBeVisible();
 });
-
-async function newPage(browser: Browser) {
-  const context = await browser.newContext({
-    permissions: ["camera", "microphone"],
-  });
-  return context.newPage();
-}

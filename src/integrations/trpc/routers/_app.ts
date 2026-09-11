@@ -1,5 +1,6 @@
 import {
   hostRouter,
+  invitesRouter,
   joinRouter,
   meetingsRouter,
 } from "@/features/meetings/server";
@@ -11,6 +12,7 @@ export const appRouter = createTRPCRouter({
   meetings: meetingsRouter,
   join: joinRouter,
   host: hostRouter,
+  invites: invitesRouter,
 });
 
 export type AppRouter = typeof appRouter;

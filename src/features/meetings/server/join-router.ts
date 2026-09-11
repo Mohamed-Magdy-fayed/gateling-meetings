@@ -3,7 +3,11 @@ import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { JoinRequestsTable, type Meeting } from "@/drizzle/schema";
+import {
+  JoinRequestsTable,
+  type Meeting,
+  MeetingInvitesTable,
+} from "@/drizzle/schema";
 import { comparePasswords } from "@/features/core/auth/core/passwordHasher";
 import { getLiveKitConfig } from "@/integrations/livekit/client";
 import {
@@ -128,7 +132,25 @@ export const joinRouter = createTRPCRouter({
         userId === meeting.hostId ? "host" : "participant";
       assertJoinable(ctx, meeting, role, userId);
 
-      if (role !== "host" && meeting.passcodeHash && meeting.passcodeSalt) {
+      // An emailed invite is a credential the host handed to a named person:
+      // it stands in for the passcode and skips the waiting room.
+      const invited =
+        role !== "host" &&
+        input.inviteToken != null &&
+        (await ctx.db.query.MeetingInvitesTable.findFirst({
+          where: and(
+            eq(MeetingInvitesTable.meetingId, meeting.id),
+            eq(MeetingInvitesTable.token, input.inviteToken),
+          ),
+          columns: { id: true },
+        })) != null;
+
+      if (
+        role !== "host" &&
+        !invited &&
+        meeting.passcodeHash &&
+        meeting.passcodeSalt
+      ) {
         const ok =
           input.passcode != null &&
           (await comparePasswords({
@@ -146,7 +168,7 @@ export const joinRouter = createTRPCRouter({
 
       const identity = userId ? hostIdentity(userId) : guestIdentity();
 
-      if (role === "host" || !meeting.settings.waitingRoom) {
+      if (role === "host" || invited || !meeting.settings.waitingRoom) {
         return admit(meeting, identity, input.displayName, role);
       }
 

@@ -120,6 +120,7 @@ function ParticipantTileInner({
 
       {isHandRaised && !isScreenShare && (
         <span
+          role="img"
           className="absolute top-2 start-2 grid size-8 place-items-center rounded-md bg-warning text-warning-foreground shadow-md motion-safe:animate-bounce"
           aria-label={t("meetings.room.handRaised")}
           title={t("meetings.room.handRaised")}

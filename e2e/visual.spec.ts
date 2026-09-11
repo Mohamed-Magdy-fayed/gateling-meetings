@@ -1,4 +1,4 @@
-import { type Browser, test } from "@playwright/test";
+import { test } from "./fixtures";
 
 import { expectInRoom, signIn, submitPreJoin } from "./helpers";
 
@@ -7,8 +7,9 @@ import { expectInRoom, signIn, submitPreJoin } from "./helpers";
  * that matter so a person can eyeball them (`test-results/visual/`). Kept
  * separate from meeting.spec.ts so the functional test stays fast.
  */
-test("room screenshots: RTL desktop + mobile", async ({ browser }) => {
-  const host = await newPage(browser, { width: 1280, height: 720 });
+test("room screenshots: RTL desktop + mobile", async ({ newPage }) => {
+  const host = await newPage();
+  await host.setViewportSize({ width: 1280, height: 720 });
   await signIn(host);
   await host
     .context()
@@ -27,7 +28,8 @@ test("room screenshots: RTL desktop + mobile", async ({ browser }) => {
     .getByRole("button", { name: /إنهاء للجميع/ })
     .waitFor({ timeout: 20_000 });
 
-  const mobile = await newPage(browser, { width: 390, height: 844 });
+  const mobile = await newPage();
+  await mobile.setViewportSize({ width: 390, height: 844 });
   await mobile.goto(url);
   await mobile.screenshot({ path: "test-results/visual/prejoin-mobile.png" });
   await submitPreJoin(mobile, "Guest");
@@ -53,14 +55,3 @@ test("room screenshots: RTL desktop + mobile", async ({ browser }) => {
   await mobile.waitForTimeout(500);
   await mobile.screenshot({ path: "test-results/visual/room-mobile-chat.png" });
 });
-
-async function newPage(
-  browser: Browser,
-  viewport: { width: number; height: number },
-) {
-  const context = await browser.newContext({
-    viewport,
-    permissions: ["camera", "microphone"],
-  });
-  return context.newPage();
-}

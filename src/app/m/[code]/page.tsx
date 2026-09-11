@@ -7,7 +7,10 @@ import { MeetingClient } from "@/features/meetings/components/meeting-client";
 import { normalizeMeetingCode } from "@/features/meetings/lib/meeting-code";
 import { api } from "@/integrations/trpc/server";
 
-type MeetingPageProps = { params: Promise<{ code: string }> };
+type MeetingPageProps = {
+  params: Promise<{ code: string }>;
+  searchParams: Promise<{ invite?: string }>;
+};
 
 async function loadMeeting(rawCode: string) {
   const code = normalizeMeetingCode(rawCode);
@@ -33,8 +36,11 @@ export async function generateMetadata({
   return { title: meeting.title, robots: { index: false } };
 }
 
-export default async function MeetingPage({ params }: MeetingPageProps) {
-  const { code } = await params;
+export default async function MeetingPage({
+  params,
+  searchParams,
+}: MeetingPageProps) {
+  const [{ code }, { invite }] = await Promise.all([params, searchParams]);
   const [meeting, user] = await Promise.all([
     loadMeeting(code),
     getCurrentUser(),
@@ -47,6 +53,7 @@ export default async function MeetingPage({ params }: MeetingPageProps) {
         defaultName: user?.name ?? "",
         isSignedIn: user != null,
       }}
+      inviteToken={typeof invite === "string" ? invite : null}
     />
   );
 }

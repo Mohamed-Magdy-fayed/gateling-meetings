@@ -31,6 +31,8 @@ type PreJoinProps = {
   meeting: MeetingSummary;
   viewer: Viewer;
   title: string;
+  /** An invite link is in hand: the passcode field is not needed. */
+  hasInvite?: boolean;
   isJoining: boolean;
   error: string | null;
   onJoin: (values: PreJoinValues) => void;
@@ -46,6 +48,7 @@ export function PreJoin({
   meeting,
   viewer,
   title,
+  hasInvite = false,
   isJoining,
   error,
   onJoin,
@@ -191,6 +194,12 @@ export function PreJoin({
           </h1>
           <p className="text-sm text-muted-foreground">
             {t("meetings.prejoin.hostedBy", { name: meeting.hostName })}
+            {meeting.status === "scheduled" && meeting.scheduledAt && (
+              <>
+                {" · "}
+                {t("meetings.detail.startsAt", { when: meeting.scheduledAt })}
+              </>
+            )}
           </p>
         </div>
 
@@ -219,7 +228,7 @@ export function PreJoin({
             )}
           </div>
 
-          {meeting.requiresPasscode && (
+          {meeting.requiresPasscode && !hasInvite && (
             <div className="space-y-1.5">
               <Label htmlFor="passcode">{t("meetings.prejoin.passcode")}</Label>
               <Input

@@ -23,6 +23,7 @@ import {
   updatedBy,
 } from "@/drizzle/schemas/helpers";
 import { JoinRequestsTable } from "./join-requests-table";
+import { MeetingInvitesTable } from "./meeting-invites-table";
 import { MeetingParticipantsTable } from "./meeting-participants-table";
 import {
   DEFAULT_MEETING_SETTINGS,

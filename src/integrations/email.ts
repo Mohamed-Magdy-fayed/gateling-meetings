@@ -11,6 +11,12 @@ export type SendMailOptions = {
   text?: string;
   html: string;
   fromName?: string;
+  /** Attaches a calendar invite the recipient's client can add in one click. */
+  icalEvent?: {
+    content: string;
+    method?: "REQUEST" | "CANCEL";
+    filename?: string;
+  };
 };
 
 let cachedTransporter: nodemailer.Transporter | null = null;
@@ -64,5 +70,12 @@ export async function sendMail(options: SendMailOptions): Promise<void> {
     subject: options.subject,
     text: options.text,
     html: options.html,
+    icalEvent: options.icalEvent
+      ? {
+          filename: options.icalEvent.filename ?? "invite.ics",
+          method: options.icalEvent.method ?? "REQUEST",
+          content: options.icalEvent.content,
+        }
+      : undefined,
   });
 }

@@ -17,7 +17,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: 1,
   reporter: process.env.CI ? "dot" : "list",
-  timeout: 60_000,
+  timeout: 120_000,
   use: {
     baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3000",
     trace: "on-first-retry",

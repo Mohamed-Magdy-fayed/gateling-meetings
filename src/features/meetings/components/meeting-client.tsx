@@ -29,7 +29,12 @@ type Stage =
   | { kind: "room"; session: JoinSession; choices: PreJoinValues }
   | { kind: "left"; reason: LeaveReason; message?: string };
 
-type MeetingClientProps = { meeting: MeetingSummary; viewer: Viewer };
+type MeetingClientProps = {
+  meeting: MeetingSummary;
+  viewer: Viewer;
+  /** From an emailed invite link — skips passcode and waiting room. */
+  inviteToken: string | null;
+};
 
 /**
  * The `/m/[code]` page is one client component with four stages —
@@ -37,7 +42,11 @@ type MeetingClientProps = { meeting: MeetingSummary; viewer: Viewer };
  * picks on the pre-join screen must survive into the room without a
  * navigation.
  */
-export function MeetingClient({ meeting, viewer }: MeetingClientProps) {
+export function MeetingClient({
+  meeting,
+  viewer,
+  inviteToken,
+}: MeetingClientProps) {
   const { t } = useTranslation();
   const trpc = useTRPC();
   const [stage, setStage] = useState<Stage>(() =>
@@ -53,6 +62,7 @@ export function MeetingClient({ meeting, viewer }: MeetingClientProps) {
       code: meeting.code,
       displayName: choices.displayName,
       passcode: choices.passcode || undefined,
+      inviteToken: inviteToken ?? undefined,
     });
     if (result.status === "pending") {
       setStage({ kind: "waiting", requestId: result.requestId, choices });
@@ -104,6 +114,7 @@ export function MeetingClient({ meeting, viewer }: MeetingClientProps) {
         <PreJoin
           meeting={meeting}
           viewer={viewer}
+          hasInvite={inviteToken != null}
           isJoining={join.isPending}
           error={join.error?.message ?? null}
           onJoin={(values) => {

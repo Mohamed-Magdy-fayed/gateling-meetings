@@ -9,9 +9,7 @@ import {
 import { useTranslation } from "@/features/core/i18n/client";
 import { FormBooleanField } from "./boolean-field";
 import { FormComboboxOneField } from "./combobox-one-field";
-// DateField, DateTimeField land with react-day-picker in Phase 5 (calendar UI, docs/rebuild/02-dependencies.md).
-// import { FormDateField } from "./date-field";
-// import { FormDateTimeField } from "./date-time-field";
+import { FormDateTimeField } from "./date-time-field";
 import { FormEmailField } from "./email-field";
 // MobileField needs react-phone-number-input, not yet an approved dependency — revisit when a phase needs it.
 // import { FormMobileField } from "./mobile-field";
@@ -34,8 +32,7 @@ const { useAppForm: useAppFormBase } = createFormHook({
     // MobileField: FormMobileField,
     ComboboxOneField: FormComboboxOneField,
     SelectField: FormSelectField,
-    // DateField: FormDateField,
-    // DateTimeField: FormDateTimeField,
+    DateTimeField: FormDateTimeField,
     BooleanField: FormBooleanField,
     TextareaField: FormTextareaField,
     // SearchLookupField: FormSearchLookupField,

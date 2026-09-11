@@ -1,8 +1,12 @@
 import { dt } from "@/features/core/i18n/lib";
 
 export const meetingsAr = {
+  personalRoomTitle: "غرفة {name}",
   instantTitle: "اجتماع فوري",
   validation: {
+    invalidTimezone: "منطقة زمنية غير معروفة.",
+    pastDate: "اختر وقتًا في المستقبل.",
+    invalidEmails: "يبدو أن عنوان بريد إلكتروني واحدًا أو أكثر غير صحيح.",
     invalidCode: "هذا لا يبدو رمز اجتماع.",
     passcodeLength: "يجب أن يكون رمز المرور من 4 إلى 16 حرفًا.",
     nameRequired: "أدخل الاسم الذي سيراه الآخرون.",
@@ -138,6 +142,106 @@ export const meetingsAr = {
       muteOnEntry: "كتم الصوت عند الدخول",
       allowScreenShare: "يمكن للمشاركين مشاركة الشاشة",
       allowGuests: "يمكن للضيوف الانضمام بدون حساب",
+    },
+  },
+  schedule: {
+    title: "جدولة اجتماع",
+    lead: "اختر وقتًا، أضف الأشخاص، وسيحصل الجميع على دعوة في التقويم.",
+    meetingTitle: "العنوان",
+    titlePlaceholder: "الاجتماع الأسبوعي",
+    when: "التاريخ والوقت",
+    duration: "المدة",
+    minutes: dt("{count:plural}", {
+      plural: {
+        count: {
+          zero: "0 دقيقة",
+          one: "دقيقة واحدة",
+          two: "دقيقتان",
+          few: "{?} دقائق",
+          many: "{?} دقيقة",
+          other: "{?} دقيقة",
+        },
+      },
+    }),
+    timezone: "المنطقة الزمنية",
+    passcode: "رمز المرور (اختياري)",
+    passcodeHint: "من 4 إلى 16 حرفًا. من لديهم رابط دعوة لا يحتاجونه.",
+    waitingRoom: "غرفة الانتظار",
+    waitingRoomHint: "تقبل كل ضيف بنفسك. المدعوون يتخطون الانتظار.",
+    invitees: "دعوة عبر البريد الإلكتروني",
+    inviteesPlaceholder: "one@example.com, two@example.com",
+    inviteesHint:
+      "مفصولة بفواصل أو أسطر جديدة. يحصل كل شخص على رابط وملف ‎.ics.",
+    submit: "جدولة",
+    submitting: "جارٍ الجدولة…",
+    created: "تمت جدولة الاجتماع.",
+  },
+  detail: {
+    startsAt: "يبدأ {when:date}",
+    startedAt: "بدأ {when:date}",
+    endedAt: "انتهى {when:date}",
+    duration: "{minutes:number} دقيقة",
+    link: "رابط الاجتماع",
+    passcodeSet: "يتطلب رمز مرور",
+    noPasscode: "بدون رمز مرور",
+    waitingRoomOn: "غرفة الانتظار مفعّلة",
+    waitingRoomOff: "غرفة الانتظار معطّلة",
+    start: "بدء الاجتماع",
+    rejoin: "إعادة الانضمام",
+    edit: "تعديل",
+    save: "حفظ التغييرات",
+    saved: "تم الحفظ.",
+    delete: "حذف الاجتماع",
+    deleteConfirm:
+      "حذف هذا الاجتماع؟ سيتوقف الرابط عن العمل ولن يتم تذكير المدعوين.",
+    deleted: "تم حذف الاجتماع.",
+    invitees: "المدعوون",
+    noInvitees: "لم تتم دعوة أحد بعد.",
+    addInvitees: "إضافة أشخاص",
+    invitesSent: dt("{count:plural}", {
+      plural: {
+        count: {
+          zero: "تمت دعوة الجميع مسبقًا.",
+          one: "تم إرسال دعوة واحدة.",
+          two: "تم إرسال دعوتين.",
+          few: "تم إرسال {?} دعوات.",
+          many: "تم إرسال {?} دعوة.",
+          other: "تم إرسال {?} دعوة.",
+        },
+      },
+    }),
+    pending: "جارٍ الإرسال…",
+    sent: "تم الإرسال",
+    addToGoogle: "إضافة إلى تقويم Google",
+    downloadIcs: "تنزيل ملف ‎.ics",
+  },
+  personalRoom: {
+    title: "غرفتك الشخصية",
+    lead: "رابط دائم يخصك دائمًا. شاركه مرة واحدة واستخدمه للأبد.",
+    open: "فتح الغرفة",
+    create: "إعداد غرفتي",
+  },
+  sections: {
+    upcoming: "القادمة",
+    live: "جارية",
+    ended: "السابقة",
+    schedule: "جدولة",
+  },
+  emails: {
+    invite: {
+      subject: "{host} يدعوك: {title}",
+      intro:
+        'دعاك {host} إلى "{title}" — {when}. اضغط الزر أدناه عندما يحين الوقت؛ لا حاجة لحساب.',
+      cta: "الانضمام إلى الاجتماع",
+      calendar:
+        "أضفه إلى تقويمك: ملف ‎.ics المرفق يعمل مع أي تطبيق تقويم، أو استخدم رابط تقويم Google هذا: {googleUrl}",
+      text: 'دعاك {host} إلى "{title}" في {when}.\n\nانضم من هنا: {url}',
+    },
+    reminder: {
+      subject: "يبدأ قريبًا: {title}",
+      intro: 'يبدأ "{title}" مع {host} في {when} — بعد نحو عشر دقائق.',
+      notice: "إن لم تتمكن من الحضور، أخبر المضيف فقط.",
+      text: 'يبدأ "{title}" مع {host} في {when}.\n\nانضم من هنا: {url}',
     },
   },
 } as const;

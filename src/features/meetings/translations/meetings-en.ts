@@ -1,8 +1,12 @@
 import { dt } from "@/features/core/i18n/lib";
 
 export const meetingsEn = {
+  personalRoomTitle: "{name}'s room",
   instantTitle: "Instant meeting",
   validation: {
+    invalidTimezone: "Unknown time zone.",
+    pastDate: "Pick a time in the future.",
+    invalidEmails: "One or more email addresses look wrong.",
     invalidCode: "That doesn't look like a meeting code.",
     passcodeLength: "Passcode must be 4–16 characters.",
     nameRequired: "Enter the name others will see.",
@@ -124,6 +128,95 @@ export const meetingsEn = {
       muteOnEntry: "Mute on entry",
       allowScreenShare: "Participants can share screen",
       allowGuests: "Guests can join without an account",
+    },
+  },
+  schedule: {
+    title: "Schedule a meeting",
+    lead: "Pick a time, add people, and everyone gets a calendar invite.",
+    meetingTitle: "Title",
+    titlePlaceholder: "Weekly sync",
+    when: "Date and time",
+    duration: "Duration",
+    minutes: dt("{count:plural}", {
+      plural: { count: { one: "{?} minute", other: "{?} minutes" } },
+    }),
+    timezone: "Time zone",
+    passcode: "Passcode (optional)",
+    passcodeHint: "4–16 characters. People with an invite link don't need it.",
+    waitingRoom: "Waiting room",
+    waitingRoomHint: "You admit each guest by hand. Invitees skip the queue.",
+    invitees: "Invite by email",
+    inviteesPlaceholder: "one@example.com, two@example.com",
+    inviteesHint:
+      "Comma or newline separated. Each gets a link and an .ics file.",
+    submit: "Schedule",
+    submitting: "Scheduling…",
+    created: "Meeting scheduled.",
+  },
+  detail: {
+    startsAt: "Starts {when:date}",
+    startedAt: "Started {when:date}",
+    endedAt: "Ended {when:date}",
+    duration: "{minutes:number} min",
+    link: "Meeting link",
+    passcodeSet: "Passcode required",
+    noPasscode: "No passcode",
+    waitingRoomOn: "Waiting room on",
+    waitingRoomOff: "Waiting room off",
+    start: "Start meeting",
+    rejoin: "Rejoin",
+    edit: "Edit",
+    save: "Save changes",
+    saved: "Saved.",
+    delete: "Delete meeting",
+    deleteConfirm:
+      "Delete this meeting? The link will stop working and invitees won't be reminded.",
+    deleted: "Meeting deleted.",
+    invitees: "Invitees",
+    noInvitees: "Nobody invited yet.",
+    addInvitees: "Add people",
+    invitesSent: dt("{count:plural}", {
+      plural: {
+        count: {
+          zero: "Everyone was already invited.",
+          one: "Invitation sent.",
+          other: "{?} invitations sent.",
+        },
+      },
+    }),
+    pending: "Sending…",
+    sent: "Sent",
+    addToGoogle: "Add to Google Calendar",
+    downloadIcs: "Download .ics",
+  },
+  personalRoom: {
+    title: "Your personal room",
+    lead: "A permanent link that's always yours. Share it once, use it forever.",
+    open: "Open room",
+    create: "Set up my room",
+  },
+  sections: {
+    upcoming: "Upcoming",
+    live: "In progress",
+    ended: "Past",
+    schedule: "Schedule",
+  },
+  emails: {
+    invite: {
+      subject: "{host} invited you: {title}",
+      intro:
+        '{host} has invited you to "{title}" — {when}. Tap the button below when it\'s time; no account needed.',
+      cta: "Join meeting",
+      calendar:
+        "Add it to your calendar: the attached .ics works with any calendar app, or use this Google Calendar link: {googleUrl}",
+      text: '{host} has invited you to "{title}" on {when}.\n\nJoin here: {url}',
+    },
+    reminder: {
+      subject: "Starting soon: {title}",
+      intro:
+        '"{title}" with {host} starts at {when} — about ten minutes from now.',
+      notice: "If you can't make it, just let the host know.",
+      text: '"{title}" with {host} starts at {when}.\n\nJoin here: {url}',
     },
   },
 } as const;
