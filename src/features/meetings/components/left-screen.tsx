@@ -27,9 +27,11 @@ export function LeftScreen({
       ? t("meetings.prejoin.ended")
       : reason === "removed"
         ? t("meetings.room.removed")
-        : reason === "error"
-          ? t("meetings.errors.connection")
-          : t("meetings.room.left");
+        : reason === "denied"
+          ? t("meetings.waiting.denied")
+          : reason === "error"
+            ? t("meetings.errors.connection")
+            : t("meetings.room.left");
 
   return (
     <main className="grid min-h-svh place-items-center px-4">

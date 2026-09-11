@@ -44,3 +44,18 @@
 .meeting-room [data-mirror="true"] video {
   transform: scaleX(-1);
 }
+
+@keyframes reaction-float {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.6);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(-1rem) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-14rem) scale(1);
+  }
+}

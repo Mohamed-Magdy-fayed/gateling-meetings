@@ -3,6 +3,7 @@
 import { useTrackToggle } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import {
+  HandIcon,
   MessageSquareIcon,
   MicIcon,
   MicOffIcon,
@@ -34,6 +35,8 @@ import {
 } from "@/components/ui/tooltip";
 import { useTranslation } from "@/features/core/i18n/client";
 import { cn } from "@/lib/utils";
+import { ReactionPicker } from "./reactions";
+import { useLocalHandRaise } from "./use-hand-raise";
 
 export type SidePanel = "chat" | "participants" | null;
 
@@ -46,6 +49,7 @@ type ControlBarProps = {
   onTogglePanel: (panel: Exclude<SidePanel, null>) => void;
   onLeave: () => void;
   onEndForAll: () => void;
+  onReact: (emoji: string) => void;
 };
 
 export function ControlBar({
@@ -57,8 +61,10 @@ export function ControlBar({
   onTogglePanel,
   onLeave,
   onEndForAll,
+  onReact,
 }: ControlBarProps) {
   const { t } = useTranslation();
+  const hand = useLocalHandRaise();
 
   const mic = useTrackToggle({ source: Track.Source.Microphone });
   const camera = useTrackToggle({ source: Track.Source.Camera });
@@ -81,10 +87,11 @@ export function ControlBar({
       }
       if (event.key === "m" || event.key === "M") mic.toggle();
       if (event.key === "v" || event.key === "V") camera.toggle();
+      if (event.key === "h" || event.key === "H") hand.toggle();
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [mic.toggle, camera.toggle]);
+  }, [mic.toggle, camera.toggle, hand.toggle]);
 
   return (
     <div className="flex items-center justify-center gap-2 px-3 py-3 sm:gap-3">
@@ -128,6 +135,21 @@ export function ControlBar({
           {screen.enabled ? <ScreenShareOffIcon /> : <ScreenShareIcon />}
         </ControlButton>
       )}
+
+      <ControlButton
+        label={
+          hand.isRaised
+            ? t("meetings.room.lowerHand")
+            : t("meetings.room.raiseHand")
+        }
+        active
+        onClick={() => hand.toggle()}
+        highlight={hand.isRaised}
+      >
+        <HandIcon />
+      </ControlButton>
+
+      <ReactionPicker onReact={onReact} />
 
       <span className="mx-1 hidden h-6 w-px bg-white/10 sm:block" />
 

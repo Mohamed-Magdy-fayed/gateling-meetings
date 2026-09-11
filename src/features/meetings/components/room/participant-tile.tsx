@@ -13,11 +13,18 @@ import {
   VideoTrack,
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
-import { MicOffIcon, PinIcon, PinOffIcon, ScreenShareIcon } from "lucide-react";
+import {
+  HandIcon,
+  MicOffIcon,
+  PinIcon,
+  PinOffIcon,
+  ScreenShareIcon,
+} from "lucide-react";
 
 import { useTranslation } from "@/features/core/i18n/client";
 import { PARTICIPANT_ATTRIBUTE_ROLE } from "@/integrations/livekit/attributes";
 import { cn } from "@/lib/utils";
+import { useHandRaised } from "./use-hand-raise";
 
 /**
  * One video cell. Rendered inside `GridLayout` / `CarouselLayout` /
@@ -41,6 +48,7 @@ function ParticipantTileInner({
   const isLocal = participant.isLocal;
   const isScreenShare = trackRef.source === Track.Source.ScreenShare;
   const isSpeaking = useIsSpeaking(participant);
+  const isHandRaised = useHandRaised(participant);
   const role = useParticipantAttribute(PARTICIPANT_ATTRIBUTE_ROLE, {
     participant,
   });
@@ -109,6 +117,16 @@ function ParticipantTileInner({
           )}
         </span>
       </div>
+
+      {isHandRaised && !isScreenShare && (
+        <span
+          className="absolute top-2 start-2 grid size-8 place-items-center rounded-md bg-warning text-warning-foreground shadow-md motion-safe:animate-bounce"
+          aria-label={t("meetings.room.handRaised")}
+          title={t("meetings.room.handRaised")}
+        >
+          <HandIcon className="size-4" />
+        </span>
+      )}
 
       {/* Pin — appears on hover / focus, always visible while pinned */}
       <button

@@ -28,7 +28,7 @@ export function Providers({ children, locale, nonce }: ProvidersProps) {
         <TRPCReactProvider>
           <TooltipProvider>
             {children}
-            <Toaster visibleToasts={3} />
+            <Toaster visibleToasts={3} position="top-center" />
           </TooltipProvider>
         </TRPCReactProvider>
       </TranslationProvider>

@@ -1,0 +1,111 @@
+import { and, eq, isNull } from "drizzle-orm";
+import { eventType } from "inngest";
+import { z } from "zod";
+
+import { db } from "@/drizzle";
+import { MeetingParticipantsTable, MeetingsTable } from "@/drizzle/schema";
+import { PARTICIPANT_ATTRIBUTE_ROLE } from "@/integrations/livekit/attributes";
+import { inngest } from "../client";
+
+/**
+ * A LiveKit webhook, verified by `/api/livekit/webhook` and handed off here
+ * so the HTTP handler answers in milliseconds and a transient DB hiccup is
+ * retried by Inngest rather than lost.
+ */
+export const liveKitWebhookEvent = eventType("livekit/webhook.received", {
+  schema: z.object({
+    event: z.string(),
+    /** LiveKit room name = our meeting code. */
+    room: z.string().min(1),
+    /** Seconds since epoch, as LiveKit sends it. */
+    createdAt: z.number(),
+    participant: z
+      .object({
+        identity: z.string(),
+        name: z.string(),
+        attributes: z.record(z.string(), z.string()),
+      })
+      .optional(),
+  }),
+});
+
+export const onLiveKitWebhook = inngest.createFunction(
+  { id: "on-livekit-webhook", triggers: [liveKitWebhookEvent] },
+  async ({ event, step }) => {
+    const { room, participant } = event.data;
+    const at = new Date(event.data.createdAt * 1000);
+
+    const meeting = await step.run("find-meeting", () =>
+      db.query.MeetingsTable.findFirst({
+        where: eq(MeetingsTable.code, room),
+        columns: { id: true, status: true },
+      }),
+    );
+    if (!meeting) return { skipped: "unknown-room" };
+
+    switch (event.data.event) {
+      case "room_started":
+        // A scheduled meeting goes live when the first person (the host —
+        // guests wait) actually connects.
+        if (meeting.status === "scheduled") {
+          await step.run("mark-live", () =>
+            db
+              .update(MeetingsTable)
+              .set({ status: "live", startedAt: at })
+              .where(eq(MeetingsTable.id, meeting.id)),
+          );
+        }
+        return { handled: "room_started" };
+
+      case "room_finished":
+        if (meeting.status !== "ended") {
+          await step.run("mark-ended", () =>
+            db
+              .update(MeetingsTable)
+              .set({ status: "ended", endedAt: at })
+              .where(eq(MeetingsTable.id, meeting.id)),
+          );
+        }
+        return { handled: "room_finished" };
+
+      case "participant_joined": {
+        if (!participant) return { skipped: "no-participant" };
+        const userId = participant.identity.startsWith("user:")
+          ? participant.identity.slice("user:".length)
+          : null;
+        await step.run("log-join", () =>
+          db.insert(MeetingParticipantsTable).values({
+            meetingId: meeting.id,
+            identity: participant.identity,
+            displayName: participant.name || participant.identity,
+            userId,
+            role:
+              participant.attributes[PARTICIPANT_ATTRIBUTE_ROLE] ??
+              "participant",
+            joinedAt: at,
+          }),
+        );
+        return { handled: "participant_joined" };
+      }
+
+      case "participant_left":
+        if (!participant) return { skipped: "no-participant" };
+        await step.run("log-leave", () =>
+          db
+            .update(MeetingParticipantsTable)
+            .set({ leftAt: at })
+            .where(
+              and(
+                eq(MeetingParticipantsTable.meetingId, meeting.id),
+                eq(MeetingParticipantsTable.identity, participant.identity),
+                isNull(MeetingParticipantsTable.leftAt),
+              ),
+            ),
+        );
+        return { handled: "participant_left" };
+
+      default:
+        return { skipped: event.data.event };
+    }
+  },
+);

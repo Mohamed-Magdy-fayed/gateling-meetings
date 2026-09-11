@@ -22,6 +22,8 @@ import {
   updatedAt,
   updatedBy,
 } from "@/drizzle/schemas/helpers";
+import { JoinRequestsTable } from "./join-requests-table";
+import { MeetingParticipantsTable } from "./meeting-participants-table";
 import {
   DEFAULT_MEETING_SETTINGS,
   type MeetingSettings,
@@ -76,11 +78,13 @@ export const MeetingsTable = pgTable(
   ],
 );
 
-export const meetingsRelations = relations(MeetingsTable, ({ one }) => ({
+export const meetingsRelations = relations(MeetingsTable, ({ one, many }) => ({
   host: one(UsersTable, {
     fields: [MeetingsTable.hostId],
     references: [UsersTable.id],
   }),
+  joinRequests: many(JoinRequestsTable),
+  participants: many(MeetingParticipantsTable),
 }));
 
 export type Meeting = typeof MeetingsTable.$inferSelect;

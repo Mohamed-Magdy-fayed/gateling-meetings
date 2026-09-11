@@ -40,8 +40,11 @@ import type {
 import type { PreJoinValues } from "./pre-join";
 import { ChatPanel } from "./room/chat-panel";
 import { ControlBar, type SidePanel } from "./room/control-bar";
+import { HostSettings } from "./room/host-settings";
 import { ParticipantsPanel } from "./room/participants-panel";
+import { ReactionsOverlay, useReactions } from "./room/reactions";
 import { Stage } from "./room/stage";
+import { useWaitingQueue } from "./room/waiting-queue";
 
 type MeetingRoomProps = {
   meeting: MeetingSummary;
@@ -153,6 +156,9 @@ function RoomShell({ meeting, session, onLeave, onEnded }: RoomShellProps) {
   const participants = useParticipants();
   const chat = useChat();
   const { chatMessages } = chat;
+  const { reactions, react } = useReactions(t("meetings.room.you"));
+  const isHost = session.role === "host";
+  const waitingQueue = useWaitingQueue(meeting.code, isHost);
 
   const [panel, setPanel] = useState<SidePanel>(null);
   const [seenChatCount, setSeenChatCount] = useState(0);
@@ -181,7 +187,6 @@ function RoomShell({ meeting, session, onLeave, onEnded }: RoomShellProps) {
     toast.success(t("meetings.room.inviteCopied"));
   }
 
-  const isHost = session.role === "host";
   const panelTitle =
     panel === "chat"
       ? t("meetings.room.chat")
@@ -190,7 +195,11 @@ function RoomShell({ meeting, session, onLeave, onEnded }: RoomShellProps) {
     panel === "chat" ? (
       <ChatPanel {...chat} />
     ) : panel === "participants" ? (
-      <ParticipantsPanel />
+      <ParticipantsPanel
+        code={meeting.code}
+        isHost={isHost}
+        waitingQueue={waitingQueue}
+      />
     ) : null;
 
   return (
@@ -209,6 +218,9 @@ function RoomShell({ meeting, session, onLeave, onEnded }: RoomShellProps) {
           {meeting.code}
           <CopyIcon className="size-3" />
         </button>
+        {isHost && meeting.settings && (
+          <HostSettings code={meeting.code} initial={meeting.settings} />
+        )}
         <span className="ms-auto flex items-center gap-2 text-xs text-neutral-400">
           {connectionState === ConnectionState.Reconnecting && (
             <span className="rounded-md bg-warning/20 px-2 py-0.5 text-warning">
@@ -227,8 +239,9 @@ function RoomShell({ meeting, session, onLeave, onEnded }: RoomShellProps) {
       </header>
 
       {/* Stage + side panel */}
-      <div className="flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1">
         <Stage />
+        <ReactionsOverlay reactions={reactions} />
         {!isMobile && panel && (
           <aside className="flex w-80 shrink-0 flex-col border-s border-white/10 bg-neutral-900">
             <div className="flex h-12 items-center justify-between border-b border-white/10 px-3">
@@ -275,6 +288,7 @@ function RoomShell({ meeting, session, onLeave, onEnded }: RoomShellProps) {
         onTogglePanel={togglePanel}
         onLeave={onLeave}
         onEndForAll={() => endMeeting.mutate({ code: meeting.code })}
+        onReact={react}
       />
     </>
   );

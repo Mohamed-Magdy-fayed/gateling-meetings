@@ -1,6 +1,6 @@
 import { type Browser, test } from "@playwright/test";
 
-import { joinRoom, signIn } from "./helpers";
+import { expectInRoom, signIn, submitPreJoin } from "./helpers";
 
 /**
  * Not an assertion suite — captures the room at the breakpoints and locale
@@ -30,7 +30,21 @@ test("room screenshots: RTL desktop + mobile", async ({ browser }) => {
   const mobile = await newPage(browser, { width: 390, height: 844 });
   await mobile.goto(url);
   await mobile.screenshot({ path: "test-results/visual/prejoin-mobile.png" });
-  await joinRoom(mobile, "Guest");
+  await submitPreJoin(mobile, "Guest");
+  await mobile.screenshot({ path: "test-results/visual/waiting-mobile.png" });
+  // Host sees the queue in the participants panel and admits.
+  await host.getByRole("button", { name: /المشاركون/ }).click();
+  await host
+    .getByRole("button", { name: /^قبول$/ })
+    .first()
+    .waitFor();
+  await host.screenshot({ path: "test-results/visual/host-queue-ar.png" });
+  await host
+    .getByRole("button", { name: /^قبول$/ })
+    .first()
+    .click();
+  await host.getByRole("button", { name: /المشاركون/ }).click();
+  await expectInRoom(mobile);
   await mobile.waitForTimeout(1500);
   await host.waitForTimeout(500);
   await host.screenshot({ path: "test-results/visual/room-ar-desktop.png" });
