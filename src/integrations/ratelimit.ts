@@ -71,6 +71,18 @@ export const meetingCodeRatelimit = new Ratelimit({
 });
 
 /**
+ * The REST API (`/api/v1/*`), keyed per integration rather than per IP —
+ * the callers are servers, often behind one egress address, and the API
+ * key is the identity that matters. 120/min is far above any real system's
+ * meeting-creation rate and low enough to blunt a leaked key.
+ */
+export const integrationApiRatelimit = new Ratelimit({
+  redis: redisClient,
+  limiter: Ratelimit.slidingWindow(120, "1 m"),
+  prefix: "ratelimit:integration-api",
+});
+
+/**
  * Trusts `x-forwarded-for`/`x-real-ip` as set by the platform's own edge
  * network (this app deploys on Vercel) — Vercel's routing layer overwrites
  * these headers with the real client IP before a request reaches the

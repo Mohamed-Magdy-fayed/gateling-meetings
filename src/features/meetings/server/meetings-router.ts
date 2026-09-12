@@ -1,31 +1,14 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 
-import {
-  DEFAULT_MEETING_SETTINGS,
-  MeetingsTable,
-  meetingSettingsSchema,
-} from "@/drizzle/schema";
-import {
-  generateSalt,
-  hashPassword,
-} from "@/features/core/auth/core/passwordHasher";
-import { generateMeetingCode } from "@/features/meetings/lib/meeting-code";
-import {
-  meetingInvitesRequestedEvent,
-  meetingScheduleChangedEvent,
-  meetingScheduledEvent,
-} from "@/integrations/inngest/functions/meeting-events";
-import { sendEvents } from "@/integrations/inngest/send";
-import { getRoomService } from "@/integrations/livekit/client";
+import { MeetingsTable } from "@/drizzle/schema";
 import {
   createTRPCRouter,
   protectedProcedure,
   publicProcedure,
   type TRPCContext,
 } from "@/integrations/trpc/init";
-import { createInvites } from "./invites";
 import { findMeetingByCode } from "./queries";
 import {
   createInstantMeetingSchema,
@@ -34,51 +17,19 @@ import {
   updateMeetingSchema,
   updateMeetingSettingsSchema,
 } from "./schemas";
-
-/**
- * A unique index guards `code`; on the astronomically rare collision the
- * insert throws and we simply draw again rather than pre-checking (which
- * would race anyway).
- */
-const CODE_RETRIES = 3;
+import {
+  createInstantMeeting,
+  createScheduledMeeting,
+  deleteMeeting,
+  endMeeting,
+  insertWithFreshCode,
+  updateMeeting,
+  updateMeetingSettings,
+} from "./service";
 
 type HostContext = Pick<TRPCContext, "db" | "t"> & {
   session: NonNullable<TRPCContext["session"]>;
 };
-
-type InsertValues = Omit<
-  typeof MeetingsTable.$inferInsert,
-  "code" | "hostId" | "createdBy"
->;
-
-async function insertWithFreshCode(ctx: HostContext, values: InsertValues) {
-  for (let attempt = 0; attempt < CODE_RETRIES; attempt++) {
-    try {
-      const [meeting] = await ctx.db
-        .insert(MeetingsTable)
-        .values({
-          ...values,
-          hostId: ctx.session.user.id,
-          createdBy: ctx.session.user.id,
-          code: generateMeetingCode(),
-        })
-        .returning({ id: MeetingsTable.id, code: MeetingsTable.code });
-      if (meeting) return meeting;
-    } catch (error) {
-      if (attempt === CODE_RETRIES - 1) throw error;
-    }
-  }
-  throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-}
-
-async function hashPasscode(passcode: string | undefined) {
-  if (!passcode) return { passcodeHash: null, passcodeSalt: null };
-  const passcodeSalt = generateSalt();
-  return {
-    passcodeHash: await hashPassword(passcode, passcodeSalt),
-    passcodeSalt,
-  };
-}
 
 const hostColumns = {
   id: true,
@@ -102,54 +53,18 @@ export const meetingsRouter = createTRPCRouter({
   createInstant: protectedProcedure
     .input(createInstantMeetingSchema)
     .mutation(({ ctx, input }) =>
-      insertWithFreshCode(ctx, {
-        title: input.title ?? ctx.t("meetings.instantTitle"),
-        status: "live",
-        startedAt: new Date(),
+      createInstantMeeting(ctx, {
+        hostId: ctx.session.user.id,
+        title: input.title,
       }),
     ),
 
   /** A meeting for later: invitees get an email with an .ics and a reminder. */
   createScheduled: protectedProcedure
     .input(scheduledMeetingSchema)
-    .mutation(async ({ ctx, input }) => {
-      if (input.scheduledAt.getTime() < Date.now()) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: ctx.t("meetings.validation.pastDate"),
-        });
-      }
-      const meeting = await insertWithFreshCode(ctx, {
-        title: input.title,
-        status: "scheduled",
-        scheduledAt: input.scheduledAt,
-        durationMinutes: input.durationMinutes,
-        timezone: input.timezone,
-        settings: {
-          ...DEFAULT_MEETING_SETTINGS,
-          waitingRoom: input.waitingRoom,
-        },
-        ...(await hashPasscode(input.passcode)),
-      });
-
-      const invites = await createInvites(ctx.db, meeting.id, input.invitees);
-      await sendEvents([
-        meetingScheduledEvent.create({
-          meetingId: meeting.id,
-          scheduledAt: input.scheduledAt.toISOString(),
-        }),
-        ...(invites.length > 0
-          ? [
-              meetingInvitesRequestedEvent.create({
-                meetingId: meeting.id,
-                inviteIds: invites.map((invite) => invite.id),
-              }),
-            ]
-          : []),
-      ]);
-
-      return meeting;
-    }),
+    .mutation(({ ctx, input }) =>
+      createScheduledMeeting(ctx, { hostId: ctx.session.user.id, input }),
+    ),
 
   /**
    * The host's permanent room — one per account, same link forever. Created
@@ -166,12 +81,14 @@ export const meetingsRouter = createTRPCRouter({
     });
     if (existing) return existing;
 
-    const created = await insertWithFreshCode(ctx, {
+    const created = await insertWithFreshCode(ctx.db, {
       title: ctx.t("meetings.personalRoomTitle", {
         name: ctx.session.user.name ?? "",
       }),
       status: "live",
       isPersonalRoom: true,
+      hostId: ctx.session.user.id,
+      createdBy: ctx.session.user.id,
     });
     return { code: created.code, title: null };
   }),
@@ -180,33 +97,8 @@ export const meetingsRouter = createTRPCRouter({
     .input(updateMeetingSchema)
     .mutation(async ({ ctx, input }) => {
       const meeting = await requireHostedMeeting(ctx, input.code);
-      const { code, passcode, waitingRoom, ...fields } = input;
-      const rescheduled =
-        fields.scheduledAt != null &&
-        fields.scheduledAt.getTime() !== meeting.scheduledAt?.getTime();
-
-      await ctx.db
-        .update(MeetingsTable)
-        .set({
-          ...fields,
-          ...(passcode !== undefined ? await hashPasscode(passcode) : {}),
-          ...(waitingRoom !== undefined
-            ? { settings: { ...meeting.settings, waitingRoom } }
-            : {}),
-          updatedBy: ctx.session.user.id,
-        })
-        .where(eq(MeetingsTable.id, meeting.id));
-
-      if (rescheduled && fields.scheduledAt) {
-        // Cancels the sleeping reminder for the old time and arms a new one.
-        await sendEvents([
-          meetingScheduleChangedEvent.create({ meetingId: meeting.id }),
-          meetingScheduledEvent.create({
-            meetingId: meeting.id,
-            scheduledAt: fields.scheduledAt.toISOString(),
-          }),
-        ]);
-      }
+      const { code, ...fields } = input;
+      await updateMeeting(ctx, meeting, fields, ctx.session.user.id);
       return { code };
     }),
 
@@ -215,13 +107,7 @@ export const meetingsRouter = createTRPCRouter({
     .input(z.object({ code: meetingCodeSchema }))
     .mutation(async ({ ctx, input }) => {
       const meeting = await requireHostedMeeting(ctx, input.code);
-      await ctx.db
-        .update(MeetingsTable)
-        .set({ deletedAt: new Date(), deletedBy: ctx.session.user.id })
-        .where(eq(MeetingsTable.id, meeting.id));
-      await sendEvents(
-        meetingScheduleChangedEvent.create({ meetingId: meeting.id }),
-      );
+      await deleteMeeting(ctx, meeting, ctx.session.user.id);
       return { ok: true };
     }),
 
@@ -307,53 +193,20 @@ export const meetingsRouter = createTRPCRouter({
     .input(updateMeetingSettingsSchema)
     .mutation(async ({ ctx, input }) => {
       const meeting = await requireHostedMeeting(ctx, input.code);
-      // Merged in SQL (`||`) so two switches flipped in quick succession
-      // each write only their own key instead of the last read winning.
-      const [updated] = await ctx.db
-        .update(MeetingsTable)
-        .set({
-          settings: sql`${MeetingsTable.settings} || ${JSON.stringify(input.settings)}::jsonb`,
-          updatedBy: ctx.session.user.id,
-        })
-        .where(eq(MeetingsTable.id, meeting.id))
-        .returning({ settings: MeetingsTable.settings });
-      return meetingSettingsSchema.parse(updated?.settings ?? meeting.settings);
+      return updateMeetingSettings(
+        ctx,
+        meeting,
+        input.settings,
+        ctx.session.user.id,
+      );
     }),
 
-  /**
-   * "End meeting for all". Deleting the LiveKit room disconnects every
-   * participant at the SFU — there is no client-side path back in, because
-   * `join.request` refuses an ended meeting. A personal room is never
-   * "ended": the link is permanent, so only the current session is cleared.
-   */
+  /** "End meeting for all" — see `endMeeting` in service.ts. */
   end: protectedProcedure
     .input(z.object({ code: meetingCodeSchema }))
     .mutation(async ({ ctx, input }) => {
       const meeting = await requireHostedMeeting(ctx, input.code);
-      if (meeting.status === "ended") return { status: "ended" as const };
-
-      if (!meeting.isPersonalRoom) {
-        await ctx.db
-          .update(MeetingsTable)
-          .set({
-            status: "ended",
-            endedAt: new Date(),
-            updatedBy: ctx.session.user.id,
-          })
-          .where(eq(MeetingsTable.id, meeting.id));
-      }
-
-      // The room may never have been created (nobody connected) — LiveKit
-      // returns 404 for that, which is the outcome we wanted anyway.
-      try {
-        await getRoomService().deleteRoom(meeting.code);
-      } catch (error) {
-        console.warn(`[livekit] deleteRoom(${meeting.code}) failed`, error);
-      }
-
-      return {
-        status: meeting.isPersonalRoom ? ("live" as const) : ("ended" as const),
-      };
+      return endMeeting(ctx, meeting, ctx.session.user.id);
     }),
 });
 
