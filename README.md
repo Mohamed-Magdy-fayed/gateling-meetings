@@ -37,8 +37,10 @@ npm test             # vitest unit tests (tests/)
 npm run test:e2e     # Playwright: host + guest in two isolated contexts with fake media
 ```
 
-The e2e suite expects the dev server, Postgres and LiveKit above to be running
-and a verified host account `host@example.test` / `Passw0rd!Local` (sign up
+The e2e suite expects the dev server, Postgres, LiveKit and the Inngest dev
+server above to be running (`livekit.dev.yaml` posts room events to the dev
+server, which hands them to Inngest — that is how the attendance log and the
+integration webhooks work locally) and a verified host account `host@example.test` / `Passw0rd!Local` (sign up
 once, then `UPDATE users SET "emailVerifiedAt" = now()` if SMTP isn't
 configured locally). `e2e/visual.spec.ts` writes RTL/mobile screenshots to
 `test-results/visual/`.
@@ -69,6 +71,7 @@ Schema-first: edit `src/drizzle/schemas/**`, then `npm run db:generate` and
 - **Personal room** — a permanent link per host.
 - **Breakout rooms** — create, assign or shuffle, open, visit, broadcast to all rooms, close all. Seamless on LiveKit Cloud; a quick reconnect on the open-source server.
 - **Attendance log** — from LiveKit webhooks (`/api/livekit/webhook`), via Inngest.
+- **Integration API** — other Gateling systems create meetings and send their signed-in users in through a signed `/sso/join` link, and get signed webhooks back. See [docs/integration.md](docs/integration.md) and [docs/webhooks.md](docs/webhooks.md); admins (`ADMIN_EMAILS`) manage keys at `/settings/integrations`.
 
 ## Deploying (all free tiers)
 
@@ -77,6 +80,6 @@ Schema-first: edit `src/drizzle/schemas/**`, then `npm run db:generate` and
 3. **Upstash** — a Redis database; `REDIS_URL` + `REDIS_TOKEN`.
 4. **Inngest** — create an app; `INNGEST_SIGNING_KEY` + `INNGEST_EVENT_KEY`. After the first deploy, sync the app at `https://<your-app>/api/inngest`.
 5. **SMTP** — any provider (`SMTP_*`) for invite/reminder/verification emails.
-6. **Vercel** — import the repo, set every variable above plus `BASE_URL`, `OAUTH_REDIRECT_URL_BASE` (`<BASE_URL>/api/oauth`) and, optionally, `GOOGLE_CLIENT_ID/SECRET`. The env module fails the build if a required production value is missing.
+6. **Vercel** — import the repo, set every variable above plus `BASE_URL`, `OAUTH_REDIRECT_URL_BASE` (`<BASE_URL>/api/oauth`), `JWT_SECRET_KEY` (32+ random chars, signs integration join links), `ADMIN_EMAILS` (who may manage integrations) and, optionally, `GOOGLE_CLIENT_ID/SECRET`. The env module fails the build if a required production value is missing.
 
 Self-hosting LiveKit instead: run `livekit/livekit-server` with a real config (open UDP range, TURN), and point `LIVEKIT_URL`/key/secret at it. Nothing in the app changes.
