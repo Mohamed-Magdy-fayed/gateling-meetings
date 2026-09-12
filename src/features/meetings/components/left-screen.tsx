@@ -5,13 +5,14 @@ import { PhoneOffIcon } from "lucide-react";
 import { LinkButton } from "@/components/general/link-button";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/features/core/i18n/client";
-import type { LeaveReason } from "./meeting-client";
+import type { LeaveReason, ReturnTarget } from "./meeting-client";
 
 type LeftScreenProps = {
   reason: LeaveReason;
   message?: string;
   canRejoin: boolean;
   onRejoin: () => void;
+  returnTarget?: ReturnTarget | null;
 };
 
 export function LeftScreen({
@@ -19,6 +20,7 @@ export function LeftScreen({
   message,
   canRejoin,
   onRejoin,
+  returnTarget = null,
 }: LeftScreenProps) {
   const { t } = useTranslation();
 
@@ -52,9 +54,20 @@ export function LeftScreen({
               {t("meetings.room.rejoin")}
             </Button>
           )}
-          <LinkButton href="/" variant="outline" size="lg" className="h-10">
-            {t("meetings.prejoin.backHome")}
-          </LinkButton>
+          {returnTarget ? (
+            <LinkButton
+              href={returnTarget.url}
+              variant="outline"
+              size="lg"
+              className="h-10"
+            >
+              {t("integrations.room.backTo", { name: returnTarget.name })}
+            </LinkButton>
+          ) : (
+            <LinkButton href="/" variant="outline" size="lg" className="h-10">
+              {t("meetings.prejoin.backHome")}
+            </LinkButton>
+          )}
         </div>
       </div>
     </main>

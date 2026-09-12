@@ -65,9 +65,13 @@ export function PreJoin({
     defaults: { username: viewer.defaultName },
   });
 
-  // A signed-in host's account name wins over an empty saved choice, but a
-  // name the person typed last time (guest or host) still wins over that.
-  const username = userChoices.username || viewer.defaultName;
+  // A name the sending system supplied (SSO link) wins until the person
+  // edits it; otherwise a signed-in host's account name wins over an empty
+  // saved choice, but a name typed last time (guest or host) wins over that.
+  const [nameOverride, setNameOverride] = useState<string | null>(
+    viewer.presetName || null,
+  );
+  const username = nameOverride ?? (userChoices.username || viewer.defaultName);
 
   const [passcode, setPasscode] = useState("");
   const [nameError, setNameError] = useState(false);
@@ -212,6 +216,7 @@ export function PreJoin({
               id="display-name"
               value={username}
               onChange={(event) => {
+                setNameOverride(event.target.value);
                 saveUsername(event.target.value);
                 setNameError(false);
               }}

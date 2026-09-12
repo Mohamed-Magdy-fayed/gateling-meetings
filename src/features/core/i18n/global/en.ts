@@ -1,3 +1,4 @@
+import { integrationsEn } from "@/features/integrations/translations/integrations-en";
 import { meetingsEn } from "@/features/meetings/translations/meetings-en";
 import type { LanguageMessages } from "../lib";
 
@@ -232,4 +233,5 @@ export default {
     },
   },
   meetings: meetingsEn,
+  integrations: integrationsEn,
 } as const satisfies LanguageMessages;

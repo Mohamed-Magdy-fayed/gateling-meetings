@@ -46,15 +46,16 @@ export function withIntegration<P = Record<string, never>>(
   handler: Handler<P>,
 ) {
   return async (request: Request, route: RouteContext<P>) => {
+    const { t } = await getT();
     try {
       const integration = await authenticate(request);
       if (await isRateLimited(integrationApiRatelimit, integration.id)) {
         throw new ApiError(429, "rate_limited", "Too many requests.");
       }
-      const [{ t }, params] = await Promise.all([getT(), route.params]);
+      const params = await route.params;
       return await handler(request, { integration, params, db, t });
     } catch (error) {
-      return errorResponse(toApiError(error));
+      return errorResponse(toApiError(error, t));
     }
   };
 }
@@ -98,14 +99,17 @@ async function authenticate(request: Request): Promise<Integration> {
   return integration;
 }
 
-function toApiError(error: unknown): ApiError {
+function toApiError(
+  error: unknown,
+  t: TFunction<typeof mainTranslations>,
+): ApiError {
   if (error instanceof ApiError) return error;
   if (error instanceof ZodError) {
     return new ApiError(
       400,
       "validation_error",
       "Invalid request body.",
-      z.treeifyError(error),
+      translateIssueTree(z.treeifyError(error), t),
     );
   }
   if (error instanceof TRPCError) {
@@ -115,6 +119,29 @@ function toApiError(error: unknown): ApiError {
   }
   console.error("[api/v1]", error);
   return new ApiError(500, "internal_error", "Internal error.");
+}
+
+/**
+ * The shared zod schemas carry translation *keys* as messages (the forms
+ * translate them on render). Walk the tree and translate for the API too —
+ * `t` returns the key unchanged when it isn't one, so plain messages pass through.
+ */
+function translateIssueTree(
+  node: unknown,
+  t: TFunction<typeof mainTranslations>,
+): unknown {
+  if (Array.isArray(node))
+    return node.map((item) => translateIssueTree(item, t));
+  if (typeof node === "string") return t(node as never);
+  if (node && typeof node === "object") {
+    return Object.fromEntries(
+      Object.entries(node).map(([key, value]) => [
+        key,
+        translateIssueTree(value, t),
+      ]),
+    );
+  }
+  return node;
 }
 
 const MAX_BODY_BYTES = 64 * 1024;

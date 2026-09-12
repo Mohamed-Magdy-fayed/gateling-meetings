@@ -1,3 +1,4 @@
+import { integrationsAr } from "@/features/integrations/translations/integrations-ar";
 import { meetingsAr } from "@/features/meetings/translations/meetings-ar";
 import type { LanguageMessages } from "../lib";
 
@@ -232,4 +233,5 @@ export default {
     },
   },
   meetings: meetingsAr,
+  integrations: integrationsAr,
 } as const satisfies LanguageMessages;

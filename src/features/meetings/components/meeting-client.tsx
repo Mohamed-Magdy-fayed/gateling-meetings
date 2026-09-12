@@ -19,7 +19,15 @@ export type JoinSession = Extract<
   { status: "admitted" }
 >;
 
-export type Viewer = { defaultName: string; isSignedIn: boolean };
+export type Viewer = {
+  defaultName: string;
+  isSignedIn: boolean;
+  /** A name handed over by the system that sent this person here. */
+  presetName?: string | null;
+};
+
+/** "Back to <name>" instead of "Back to home" once the person leaves. */
+export type ReturnTarget = { url: string; name: string };
 
 export type LeaveReason = "left" | "ended" | "removed" | "denied" | "error";
 
@@ -34,6 +42,7 @@ type MeetingClientProps = {
   viewer: Viewer;
   /** From an emailed invite link — skips passcode and waiting room. */
   inviteToken: string | null;
+  returnTarget?: ReturnTarget | null;
 };
 
 /**
@@ -46,6 +55,7 @@ export function MeetingClient({
   meeting,
   viewer,
   inviteToken,
+  returnTarget = null,
 }: MeetingClientProps) {
   const { t } = useTranslation();
   const trpc = useTRPC();
@@ -79,6 +89,7 @@ export function MeetingClient({
           message={stage.message}
           canRejoin={stage.reason === "left" || stage.reason === "error"}
           onRejoin={() => setStage({ kind: "prejoin" })}
+          returnTarget={returnTarget}
         />
       );
 
