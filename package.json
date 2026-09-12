@@ -43,6 +43,7 @@
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "inngest": "^4.13.0",
+    "jose": "^6.2.12",
     "livekit-client": "^2.22.3",
     "livekit-server-sdk": "^2.19.0",
     "lucide-react": "^1.25.0",
