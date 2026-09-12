@@ -38,19 +38,33 @@ MEETINGS_API_KEY=gm_live_…
 MEETINGS_WEBHOOK_SECRET=whsec_…
 ```
 
-## 2. Drop in the client
+## 2. Install the client
 
-Copy [`docs/client.ts`](./client.ts) into the other repo (say
-`src/integrations/meetings.ts`). It has no dependencies. Instantiate it in
-server code only:
+The consumer side lives in the Gateling registry as one installable block —
+the typed client for this API, create-or-reschedule / cancel / join-link
+helpers, a signed-webhook receiver, and its tests. Add the namespace to the
+other repo's `components.json` once, then install:
+
+```json
+{ "registries": { "@gateling": "https://gateling-registry.vercel.app/r/{name}.json" } }
+```
+
+```bash
+npx shadcn@latest add @gateling/meetings-integration
+```
+
+Files land at `src/integrations/meetings/*` and
+`src/app/api/meetings-webhook/route.ts`; the three env vars above are appended
+to `.env`. Docs and usage patterns:
+<https://gateling-registry.vercel.app/integrations/meetings-integration>.
+The block is the single source of truth for the client — when this API
+changes, update the block (and bump its version), then consumers re-run the
+install with `--overwrite`.
 
 ```ts
-import { createMeetingsClient } from "@/integrations/meetings";
+import { getMeetingsClient } from "@/integrations/meetings";
 
-export const meetings = createMeetingsClient({
-  baseUrl: process.env.MEETINGS_API_URL!,
-  apiKey: process.env.MEETINGS_API_KEY!,
-});
+const meetings = getMeetingsClient(); // null when MEETINGS_* are not set
 ```
 
 ## 3. Create a meeting
@@ -187,7 +201,8 @@ curl -s -X POST http://localhost:3000/api/v1/meetings \
 ```
 
 `e2e/integration.spec.ts` drives the entire loop — including a local webhook
-receiver — and is the executable version of this document.
+receiver — and is the executable version of this document. gateling.com is the
+reference consumer (`docs/meetings-integration.md` there).
 
 ## Not in scope
 
