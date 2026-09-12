@@ -22,6 +22,7 @@ import {
   updatedAt,
   updatedBy,
 } from "@/drizzle/schemas/helpers";
+import { IntegrationsTable } from "@/drizzle/schemas/integrations/integrations-table";
 import { BreakoutRoomsTable } from "./breakout-rooms-table";
 import { JoinRequestsTable } from "./join-requests-table";
 import { MeetingInvitesTable } from "./meeting-invites-table";
@@ -66,6 +67,15 @@ export const MeetingsTable = pgTable(
       .$type<MeetingSettings>()
       .notNull()
       .default(DEFAULT_MEETING_SETTINGS),
+    /**
+     * Set when another system created this meeting through the API. Tenancy
+     * hangs off this: an integration only ever sees meetings carrying its id.
+     */
+    integrationId: uuid().references(() => IntegrationsTable.id, {
+      onDelete: "set null",
+    }),
+    /** The other system's own handle for this meeting (e.g. `order:8812`). */
+    externalRef: varchar({ length: 128 }),
     createdAt,
     createdBy,
     updatedAt,
@@ -77,6 +87,10 @@ export const MeetingsTable = pgTable(
     uniqueIndex("meetings_code_unique").on(table.code),
     index("meetings_host_idx").on(table.hostId),
     index("meetings_scheduled_at_idx").on(table.scheduledAt),
+    index("meetings_integration_external_ref_idx").on(
+      table.integrationId,
+      table.externalRef,
+    ),
   ],
 );
 
@@ -84,6 +98,10 @@ export const meetingsRelations = relations(MeetingsTable, ({ one, many }) => ({
   host: one(UsersTable, {
     fields: [MeetingsTable.hostId],
     references: [UsersTable.id],
+  }),
+  integration: one(IntegrationsTable, {
+    fields: [MeetingsTable.integrationId],
+    references: [IntegrationsTable.id],
   }),
   joinRequests: many(JoinRequestsTable),
   participants: many(MeetingParticipantsTable),

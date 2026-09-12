@@ -35,6 +35,13 @@ export const env = createEnv({
     BASE_URL: z.url().optional(),
     OAUTH_REDIRECT_URL_BASE: z.url().optional(),
 
+    // Integration layer. JWT_SECRET_KEY signs the short-lived /sso/join
+    // links and the return-URL cookie; ADMIN_EMAILS (comma-separated) is
+    // who may open /settings/integrations — the app has no role column.
+    // Both optional here so a bare checkout builds; required once deployed.
+    JWT_SECRET_KEY: z.string().min(32).optional(),
+    ADMIN_EMAILS: z.string().min(1).optional(),
+
     GOOGLE_CLIENT_ID: z.string().min(1).optional(),
     GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
 
@@ -103,7 +110,28 @@ if (
   );
 }
 
+// Without a signing key every /sso/join link is unverifiable, and without an
+// admin nobody can create an integration — either way the feature is dead
+// on arrival, so a deploy without them is a broken deploy.
+if (isDeployed && (!env.JWT_SECRET_KEY || !env.ADMIN_EMAILS)) {
+  throw new Error(
+    "JWT_SECRET_KEY and ADMIN_EMAILS are required in production.",
+  );
+}
+
 // Local/dev-only fallbacks — never reached on a deployment, see the checks above.
 export const baseUrl = env.BASE_URL ?? "http://localhost:3000";
 export const oauthRedirectUrlBase =
   env.OAUTH_REDIRECT_URL_BASE ?? "http://localhost:3000/api/oauth";
+
+/**
+ * Lower-cased, trimmed admin addresses. Empty when unset — locally that
+ * means no one is an admin until `.env` says otherwise, which is the
+ * safe default.
+ */
+export const adminEmails: ReadonlySet<string> = new Set(
+  (env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean),
+);

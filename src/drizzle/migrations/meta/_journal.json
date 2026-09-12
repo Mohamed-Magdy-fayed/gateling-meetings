@@ -29,6 +29,13 @@
       "when": 1789155577818,
       "tag": "0003_clean_maverick",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789196757266,
+      "tag": "0004_clear_killer_shrike",
+      "breakpoints": true
     }
   ]
 }
