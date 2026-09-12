@@ -40,6 +40,7 @@ export async function ensureLinkedUser(
   db: Database,
   integration: Pick<Integration, "id" | "slug">,
   person: ExternalUser,
+  attempt = 0,
 ): Promise<LinkedUserResult> {
   const existing = await findLinkedUser(db, integration.id, person.externalId);
   if (existing) {
@@ -94,8 +95,24 @@ export async function ensureLinkedUser(
     // the primary key, so it simply reads what the winner wrote.
     const raced = await findLinkedUser(db, integration.id, person.externalId);
     if (raced) return raced;
+    // Two *different* people claiming the same real email at once: the
+    // loser's user insert hits the email index. Going round once more sees
+    // the address as taken and falls back to the placeholder.
+    if (isUniqueViolation(error) && attempt === 0) {
+      return ensureLinkedUser(db, integration, person, attempt + 1);
+    }
     throw error;
   }
+}
+
+/** Postgres `unique_violation`; postgres-js surfaces the SQLSTATE as `code`. */
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "23505"
+  );
 }
 
 async function findLinkedUser(

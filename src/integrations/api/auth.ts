@@ -10,6 +10,8 @@ import type { mainTranslations } from "@/features/core/i18n/global";
 import type { TFunction } from "@/features/core/i18n/lib";
 import { getT } from "@/features/core/i18n/server";
 import {
+  getRequestIp,
+  integrationApiAuthRatelimit,
   integrationApiRatelimit,
   isRateLimited,
 } from "@/integrations/ratelimit";
@@ -48,6 +50,13 @@ export function withIntegration<P = Record<string, never>>(
   return async (request: Request, route: RouteContext<P>) => {
     const { t } = await getT();
     try {
+      // Two budgets: per IP before the key is checked (so failed attempts
+      // are bounded), per integration after (so a leaked key is bounded).
+      if (
+        await isRateLimited(integrationApiAuthRatelimit, await getRequestIp())
+      ) {
+        throw new ApiError(429, "rate_limited", "Too many requests.");
+      }
       const integration = await authenticate(request);
       if (await isRateLimited(integrationApiRatelimit, integration.id)) {
         throw new ApiError(429, "rate_limited", "Too many requests.");

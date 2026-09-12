@@ -216,7 +216,8 @@ export function PreJoin({
               id="display-name"
               value={username}
               onChange={(event) => {
-                setNameOverride(event.target.value);
+                // Cleared → back to the saved/account name, as before.
+                setNameOverride(event.target.value || null);
                 saveUsername(event.target.value);
                 setNameError(false);
               }}

@@ -49,9 +49,9 @@ describe("verifyApiKey", () => {
 
 describe("isWellFormedApiKey", () => {
   it("refuses other prefixes, wrong lengths and non-base64url characters", () => {
-    expect(isWellFormedApiKey("gm_test_" + "a".repeat(43))).toBe(false);
-    expect(isWellFormedApiKey("gm_live_" + "a".repeat(42))).toBe(false);
-    expect(isWellFormedApiKey("gm_live_" + "a".repeat(42) + "+")).toBe(false);
+    expect(isWellFormedApiKey(`gm_test_${"a".repeat(43)}`)).toBe(false);
+    expect(isWellFormedApiKey(`gm_live_${"a".repeat(42)}`)).toBe(false);
+    expect(isWellFormedApiKey(`gm_live_${"a".repeat(42)}+`)).toBe(false);
     expect(isWellFormedApiKey("")).toBe(false);
   });
 });

@@ -83,6 +83,18 @@ export const integrationApiRatelimit = new Ratelimit({
 });
 
 /**
+ * Before authentication, keyed per IP: a wrong or missing key must not be
+ * free to spam, since every well-formed attempt costs a database read.
+ * Sized above the per-key budget so several systems behind one egress
+ * address are never throttled by this one; it only bounds the abusive case.
+ */
+export const integrationApiAuthRatelimit = new Ratelimit({
+  redis: redisClient,
+  limiter: Ratelimit.slidingWindow(600, "1 m"),
+  prefix: "ratelimit:integration-api-auth",
+});
+
+/**
  * Trusts `x-forwarded-for`/`x-real-ip` as set by the platform's own edge
  * network (this app deploys on Vercel) — Vercel's routing layer overwrites
  * these headers with the real client IP before a request reaches the

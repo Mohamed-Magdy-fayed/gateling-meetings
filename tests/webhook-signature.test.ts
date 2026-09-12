@@ -11,7 +11,7 @@ const SECRET = "whsec_test";
 const BODY = JSON.stringify({ id: "d1", event: "meeting.ended", data: {} });
 
 describe("signWebhook", () => {
-  it("emits t=<ts>,v1=<hex> over `${t}.${body}`", () => {
+  it("emits t=<ts>,v1=<hex> over the timestamp-dot-body string", () => {
     const header = signWebhook(SECRET, BODY, 1_700_000_000);
     expect(header).toBe(
       `t=1700000000,v1=${computeWebhookSignature(SECRET, 1_700_000_000, BODY)}`,
