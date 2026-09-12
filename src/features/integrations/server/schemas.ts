@@ -40,14 +40,18 @@ export function isAcceptableWebhookUrl(
   return !isDeployed;
 }
 
+/**
+ * Syntax only — the "https once deployed" rule is enforced by the router
+ * (`isAcceptableWebhookUrl`), which knows whether it is deployed; the
+ * browser bundle does not.
+ */
 export const webhookUrlSchema = z
   .string()
   .trim()
   .max(2048)
-  .refine(
-    (value) => isAcceptableWebhookUrl(value, process.env.VERCEL_ENV != null),
-    { message: translationKey("integrations.admin.validation.webhookHttps") },
-  );
+  .refine((value) => isAcceptableWebhookUrl(value, false), {
+    message: translationKey("integrations.admin.validation.webhookHttps"),
+  });
 
 /** An origin, not a URL: `https://host[:port]` with nothing after. */
 export function isOrigin(value: string): boolean {

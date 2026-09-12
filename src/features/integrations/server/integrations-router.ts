@@ -2,10 +2,18 @@ import { TRPCError } from "@trpc/server";
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
+import { env } from "@/data/env/server";
 import { IntegrationsTable, WebhookDeliveriesTable } from "@/drizzle/schema";
 import { generateApiKey, generateWebhookSecret } from "@/integrations/api/keys";
 import { adminProcedure, createTRPCRouter } from "@/integrations/trpc/init";
-import { createIntegrationSchema, integrationIdSchema } from "./schemas";
+import {
+  createIntegrationSchema,
+  integrationIdSchema,
+  isAcceptableWebhookUrl,
+} from "./schemas";
+
+const isDeployed =
+  env.VERCEL_ENV === "preview" || env.VERCEL_ENV === "production";
 
 const DELIVERIES_LIMIT = 50;
 
@@ -38,6 +46,15 @@ export const integrationsRouter = createTRPCRouter({
   create: adminProcedure
     .input(createIntegrationSchema)
     .mutation(async ({ ctx, input }) => {
+      if (
+        input.webhookUrl &&
+        !isAcceptableWebhookUrl(input.webhookUrl, isDeployed)
+      ) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: ctx.t("integrations.admin.validation.webhookHttps"),
+        });
+      }
       const taken = await ctx.db.query.IntegrationsTable.findFirst({
         where: eq(IntegrationsTable.slug, input.slug),
         columns: { id: true },
