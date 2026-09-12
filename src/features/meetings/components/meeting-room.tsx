@@ -6,6 +6,7 @@ import "./room/room.css";
 import {
   LiveKitRoom,
   RoomAudioRenderer,
+  useAudioPlayback,
   useChat,
   useConnectionState,
   useDataChannel,
@@ -18,7 +19,13 @@ import {
   Room,
   VideoPresets,
 } from "livekit-client";
-import { CopyIcon, LayoutGridIcon, UserSquareIcon, XIcon } from "lucide-react";
+import {
+  CopyIcon,
+  LayoutGridIcon,
+  UserSquareIcon,
+  Volume2Icon,
+  XIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -48,6 +55,7 @@ import { HostSettings } from "./room/host-settings";
 import { ParticipantsPanel } from "./room/participants-panel";
 import { ReactionsOverlay, useReactions } from "./room/reactions";
 import { Stage, type StageLayout } from "./room/stage";
+import { useKeepAlive } from "./room/use-keep-alive";
 import { useWaitingQueue } from "./room/waiting-queue";
 
 type MeetingRoomProps = {
@@ -152,6 +160,11 @@ export function MeetingRoom({
     console.error("[livekit]", error);
     toast.error(error.message);
   }, []);
+  // Also reached from the OS "hang up" control (see useKeepAlive).
+  const handleLeave = useCallback(() => {
+    leaveReasonRef.current = "left";
+    room.disconnect();
+  }, [room]);
 
   return (
     <div className="meeting-room dark flex h-svh flex-col bg-neutral-900 text-foreground">
@@ -172,10 +185,7 @@ export function MeetingRoom({
             meeting={meeting}
             session={session}
             onMove={handleMove}
-            onLeave={() => {
-              leaveReasonRef.current = "left";
-              room.disconnect();
-            }}
+            onLeave={handleLeave}
             onEnded={() => {
               leaveReasonRef.current = "ended";
             }}
@@ -229,6 +239,8 @@ function RoomShell({
   const chat = useChat();
   const { chatMessages } = chat;
   const { reactions, react } = useReactions(t("meetings.room.you"));
+  const { canPlayAudio, startAudio } = useAudioPlayback();
+  useKeepAlive({ title: meeting.title, appName: t("appName"), onLeave });
   const isHost = session.role === "host";
   const waitingQueue = useWaitingQueue(meeting.code, isHost);
 
@@ -340,6 +352,19 @@ function RoomShell({
       </header>
 
       <BreakoutBanner code={meeting.code} session={session} />
+
+      {/* Mobile browsers block autoplay after the tab was backgrounded;
+          playback then needs a tap. */}
+      {!canPlayAudio && (
+        <button
+          type="button"
+          onClick={() => void startAudio()}
+          className="flex shrink-0 items-center justify-center gap-2 bg-warning/20 px-3 py-2 text-sm text-warning transition-colors hover:bg-warning/30"
+        >
+          <Volume2Icon className="size-4" />
+          {t("meetings.room.audioBlocked")}
+        </button>
+      )}
 
       {/* Stage + side panel */}
       <div className="relative flex min-h-0 flex-1">

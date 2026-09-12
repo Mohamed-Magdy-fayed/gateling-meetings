@@ -85,6 +85,7 @@ export const meetingsEn = {
     }),
     connecting: "Connecting…",
     reconnecting: "Reconnecting…",
+    audioBlocked: "Tap to hear the meeting",
     left: "You left the meeting.",
     rejoin: "Rejoin",
     endedByHost: "The host ended the meeting.",

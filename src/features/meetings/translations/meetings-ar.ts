@@ -92,6 +92,7 @@ export const meetingsAr = {
     }),
     connecting: "جارٍ الاتصال…",
     reconnecting: "جارٍ إعادة الاتصال…",
+    audioBlocked: "اضغط لسماع الاجتماع",
     left: "غادرت الاجتماع.",
     rejoin: "إعادة الانضمام",
     endedByHost: "أنهى المضيف الاجتماع.",
