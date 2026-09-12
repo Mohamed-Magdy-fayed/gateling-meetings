@@ -1,3 +1,4 @@
+import { integrationsRouter } from "@/features/integrations/server/integrations-router";
 import {
   breakoutsRouter,
   hostRouter,
@@ -15,6 +16,7 @@ export const appRouter = createTRPCRouter({
   host: hostRouter,
   invites: invitesRouter,
   breakouts: breakoutsRouter,
+  integrations: integrationsRouter,
 });
 
 export type AppRouter = typeof appRouter;

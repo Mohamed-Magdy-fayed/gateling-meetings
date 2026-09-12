@@ -2,6 +2,7 @@ import { VideoIcon } from "lucide-react";
 import Link from "next/link";
 
 import { LinkButton } from "@/components/general/link-button";
+import { isAdminEmail } from "@/features/core/auth/core/admin";
 import { SignOutButton } from "@/features/core/auth/nextjs/components/sign-out-button";
 import { getCurrentUser } from "@/features/core/auth/nextjs/currentUser";
 import { LanguageToggle } from "@/features/core/i18n/client";
@@ -30,6 +31,11 @@ export async function SiteHeader() {
               <LinkButton href="/dashboard" variant="ghost">
                 {t("meetings.dashboard.title")}
               </LinkButton>
+              {isAdminEmail(user.email) && (
+                <LinkButton href="/settings/integrations" variant="ghost">
+                  {t("integrations.admin.title")}
+                </LinkButton>
+              )}
               <SignOutButton variant="ghost" />
             </>
           ) : (

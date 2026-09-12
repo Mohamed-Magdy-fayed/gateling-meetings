@@ -5,6 +5,7 @@ import z, { ZodError } from "zod";
 
 import { db } from "@/drizzle";
 import { getUserSession } from "@/features/core/auth/core";
+import { isAdminEmail } from "@/features/core/auth/core/admin";
 import { LOCALE_COOKIE_NAME } from "@/features/core/i18n/lib";
 import { getT } from "@/features/core/i18n/server";
 import { handleDatabaseError } from "./db-error";
@@ -42,6 +43,13 @@ const authMiddleware = t.middleware(({ ctx, next }) => {
   return next({ ctx: { session: ctx.session } });
 });
 
+const adminMiddleware = t.middleware(({ ctx, next }) => {
+  if (!ctx.session || !isAdminEmail(ctx.session.user.email)) {
+    throw new TRPCError({ code: "FORBIDDEN" });
+  }
+  return next({ ctx: { session: ctx.session } });
+});
+
 const databaseErrorMiddleware = t.middleware(async ({ next }) => {
   try {
     return await next();
@@ -60,4 +68,9 @@ export const publicProcedure = t.procedure.use(databaseErrorMiddleware);
 /** Requires a signed-in account (a meeting host). */
 export const protectedProcedure = t.procedure
   .use(authMiddleware)
+  .use(databaseErrorMiddleware);
+
+/** An account listed in `ADMIN_EMAILS` — manages integrations. */
+export const adminProcedure = t.procedure
+  .use(adminMiddleware)
   .use(databaseErrorMiddleware);
