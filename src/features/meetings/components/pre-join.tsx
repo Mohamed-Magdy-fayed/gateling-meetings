@@ -82,10 +82,26 @@ export function PreJoin({
       userChoices.videoDeviceId,
       "videoinput",
     );
-  const { deviceError: audioError } = usePreviewDevice<LocalAudioTrack>(
-    userChoices.audioEnabled,
-    userChoices.audioDeviceId,
-    "audioinput",
+  const { localTrack: audioTrack, deviceError: audioError } =
+    usePreviewDevice<LocalAudioTrack>(
+      userChoices.audioEnabled,
+      userChoices.audioDeviceId,
+      "audioinput",
+    );
+
+  // `usePreviewDevice`'s own unmount cleanup closes over the track from the
+  // first render — always undefined — so the preview tracks it creates a
+  // moment later are never stopped and the camera light stays on for the
+  // life of the tab, long after the meeting ended. Stop the *latest* ones
+  // ourselves when this screen goes away.
+  const previewTracksRef = useRef({ video: videoTrack, audio: audioTrack });
+  previewTracksRef.current = { video: videoTrack, audio: audioTrack };
+  useEffect(
+    () => () => {
+      previewTracksRef.current.video?.stop();
+      previewTracksRef.current.audio?.stop();
+    },
+    [],
   );
 
   const videoRef = useRef<HTMLVideoElement>(null);
