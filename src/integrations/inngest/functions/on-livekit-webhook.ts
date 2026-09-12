@@ -4,6 +4,8 @@ import { z } from "zod";
 
 import { db } from "@/drizzle";
 import { MeetingParticipantsTable, MeetingsTable } from "@/drizzle/schema";
+import { enqueueWebhook } from "@/features/integrations/server/webhooks";
+import { toWebhookMeeting } from "@/features/meetings/server/service";
 import { PARTICIPANT_ATTRIBUTE_ROLE } from "@/integrations/livekit/attributes";
 import { inngest } from "../client";
 
@@ -38,10 +40,58 @@ export const onLiveKitWebhook = inngest.createFunction(
     const meeting = await step.run("find-meeting", () =>
       db.query.MeetingsTable.findFirst({
         where: eq(MeetingsTable.code, room),
-        columns: { id: true, status: true },
+        columns: {
+          id: true,
+          status: true,
+          hostId: true,
+          integrationId: true,
+          isPersonalRoom: true,
+        },
       }),
     );
     if (!meeting) return { skipped: "unknown-room" };
+
+    /**
+     * Tells the integration that created this meeting what just happened.
+     * The role is derived from the identity against the meeting's host —
+     * participant attributes are client-writable and never trusted here.
+     */
+    const notify = (
+      eventName:
+        | "meeting.started"
+        | "meeting.ended"
+        | "participant.joined"
+        | "participant.left",
+      extra: Record<string, unknown> = {},
+    ) =>
+      meeting.integrationId
+        ? step.run(`notify-${eventName}`, async () => {
+            const current = await db.query.MeetingsTable.findFirst({
+              where: eq(MeetingsTable.id, meeting.id),
+            });
+            if (!current?.integrationId) return;
+            await enqueueWebhook(db, {
+              integrationId: current.integrationId,
+              event: eventName,
+              data: { meeting: toWebhookMeeting(current), ...extra },
+            });
+          })
+        : Promise.resolve();
+
+    const participantData = () =>
+      participant
+        ? {
+            participant: {
+              identity: participant.identity,
+              name: participant.name || participant.identity,
+              role:
+                participant.identity === `user:${meeting.hostId}`
+                  ? "host"
+                  : "participant",
+            },
+            at: at.toISOString(),
+          }
+        : {};
 
     switch (event.data.event) {
       case "room_started":
@@ -55,16 +105,21 @@ export const onLiveKitWebhook = inngest.createFunction(
               .where(eq(MeetingsTable.id, meeting.id)),
           );
         }
+        await notify("meeting.started", { at: at.toISOString() });
         return { handled: "room_started" };
 
       case "room_finished":
-        if (meeting.status !== "ended") {
+        // A personal room is never "ended" (the link is permanent), and a
+        // meeting the host ended from the UI/API already told the
+        // integration — only the SFU-initiated end is news here.
+        if (meeting.status !== "ended" && !meeting.isPersonalRoom) {
           await step.run("mark-ended", () =>
             db
               .update(MeetingsTable)
               .set({ status: "ended", endedAt: at })
               .where(eq(MeetingsTable.id, meeting.id)),
           );
+          await notify("meeting.ended", { endedBy: "room" });
         }
         return { handled: "room_finished" };
 
@@ -96,6 +151,7 @@ export const onLiveKitWebhook = inngest.createFunction(
             joinedAt: at,
           });
         });
+        await notify("participant.joined", participantData());
         return { handled: "participant_joined" };
       }
 
@@ -113,6 +169,7 @@ export const onLiveKitWebhook = inngest.createFunction(
               ),
             ),
         );
+        await notify("participant.left", participantData());
         return { handled: "participant_left" };
 
       default:

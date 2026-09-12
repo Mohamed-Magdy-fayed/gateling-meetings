@@ -291,7 +291,7 @@ export async function endMeeting(
       event: "meeting.ended",
       data: {
         meeting: toWebhookMeeting({ ...meeting, status: "ended", endedAt }),
-        endedBy: "host",
+        endedBy: actorId.startsWith("integration:") ? "integration" : "host",
       },
     });
   }

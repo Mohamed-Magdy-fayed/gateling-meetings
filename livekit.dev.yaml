@@ -18,3 +18,12 @@ rtc:
   use_external_ip: false
 logging:
   level: info
+# Post room/participant events to the dev server, exactly as LiveKit Cloud
+# does in production, so the attendance log and outbound integration
+# webhooks work locally too. Needs `npm run dev` and `npm run inngest`
+# (the handler hands events to Inngest). `host.docker.internal` is Docker
+# Desktop's name for the machine running the container.
+webhook:
+  api_key: devkey
+  urls:
+    - http://host.docker.internal:3000/api/livekit/webhook

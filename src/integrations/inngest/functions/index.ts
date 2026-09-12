@@ -1,3 +1,4 @@
+import { deliverWebhook } from "./deliver-webhook";
 import { processTask } from "./example";
 import { onLiveKitWebhook } from "./on-livekit-webhook";
 import { onMeetingInvitesRequested } from "./on-meeting-invites-requested";
@@ -10,4 +11,5 @@ export const functions = [
   onLiveKitWebhook,
   onMeetingInvitesRequested,
   onMeetingScheduled,
+  deliverWebhook,
 ];
