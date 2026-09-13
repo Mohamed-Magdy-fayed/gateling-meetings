@@ -1,4 +1,3 @@
-import { UNLIMITED_ENTITLEMENTS } from "@/features/billing/plans";
 import {
   listIntegrationMeetings,
   toApiMeeting,
@@ -87,19 +86,26 @@ export const POST = withIntegration(async (request, ctx) => {
   }
 });
 
-async function create(request: Request, { integration, db, t }: ApiContext) {
+async function create(
+  request: Request,
+  { integration, organization, entitlements, db, t }: ApiContext,
+) {
   const body = await parseJson(request, createMeetingBodySchema);
   const host = await ensureLinkedUser(db, integration, body.host);
   const origin = {
     integrationId: integration.id,
     externalRef: body.externalRef,
   };
-  // Integrations are platform-owned (minted by ADMIN_EMAILS only), so their
-  // meetings are uncapped; they live in the linked host's personal org.
+  // The meeting runs under the org that owns the key, so the org's plan
+  // caps it. A platform integration has no org and is uncapped; its
+  // meetings live in the linked host's personal org. Quota refusals are
+  // >= 400 and never cached by the idempotency store, so a retry after an
+  // upgrade is not replayed as a failure.
   const owner = {
     hostId: host.id,
-    organizationId: (await ensurePersonalOrganization(db, host)).id,
-    entitlements: UNLIMITED_ENTITLEMENTS,
+    organizationId:
+      organization?.id ?? (await ensurePersonalOrganization(db, host)).id,
+    entitlements,
   };
 
   const created = body.scheduledAt

@@ -14,6 +14,11 @@ export const integrationsAr = {
   admin: {
     title: "التكاملات",
     lead: "الأنظمة الأخرى التي تُنشئ اجتماعات وترسل مستخدميها إلى هنا عبر الواجهة البرمجية.",
+    upgradeLead:
+      "مفاتيح API وWebhooks وروابط انضمام SSO جزء من خطة الأعمال. قم بالترقية لربط أنظمتك.",
+    platform: "تكامل المنصة",
+    platformHint: "غير مملوك لأي مؤسسة وبلا حدود. لأنظمة Gateling الخاصة فقط.",
+    scope: { platform: "المنصة", organization: "هذه المؤسسة" },
     empty: "لا توجد تكاملات بعد.",
     create: "تكامل جديد",
     name: "الاسم",

@@ -15,6 +15,12 @@ export const integrationsEn = {
   admin: {
     title: "Integrations",
     lead: "Other systems that create meetings and send their users here through the API.",
+    upgradeLead:
+      "API keys, webhooks and SSO join links are part of the Business plan. Upgrade to connect your own systems.",
+    platform: "Platform integration",
+    platformHint:
+      "Owned by no organization and never capped. For Gateling's own systems only.",
+    scope: { platform: "Platform", organization: "This organization" },
     empty: "No integrations yet.",
     create: "New integration",
     name: "Name",

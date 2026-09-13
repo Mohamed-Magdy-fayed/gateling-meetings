@@ -1,16 +1,35 @@
 import { VideoIcon } from "lucide-react";
+import { cookies } from "next/headers";
 import Link from "next/link";
 
 import { LinkButton } from "@/components/general/link-button";
+import { db } from "@/drizzle";
+import { resolveEntitlements } from "@/features/billing/plans";
 import { isAdminEmail } from "@/features/core/auth/core/admin";
+import { getUserSession } from "@/features/core/auth/core/session";
 import { SignOutButton } from "@/features/core/auth/nextjs/components/sign-out-button";
-import { getCurrentUser } from "@/features/core/auth/nextjs/currentUser";
 import { LanguageToggle } from "@/features/core/i18n/client";
 import { getT } from "@/features/core/i18n/server";
+import { loadActiveOrganization } from "@/features/organizations/server/service";
 
 /** Shared top bar for the landing page and the host dashboard. */
 export async function SiteHeader() {
-  const [{ t }, user] = await Promise.all([getT(), getCurrentUser()]);
+  const [{ t }, session] = await Promise.all([
+    getT(),
+    getUserSession(await cookies()),
+  ]);
+  const user = session?.user ?? null;
+  const isAdmin = isAdminEmail(user?.email);
+  // Org owners/admins on a plan with API access get the integrations link;
+  // platform admins reach it through /admin instead.
+  const active = session
+    ? await loadActiveOrganization(db, session.user.id, session.orgId ?? null)
+    : null;
+  const canManageIntegrations =
+    !isAdmin &&
+    active != null &&
+    ["owner", "admin"].includes(active.membership.role) &&
+    resolveEntitlements(active.organization).apiAccess;
 
   return (
     <header className="sticky top-0 z-20 border-b border-border/60 bg-background/80 backdrop-blur">
@@ -34,7 +53,12 @@ export async function SiteHeader() {
               <LinkButton href="/dashboard" variant="ghost">
                 {t("meetings.dashboard.title")}
               </LinkButton>
-              {isAdminEmail(user.email) && (
+              {canManageIntegrations && (
+                <LinkButton href="/settings/integrations" variant="ghost">
+                  {t("integrations.admin.title")}
+                </LinkButton>
+              )}
+              {isAdmin && (
                 <LinkButton href="/admin" variant="ghost">
                   {t("admin.title")}
                 </LinkButton>

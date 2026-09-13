@@ -23,3 +23,16 @@ export function entitlementsForMeeting(
     isAdmin: isAdminEmail(meeting.host.email),
   });
 }
+
+/**
+ * What an *organization* is allowed on its own, with no session in hand —
+ * for API keys. A personal org whose owner is in `ADMIN_EMAILS` is
+ * unlimited, matching what that owner sees when signed in.
+ */
+export function entitlementsForOrganization(
+  organization: Organization & { personalOwner: Pick<User, "email"> | null },
+): ResolvedEntitlements {
+  return resolveEntitlements(organization, {
+    isAdmin: isAdminEmail(organization.personalOwner?.email),
+  });
+}

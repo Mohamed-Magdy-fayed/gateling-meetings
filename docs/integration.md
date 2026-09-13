@@ -16,10 +16,19 @@ your server ──302 → that url───────────────�
 meetings ────POST <your webhook> ──────────────▶ meeting.started / participant.joined / … / meeting.ended
 ```
 
-## 1. Create the integration (once, admin)
+## 1. Create the integration (once)
 
-On `https://meetings.gateling.com/settings/integrations` (accounts listed in
-`ADMIN_EMAILS`), click **New integration**:
+API access is part of the **Business** plan. An owner or admin of an
+organization on Business opens `https://meetings.gateling.com/settings/integrations`
+and clicks **New integration**. (Platform admins — `ADMIN_EMAILS` — see every
+integration there and can additionally tick *Platform integration*, which
+belongs to no organization and is never capped; that is for Gateling's own
+systems.)
+
+Every meeting the key creates runs under the owning organization's plan:
+participant cap, meeting length and so on apply exactly as they do in the
+browser. If the plan lapses, the key answers `403 forbidden` until the
+organization is back on a plan with API access — it is not revoked.
 
 | Field | What to put |
 |---|---|
@@ -165,11 +174,11 @@ Errors are always:
 | Code | HTTP | Meaning |
 |---|---|---|
 | `unauthorized` | 401 | Missing, malformed, unknown or revoked API key. |
-| `forbidden` | 403 | e.g. a host link for someone who isn't the host. |
+| `forbidden` | 403 | A host link for someone who isn't the host, or the owning organization's plan no longer includes API access. |
 | `not_found` | 404 | No such meeting **for this integration** — other systems' meetings are invisible. |
 | `validation_error` | 400 | Body or query failed validation; `details` is a zod tree with translated messages. |
 | `conflict` | 409 | An `Idempotency-Key` request is still in flight. |
-| `precondition_failed` | 412 | The meeting has ended. |
+| `precondition_failed` | 412 | The meeting has ended, or the organization's plan cap (upcoming scheduled meetings) is reached. A meeting longer than the plan allows is a `validation_error`. |
 | `rate_limited` | 429 | More than 120 requests/minute on this key. |
 
 | Method | Path | Body / query | Returns |

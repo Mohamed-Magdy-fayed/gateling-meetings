@@ -109,6 +109,11 @@ function IntegrationCard({
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-display text-base">{integration.name}</h2>
             <Badge variant="secondary">{integration.slug}</Badge>
+            {integration.organizationId == null && (
+              <Badge variant="outline">
+                {t("integrations.admin.scope.platform")}
+              </Badge>
+            )}
             <Badge variant={isRevoked ? "destructive" : "success"}>
               {isRevoked
                 ? t("integrations.admin.status.revoked")

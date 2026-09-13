@@ -106,3 +106,15 @@ async function schedule(
     .click();
   await page.getByRole("button", { name: /^schedule$/i }).click();
 }
+
+test("a free organization sees an upgrade prompt instead of API keys", async ({
+  newPage,
+}) => {
+  const host = await newPage();
+  await signInAs(host, MEMBER);
+  await host.goto("/settings/integrations");
+  await expect(host.getByText(/part of the business plan/i)).toBeVisible();
+  await expect(
+    host.getByRole("button", { name: /new integration/i }),
+  ).toHaveCount(0);
+});

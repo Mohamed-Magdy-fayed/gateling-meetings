@@ -76,7 +76,7 @@ Schema-first: edit `src/drizzle/schemas/**`, then `npm run db:generate` and
 - **Plans and organizations** — every account owns a personal organization; the org's plan (`free` / `pro` / `business`, see `src/features/billing/plans.ts`) caps participants, meeting length, upcoming scheduled meetings, breakouts and API access. Free is 5 people / 40 minutes. Enforced at the join door, the meeting service and an Inngest duration enforcer — never only in the UI. `ADMIN_EMAILS` accounts are unlimited.
 - **Billing** — Paddle (merchant of record): overlay checkout from `/settings/billing` or `/pricing`, per-seat subscriptions, customer portal, cancellation at period end. Webhooks land in `billing_events` (idempotent by Paddle event id) and are applied by Inngest. A plan set by hand in the admin panel is never overwritten by billing.
 - **Admin panel** — `/admin` (`ADMIN_EMAILS` only): search organizations, put any org on any plan (`manual` source, optional expiry, note), pre-grant a plan to an email before they sign up, list users.
-- **Integration API** — other Gateling systems create meetings and send their signed-in users in through a signed `/sso/join` link, and get signed webhooks back. See [docs/integration.md](docs/integration.md) and [docs/webhooks.md](docs/webhooks.md); admins (`ADMIN_EMAILS`) manage keys at `/settings/integrations`.
+- **Integration API** — other Gateling systems create meetings and send their signed-in users in through a signed `/sso/join` link, and get signed webhooks back. See [docs/integration.md](docs/integration.md) and [docs/webhooks.md](docs/webhooks.md); Business-plan organizations mint their own keys at `/settings/integrations` (platform admins can mint uncapped platform keys).
 
 ## Deploying (all free tiers)
 

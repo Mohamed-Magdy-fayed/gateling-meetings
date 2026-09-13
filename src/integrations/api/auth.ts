@@ -5,7 +5,16 @@ import { and, eq, isNull, lt, or } from "drizzle-orm";
 import { ZodError, z } from "zod";
 
 import { db } from "@/drizzle";
-import { type Integration, IntegrationsTable } from "@/drizzle/schema";
+import {
+  type Integration,
+  IntegrationsTable,
+  type Organization,
+} from "@/drizzle/schema";
+import {
+  type Entitlements,
+  UNLIMITED_ENTITLEMENTS,
+} from "@/features/billing/plans";
+import { entitlementsForOrganization } from "@/features/billing/server/entitlements";
 import type { mainTranslations } from "@/features/core/i18n/global";
 import type { TFunction } from "@/features/core/i18n/lib";
 import { getT } from "@/features/core/i18n/server";
@@ -25,6 +34,10 @@ import { errorResponse } from "./respond";
  */
 export type ApiContext<P = Record<string, never>> = {
   integration: Integration;
+  /** The owning org; null for a platform integration. */
+  organization: Organization | null;
+  /** What the owning org's plan allows; unlimited for platform integrations. */
+  entitlements: Entitlements;
   params: P;
   db: typeof db;
   t: TFunction<typeof mainTranslations>;
@@ -57,19 +70,44 @@ export function withIntegration<P = Record<string, never>>(
       ) {
         throw new ApiError(429, "rate_limited", "Too many requests.");
       }
-      const integration = await authenticate(request);
+      const { organization, ...integration } = await authenticate(request);
       if (await isRateLimited(integrationApiRatelimit, integration.id)) {
         throw new ApiError(429, "rate_limited", "Too many requests.");
       }
+      // A lapsed plan switches the key off without revoking it: the key
+      // works again the moment the org is back on a plan with API access.
+      const entitlements = organization
+        ? entitlementsForOrganization(organization)
+        : UNLIMITED_ENTITLEMENTS;
+      if (!entitlements.apiAccess) {
+        throw new ApiError(
+          403,
+          "forbidden",
+          "API access is not included in this organization's plan.",
+        );
+      }
       const params = await route.params;
-      return await handler(request, { integration, params, db, t });
+      return await handler(request, {
+        integration,
+        organization,
+        entitlements,
+        params,
+        db,
+        t,
+      });
     } catch (error) {
       return errorResponse(toApiError(error, t));
     }
   };
 }
 
-async function authenticate(request: Request): Promise<Integration> {
+async function authenticate(request: Request): Promise<
+  Integration & {
+    organization:
+      | (Organization & { personalOwner: { email: string } | null })
+      | null;
+  }
+> {
   const header = request.headers.get("authorization") ?? "";
   const [scheme, key] = header.split(" ");
   if (scheme?.toLowerCase() !== "bearer" || !key || !isWellFormedApiKey(key)) {
@@ -78,6 +116,9 @@ async function authenticate(request: Request): Promise<Integration> {
 
   const integration = await db.query.IntegrationsTable.findFirst({
     where: eq(IntegrationsTable.apiKeyPrefix, apiKeyPrefix(key)),
+    with: {
+      organization: { with: { personalOwner: { columns: { email: true } } } },
+    },
   });
   // Same error whether the prefix is unknown, the hash mismatches or the key
   // was revoked: a caller cannot learn which by probing.

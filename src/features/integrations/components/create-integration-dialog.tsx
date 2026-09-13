@@ -44,6 +44,7 @@ const formSchema = z.object({
     .refine((raw) => parseOriginList(raw).every(isOrigin), {
       message: translationKey("integrations.admin.validation.origin"),
     }),
+  platform: z.boolean(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -59,7 +60,14 @@ export function parseOriginList(raw: string): string[] {
   ];
 }
 
-export function CreateIntegrationDialog() {
+type CreateIntegrationDialogProps = {
+  /** Only `ADMIN_EMAILS` may mint a platform integration (no org, no caps). */
+  isPlatformAdmin: boolean;
+};
+
+export function CreateIntegrationDialog({
+  isPlatformAdmin,
+}: CreateIntegrationDialogProps) {
   const { t } = useTranslation();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -91,6 +99,7 @@ export function CreateIntegrationDialog() {
       slug: "",
       webhookUrl: "",
       allowedReturnOrigins: "",
+      platform: false as boolean,
     } satisfies FormValues,
     validators: { onSubmit: formSchema },
     onSubmit: ({ value }) => {
@@ -99,6 +108,7 @@ export function CreateIntegrationDialog() {
         slug: value.slug,
         webhookUrl: value.webhookUrl,
         allowedReturnOrigins: parseOriginList(value.allowedReturnOrigins),
+        platform: value.platform,
       });
     },
   });
@@ -165,6 +175,16 @@ export function CreateIntegrationDialog() {
                   />
                 )}
               </form.AppField>
+              {isPlatformAdmin && (
+                <form.AppField name="platform">
+                  {(field) => (
+                    <field.BooleanField
+                      label={t("integrations.admin.platform")}
+                      description={t("integrations.admin.platformHint")}
+                    />
+                  )}
+                </form.AppField>
+              )}
             </FieldGroup>
           </OverlayFormBody>
           <DialogFooter>
