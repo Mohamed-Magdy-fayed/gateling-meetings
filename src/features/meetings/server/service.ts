@@ -10,6 +10,8 @@ import {
   MeetingsTable,
   meetingSettingsSchema,
 } from "@/drizzle/schema";
+import { assertEntitlement, type Entitlements } from "@/features/billing/plans";
+import { countUpcomingScheduled } from "@/features/billing/server/usage";
 import {
   generateSalt,
   hashPassword,
@@ -19,6 +21,7 @@ import type { TFunction } from "@/features/core/i18n/lib";
 import { enqueueWebhook } from "@/features/integrations/server/webhooks";
 import { generateMeetingCode } from "@/features/meetings/lib/meeting-code";
 import {
+  meetingEndedEvent,
   meetingInvitesRequestedEvent,
   meetingScheduleChangedEvent,
   meetingScheduledEvent,
@@ -84,8 +87,18 @@ export type MeetingOrigin = {
   externalRef?: string | null;
 };
 
-type CreateInstantInput = {
+/**
+ * Who owns the meeting and what they may do. Passed in rather than looked
+ * up here because the two doors resolve it differently: the tRPC router
+ * from the session's active org, the REST API from the integration's org.
+ */
+export type MeetingOwner = {
   hostId: string;
+  organizationId: string;
+  entitlements: Entitlements;
+};
+
+type CreateInstantInput = MeetingOwner & {
   title?: string;
   origin?: MeetingOrigin;
   settings?: Partial<MeetingSettings>;
@@ -94,13 +107,14 @@ type CreateInstantInput = {
 /** "New meeting" — live immediately; the host goes straight into the room. */
 export function createInstantMeeting(
   ctx: MeetingServiceContext,
-  { hostId, title, origin, settings }: CreateInstantInput,
+  { hostId, organizationId, title, origin, settings }: CreateInstantInput,
 ) {
   return insertWithFreshCode(ctx.db, {
     title: title ?? ctx.t("meetings.instantTitle"),
     status: "live",
     startedAt: new Date(),
     hostId,
+    organizationId,
     createdBy: hostId,
     settings: { ...DEFAULT_MEETING_SETTINGS, ...settings },
     integrationId: origin?.integrationId,
@@ -110,8 +124,7 @@ export function createInstantMeeting(
 
 export type ScheduledMeetingInput = z.infer<typeof scheduledMeetingSchema>;
 
-type CreateScheduledInput = {
-  hostId: string;
+type CreateScheduledInput = MeetingOwner & {
   input: ScheduledMeetingInput;
   origin?: MeetingOrigin;
   settings?: Partial<MeetingSettings>;
@@ -120,13 +133,34 @@ type CreateScheduledInput = {
 /** A meeting for later: invitees get an email with an .ics and a reminder. */
 export async function createScheduledMeeting(
   ctx: MeetingServiceContext,
-  { hostId, input, origin, settings }: CreateScheduledInput,
+  {
+    hostId,
+    organizationId,
+    entitlements,
+    input,
+    origin,
+    settings,
+  }: CreateScheduledInput,
 ) {
   if (input.scheduledAt.getTime() < Date.now()) {
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: ctx.t("meetings.validation.pastDate"),
     });
+  }
+  assertEntitlement(
+    ctx.t,
+    entitlements,
+    "maxMeetingMinutes",
+    input.durationMinutes,
+  );
+  if (entitlements.maxUpcomingScheduled != null) {
+    assertEntitlement(
+      ctx.t,
+      entitlements,
+      "maxUpcomingScheduled",
+      await countUpcomingScheduled(ctx.db, organizationId),
+    );
   }
   const meeting = await insertWithFreshCode(ctx.db, {
     title: input.title,
@@ -135,6 +169,7 @@ export async function createScheduledMeeting(
     durationMinutes: input.durationMinutes,
     timezone: input.timezone,
     hostId,
+    organizationId,
     createdBy: hostId,
     settings: {
       ...DEFAULT_MEETING_SETTINGS,
@@ -179,6 +214,7 @@ export async function updateMeeting(
   meeting: Meeting,
   input: UpdateMeetingInput,
   actorId: string,
+  entitlements: Entitlements,
 ) {
   const { passcode, waitingRoom, ...fields } = input;
   const rescheduled =
@@ -193,6 +229,14 @@ export async function updateMeeting(
       code: "BAD_REQUEST",
       message: ctx.t("meetings.validation.pastDate"),
     });
+  }
+  if (fields.durationMinutes != null) {
+    assertEntitlement(
+      ctx.t,
+      entitlements,
+      "maxMeetingMinutes",
+      fields.durationMinutes,
+    );
   }
 
   await ctx.db
@@ -283,6 +327,10 @@ export async function endMeeting(
     console.warn(`[livekit] deleteRoom(${meeting.code}) failed`, error);
   }
 
+  // Disarms the duration enforcer. Sent for personal rooms too: their
+  // status never flips, so this is the only signal the timer gets.
+  await sendEvents(meetingEndedEvent.create({ meetingId: meeting.id }));
+
   // The status flipped above, so the later `room_finished` webhook from
   // LiveKit sees "already ended" and does not emit a second one.
   if (!meeting.isPersonalRoom && meeting.integrationId) {
@@ -291,7 +339,11 @@ export async function endMeeting(
       event: "meeting.ended",
       data: {
         meeting: toWebhookMeeting({ ...meeting, status: "ended", endedAt }),
-        endedBy: actorId.startsWith("integration:") ? "integration" : "host",
+        endedBy: actorId.startsWith("integration:")
+          ? "integration"
+          : actorId.startsWith("system:")
+            ? "system"
+            : "host",
       },
     });
   }

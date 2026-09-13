@@ -62,6 +62,11 @@ export const sessionSchema = z.object({
   sessionId: z.string(),
   exp: z.number(),
   hasPassword: z.boolean().optional().default(false),
+  /**
+   * The active organization. Optional so sessions minted before orgs
+   * existed keep parsing; `orgMiddleware` fills it in on first use.
+   */
+  orgId: z.string().optional().nullable(),
   user: z.object({
     id: z.string(),
     email: z.string().optional().nullable(),

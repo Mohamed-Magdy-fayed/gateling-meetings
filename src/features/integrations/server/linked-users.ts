@@ -9,6 +9,7 @@ import {
   UsersTable,
 } from "@/drizzle/schema";
 import { normalizeEmail } from "@/features/core/auth/core/helpers";
+import { createPersonalOrganization } from "@/features/organizations/server/service";
 
 export type ExternalUser = {
   externalId: string;
@@ -88,6 +89,11 @@ export async function ensureLinkedUser(
         externalId: person.externalId,
         userId: user.id,
       });
+      await createPersonalOrganization(
+        tx,
+        user,
+        `integration:${integration.slug}`,
+      );
       return user;
     });
   } catch (error) {

@@ -53,7 +53,7 @@ Every event's `data.meeting` is:
 | Event | When | Extra `data` fields |
 |---|---|---|
 | `meeting.started` | The LiveKit room came up — the first person (normally the host) connected. | `at` |
-| `meeting.ended` | The host or the API ended the meeting, or the room closed on its own. | `endedBy`: `"host"`, `"integration"` or `"room"` |
+| `meeting.ended` | The host or the API ended the meeting, the room closed on its own, or the owning organization's plan hit its meeting-length cap. | `endedBy`: `"host"`, `"integration"`, `"room"` or `"system"` |
 | `participant.joined` | Someone connected to the room. | `participant: { identity, name, role }`, `at` |
 | `participant.left` | Someone disconnected. | `participant: { identity, name, role }`, `at` |
 
@@ -67,8 +67,13 @@ available through `GET /api/v1/meetings/:code/participants`.
 
 `meeting.started` / `.ended` / `participant.*` from LiveKit require the
 LiveKit webhook to be configured (`/api/livekit/webhook`, see the README).
-`meeting.ended` with `endedBy: "host" | "integration"` is emitted by the app
+`meeting.ended` with `endedBy: "host" | "integration" | "system"` is emitted by the app
 itself and needs nothing else.
+
+`startedAt` is stamped when the LiveKit room actually opens, and re-stamped
+each time it opens again (a personal room opens once per session; an instant
+meeting created moments before the host connects gets the connect time). It is
+the clock the plan's meeting-length cap runs on.
 
 ## Verifying the signature
 

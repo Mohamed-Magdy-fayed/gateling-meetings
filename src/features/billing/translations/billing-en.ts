@@ -1,0 +1,71 @@
+import { dt } from "@/features/core/i18n/lib";
+
+export const billingEn = {
+  plans: {
+    free: { name: "Free", tagline: "For trying it out." },
+    pro: { name: "Pro", tagline: "For people who host regularly." },
+    business: { name: "Business", tagline: "For teams and integrations." },
+  },
+  sources: {
+    free: "Free",
+    subscription: "Subscription",
+    manual: "Granted",
+    trial: "Trial",
+  },
+  features: {
+    participants: "Up to {max:number} participants",
+    minutes: "Meetings up to {max:number} minutes",
+    hours: "Meetings up to {max:number} hours",
+    unlimitedDuration: "Unlimited meeting length",
+    upcoming: "Up to {max:number} upcoming scheduled meetings",
+    unlimitedUpcoming: "Unlimited scheduled meetings",
+    breakouts: "Breakout rooms",
+    apiAccess: "API access, webhooks and SSO join links",
+    seats: "Per-seat pricing for your team",
+  },
+  limits: {
+    participants:
+      "This meeting is full — its plan allows {max:number} participants.",
+    minutes: "This plan allows meetings up to {max:number} minutes.",
+    upcoming:
+      "This plan allows {max:number} upcoming scheduled meetings. End or delete one, or upgrade.",
+    breakouts: "Breakout rooms are not included in this plan.",
+    apiAccess: "API access is not included in this plan.",
+    seats: "All seats in this organization are taken.",
+  },
+  room: {
+    endingSoon: "This meeting will end in 5 minutes (plan limit).",
+    endsIn: "Meeting ends in {time}",
+    cappedBy: "Free plan limit",
+    upgrade: "Upgrade",
+  },
+  settings: {
+    title: "Plan & billing",
+    lead: "What {name} is on, and what that allows.",
+    currentPlan: "Current plan",
+    participants: "Participants per meeting",
+    duration: "Meeting length",
+    upcoming: "Upcoming scheduled meetings",
+    seats: "Seats",
+    api: "API access",
+    unlimited: "Unlimited",
+    minutes: dt("{count:plural}", {
+      plural: { count: { one: "{?} minute", other: "{?} minutes" } },
+    }),
+    comparePlans: "Compare plans",
+  },
+  pricing: {
+    nav: "Pricing",
+    title: "Simple pricing",
+    lead: "Start free. Upgrade when you need longer meetings, more people, or the API.",
+    perSeat: "per seat / month",
+    free: "Free forever",
+    current: "Current plan",
+    getStarted: "Get started",
+    upgrade: "Upgrade",
+    manage: "Manage billing",
+    contact: "Talk to us",
+    contactLead:
+      "Need custom limits or an invoice? We can set your organization up by hand.",
+  },
+} as const;

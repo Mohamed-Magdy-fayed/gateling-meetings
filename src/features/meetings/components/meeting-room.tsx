@@ -50,6 +50,7 @@ import { BreakoutBanner } from "./room/breakout-banner";
 import { BreakoutPanel } from "./room/breakout-panel";
 import { ChatPanel } from "./room/chat-panel";
 import { ControlBar, type SidePanel } from "./room/control-bar";
+import { DurationBanner } from "./room/duration-banner";
 import { HostIdentityProvider } from "./room/host-identity";
 import { HostSettings } from "./room/host-settings";
 import { ParticipantsPanel } from "./room/participants-panel";
@@ -352,6 +353,7 @@ function RoomShell({
       </header>
 
       <BreakoutBanner code={meeting.code} session={session} />
+      <DurationBanner code={meeting.code} isHost={isHost} />
 
       {/* Mobile browsers block autoplay after the tab was backgrounded;
           playback then needs a tap. */}
@@ -409,6 +411,7 @@ function RoomShell({
 
       <ControlBar
         isHost={isHost}
+        canBreakout={meeting.features.breakouts}
         canShareScreen
         participantCount={participants.length}
         unreadChat={Math.max(0, unreadChat)}

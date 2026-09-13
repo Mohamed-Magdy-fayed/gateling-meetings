@@ -1,0 +1,1 @@
+ALTER TABLE "meetings" ALTER COLUMN "organizationId" SET NOT NULL;

@@ -1,3 +1,4 @@
+import { entitlementsForMeeting } from "@/features/billing/server/entitlements";
 import {
   requireIntegrationMeeting,
   toApiMeeting,
@@ -49,6 +50,7 @@ export const PATCH = withIntegration<Params>(
         ...(externalRef !== undefined ? { externalRef } : {}),
       },
       actor,
+      entitlementsForMeeting(meeting),
     );
     if (settings && Object.keys(settings).length > 0) {
       await updateMeetingSettings({ db, t }, meeting, settings, actor);

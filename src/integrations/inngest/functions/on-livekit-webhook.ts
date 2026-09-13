@@ -4,10 +4,14 @@ import { z } from "zod";
 
 import { db } from "@/drizzle";
 import { MeetingParticipantsTable, MeetingsTable } from "@/drizzle/schema";
+import { meetingEndsAt } from "@/features/billing/plans";
+import { entitlementsForMeeting } from "@/features/billing/server/entitlements";
 import { enqueueWebhook } from "@/features/integrations/server/webhooks";
+import { findMeetingById } from "@/features/meetings/server/queries";
 import { toWebhookMeeting } from "@/features/meetings/server/service";
 import { PARTICIPANT_ATTRIBUTE_ROLE } from "@/integrations/livekit/attributes";
 import { inngest } from "../client";
+import { meetingEndedEvent, meetingStartedEvent } from "./meeting-events";
 
 /**
  * A LiveKit webhook, verified by `/api/livekit/webhook` and handed off here
@@ -94,19 +98,37 @@ export const onLiveKitWebhook = inngest.createFunction(
         : {};
 
     switch (event.data.event) {
-      case "room_started":
+      case "room_started": {
+        if (meeting.status === "ended") return { skipped: "already-ended" };
         // A scheduled meeting goes live when the first person (the host —
-        // guests wait) actually connects.
-        if (meeting.status === "scheduled") {
-          await step.run("mark-live", () =>
-            db
-              .update(MeetingsTable)
-              .set({ status: "live", startedAt: at })
-              .where(eq(MeetingsTable.id, meeting.id)),
+        // guests wait) actually connects. `startedAt` is (re)stamped for
+        // instant and personal rooms too: it is the clock the plan's
+        // duration cap runs on, and a personal room opens many times.
+        await step.run("mark-live", () =>
+          db
+            .update(MeetingsTable)
+            .set({ status: "live", startedAt: at })
+            .where(eq(MeetingsTable.id, meeting.id)),
+        );
+        const endsAt = await step.run("resolve-cap", async () => {
+          const fresh = await findMeetingById(db, meeting.id);
+          if (!fresh) return null;
+          return (
+            meetingEndsAt(at, entitlementsForMeeting(fresh))?.toISOString() ??
+            null
           );
-        }
+        });
+        await step.sendEvent(
+          "arm-duration-cap",
+          meetingStartedEvent.create({
+            meetingId: meeting.id,
+            startedAt: at.toISOString(),
+            endsAt,
+          }),
+        );
         await notify("meeting.started", { at: at.toISOString() });
         return { handled: "room_started" };
+      }
 
       case "room_finished":
         // A personal room is never "ended" (the link is permanent), and a
@@ -121,6 +143,11 @@ export const onLiveKitWebhook = inngest.createFunction(
           );
           await notify("meeting.ended", { endedBy: "room" });
         }
+        // Always — a personal room's timer must not outlive its session.
+        await step.sendEvent(
+          "disarm-duration-cap",
+          meetingEndedEvent.create({ meetingId: meeting.id }),
+        );
         return { handled: "room_finished" };
 
       case "participant_joined": {

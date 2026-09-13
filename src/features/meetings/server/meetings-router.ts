@@ -3,8 +3,11 @@ import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 
 import { MeetingsTable } from "@/drizzle/schema";
+import { meetingEndsAt } from "@/features/billing/plans";
+import { entitlementsForMeeting } from "@/features/billing/server/entitlements";
 import {
   createTRPCRouter,
+  orgProcedure,
   protectedProcedure,
   publicProcedure,
   type TRPCContext,
@@ -50,27 +53,35 @@ export const meetingsRouter = createTRPCRouter({
    * "New meeting" — live immediately, the host is redirected straight into
    * the room. The title is optional; the dashboard shows a dated default.
    */
-  createInstant: protectedProcedure
+  createInstant: orgProcedure
     .input(createInstantMeetingSchema)
     .mutation(({ ctx, input }) =>
       createInstantMeeting(ctx, {
         hostId: ctx.session.user.id,
+        organizationId: ctx.organization.id,
+        entitlements: ctx.entitlements,
         title: input.title,
       }),
     ),
 
   /** A meeting for later: invitees get an email with an .ics and a reminder. */
-  createScheduled: protectedProcedure
+  createScheduled: orgProcedure
     .input(scheduledMeetingSchema)
     .mutation(({ ctx, input }) =>
-      createScheduledMeeting(ctx, { hostId: ctx.session.user.id, input }),
+      createScheduledMeeting(ctx, {
+        hostId: ctx.session.user.id,
+        organizationId: ctx.organization.id,
+        entitlements: ctx.entitlements,
+        input,
+      }),
     ),
 
   /**
    * The host's permanent room — one per account, same link forever. Created
-   * lazily the first time it is asked for.
+   * lazily the first time it is asked for, in whichever org is active then;
+   * it is looked up by host afterwards, so switching orgs keeps the link.
    */
-  getPersonalRoom: protectedProcedure.mutation(async ({ ctx }) => {
+  getPersonalRoom: orgProcedure.mutation(async ({ ctx }) => {
     const existing = await ctx.db.query.MeetingsTable.findFirst({
       where: and(
         eq(MeetingsTable.hostId, ctx.session.user.id),
@@ -88,6 +99,7 @@ export const meetingsRouter = createTRPCRouter({
       status: "live",
       isPersonalRoom: true,
       hostId: ctx.session.user.id,
+      organizationId: ctx.organization.id,
       createdBy: ctx.session.user.id,
     });
     return { code: created.code, title: null };
@@ -98,7 +110,14 @@ export const meetingsRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const meeting = await requireHostedMeeting(ctx, input.code);
       const { code, ...fields } = input;
-      await updateMeeting(ctx, meeting, fields, ctx.session.user.id);
+      await updateMeeting(
+        ctx,
+        meeting,
+        fields,
+        ctx.session.user.id,
+        // The meeting's own org, not the caller's active one.
+        entitlementsForMeeting(meeting),
+      );
       return { code };
     }),
 
@@ -128,11 +147,20 @@ export const meetingsRouter = createTRPCRouter({
       }
 
       const isHost = ctx.session?.user.id === meeting.hostId;
+      const entitlements = entitlementsForMeeting(meeting);
+      const endsAt =
+        meeting.status === "live" && meeting.startedAt
+          ? meetingEndsAt(meeting.startedAt, entitlements)
+          : null;
 
       return {
         code: meeting.code,
         title: meeting.title,
         status: meeting.status,
+        /** When the plan will end the room, or null if it never will. */
+        endsAt,
+        /** What the room's plan allows — drives which host controls render. */
+        features: { breakouts: entitlements.breakouts },
         hostName: meeting.host.name ?? meeting.host.email,
         /** LiveKit identity of the host — clients badge by this, never by attributes. */
         hostIdentity: `user:${meeting.hostId}`,
@@ -159,10 +187,14 @@ export const meetingsRouter = createTRPCRouter({
       return { ...rest, hasPasscode: passcodeHash != null, invites };
     }),
 
-  /** Host-only. Upcoming first (soonest at the top), then recent (newest at the top). */
-  listMine: protectedProcedure.query(async ({ ctx }) => {
+  /**
+   * Host-only, scoped to the active org. Upcoming first (soonest at the
+   * top), then recent (newest at the top).
+   */
+  listMine: orgProcedure.query(async ({ ctx }) => {
     const where = and(
       eq(MeetingsTable.hostId, ctx.session.user.id),
+      eq(MeetingsTable.organizationId, ctx.organization.id),
       isNull(MeetingsTable.deletedAt),
       eq(MeetingsTable.isPersonalRoom, false),
     );

@@ -1,5 +1,8 @@
+import { adminAr } from "@/features/admin/translations/admin-ar";
+import { billingAr } from "@/features/billing/translations/billing-ar";
 import { integrationsAr } from "@/features/integrations/translations/integrations-ar";
 import { meetingsAr } from "@/features/meetings/translations/meetings-ar";
+import { organizationsAr } from "@/features/organizations/translations/organizations-ar";
 import type { LanguageMessages } from "../lib";
 
 export default {
@@ -125,7 +128,7 @@ export default {
     },
     signUp: {
       title: "أنشئ حسابك",
-      description: "استضف اجتماعاتك بنفسك — مجانًا وبلا حدود زمنية.",
+      description: "استضف اجتماعاتك بنفسك — ابدأ مجانًا.",
       nameLabel: "الاسم الكامل",
       emailLabel: "البريد الإلكتروني",
       phoneLabel: "رقم الهاتف",
@@ -234,4 +237,7 @@ export default {
   },
   meetings: meetingsAr,
   integrations: integrationsAr,
+  billing: billingAr,
+  organizations: organizationsAr,
+  admin: adminAr,
 } as const satisfies LanguageMessages;

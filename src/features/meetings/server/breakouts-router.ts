@@ -5,6 +5,8 @@ import { z } from "zod";
 
 import type { DatabaseOrTransaction } from "@/drizzle";
 import { BreakoutAssignmentsTable, BreakoutRoomsTable } from "@/drizzle/schema";
+import { assertEntitlement } from "@/features/billing/plans";
+import { entitlementsForMeeting } from "@/features/billing/server/entitlements";
 import { getRoomService } from "@/integrations/livekit/client";
 import { moveParticipant } from "@/integrations/livekit/move";
 import { verifyParticipantKey } from "@/integrations/livekit/participant-key";
@@ -98,6 +100,7 @@ export const breakoutsRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const meeting = await requireHostedMeeting(ctx, input.code);
+      assertEntitlement(ctx.t, entitlementsForMeeting(meeting), "breakouts");
       const existing = await activeRooms(ctx.db, meeting.id);
       if (existing.length + input.count > MAX_BREAKOUT_ROOMS) {
         throw new TRPCError({
@@ -263,6 +266,7 @@ export const breakoutsRouter = createTRPCRouter({
   /** Creates the LiveKit rooms (with their names in metadata) and moves everyone assigned. */
   open: protectedProcedure.input(codeInput).mutation(async ({ ctx, input }) => {
     const meeting = await requireHostedMeeting(ctx, input.code);
+    assertEntitlement(ctx.t, entitlementsForMeeting(meeting), "breakouts");
     const rooms = await activeRooms(ctx.db, meeting.id);
     if (rooms.length === 0) {
       throw new TRPCError({ code: "PRECONDITION_FAILED" });

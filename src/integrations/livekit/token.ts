@@ -1,6 +1,11 @@
 import "server-only";
 
-import { AccessToken, TrackSource, type VideoGrant } from "livekit-server-sdk";
+import {
+  AccessToken,
+  RoomConfiguration,
+  TrackSource,
+  type VideoGrant,
+} from "livekit-server-sdk";
 
 import { PARTICIPANT_ATTRIBUTE_ROLE } from "./attributes";
 import { getLiveKitConfig } from "./client";
@@ -21,6 +26,12 @@ export type CreateMeetingTokenOptions = {
   role: MeetingRole;
   /** `false` blocks screen share at the SFU, not just in the UI. */
   canShareScreen: boolean;
+  /**
+   * Plan cap, applied when this token is the one that creates the room.
+   * A backstop behind the join door's own count — LiveKit refuses the
+   * N+1th connection even if two joins race past the DB check.
+   */
+  maxParticipants?: number;
 };
 
 /**
@@ -35,6 +46,7 @@ export async function createMeetingToken({
   name,
   role,
   canShareScreen,
+  maxParticipants,
 }: CreateMeetingTokenOptions): Promise<string> {
   const { apiKey, apiSecret } = getLiveKitConfig();
 
@@ -65,5 +77,8 @@ export async function createMeetingToken({
   };
 
   token.addGrant(grant);
+  if (maxParticipants != null && maxParticipants < Number.MAX_SAFE_INTEGER) {
+    token.roomConfig = new RoomConfiguration({ maxParticipants });
+  }
   return token.toJwt();
 }

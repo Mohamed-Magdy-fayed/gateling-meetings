@@ -19,6 +19,10 @@ import {
 } from "@/features/core/auth/core";
 import { getPostAuthRedirect } from "@/features/core/auth/nextjs/lib/post-auth-redirect";
 import type { PartialUser } from "@/features/core/auth/types";
+import {
+  createPersonalOrganization,
+  ensurePersonalOrganization,
+} from "@/features/organizations/server/service";
 
 const OAUTH_RETURN_TO_COOKIE = "oAuthReturnTo";
 
@@ -52,7 +56,11 @@ export async function GET(
     // OAuth-created sessions don't imply a password was ever set for this
     // account — sign-in/password-reset still read credentials from the DB
     // directly, so this flag is informational only.
-    await createUserSession({ user, hasPassword: false }, cookieJar);
+    const org = await ensurePersonalOrganization(db, user);
+    await createUserSession(
+      { user, hasPassword: false, orgId: org.id },
+      cookieJar,
+    );
     authenticatedUser = user;
   } catch (error) {
     // Only a fixed, non-leaking code goes to the client (see
@@ -128,6 +136,7 @@ function connectUserToAccount(
         throw new Error("Unable to create user from OAuth profile");
       }
 
+      await createPersonalOrganization(trx, newUser, newUser.id);
       user = newUser;
     } else {
       const existingAccount = await trx.query.UserOAuthAccountsTable.findFirst({

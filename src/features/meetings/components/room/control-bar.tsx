@@ -43,6 +43,8 @@ export type SidePanel = "chat" | "participants" | "breakouts" | null;
 
 type ControlBarProps = {
   isHost: boolean;
+  /** Breakout rooms are a plan feature; the button is simply absent without it. */
+  canBreakout: boolean;
   canShareScreen: boolean;
   participantCount: number;
   unreadChat: number;
@@ -55,6 +57,7 @@ type ControlBarProps = {
 
 export function ControlBar({
   isHost,
+  canBreakout,
   canShareScreen,
   participantCount,
   unreadChat,
@@ -164,7 +167,7 @@ export function ControlBar({
         <UsersIcon />
       </ControlButton>
 
-      {isHost && (
+      {isHost && canBreakout && (
         <ControlButton
           label={t("meetings.breakouts.title")}
           active

@@ -25,6 +25,9 @@ export async function SiteHeader() {
           {t("appName")}
         </Link>
         <nav className="ms-auto flex items-center gap-1">
+          <LinkButton href="/pricing" variant="ghost">
+            {t("billing.pricing.nav")}
+          </LinkButton>
           <LanguageToggle variant="ghost" />
           {user ? (
             <>
@@ -32,8 +35,8 @@ export async function SiteHeader() {
                 {t("meetings.dashboard.title")}
               </LinkButton>
               {isAdminEmail(user.email) && (
-                <LinkButton href="/settings/integrations" variant="ghost">
-                  {t("integrations.admin.title")}
+                <LinkButton href="/admin" variant="ghost">
+                  {t("admin.title")}
                 </LinkButton>
               )}
               <SignOutButton variant="ghost" />

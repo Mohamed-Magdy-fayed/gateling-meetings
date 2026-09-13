@@ -31,3 +31,20 @@ export const meetingScheduleChangedEvent = eventType(
   "meeting/schedule.changed",
   { schema: z.object({ meetingId: z.uuid() }) },
 );
+
+/**
+ * The LiveKit room actually opened. `endsAt` is when the owning org's plan
+ * says it must close (`null` = never); it arms the duration enforcer.
+ */
+export const meetingStartedEvent = eventType("meeting/started", {
+  schema: z.object({
+    meetingId: z.uuid(),
+    startedAt: z.iso.datetime(),
+    endsAt: z.iso.datetime().nullable(),
+  }),
+});
+
+/** The room closed (host ended it, everyone left, or the cap hit); disarm. */
+export const meetingEndedEvent = eventType("meeting/ended", {
+  schema: z.object({ meetingId: z.uuid() }),
+});

@@ -27,7 +27,7 @@ export const meetingsEn = {
   },
   home: {
     tagline: "Meetings you host yourself.",
-    lead: "No accounts for guests, no time limits, no subscription. Start a meeting or paste a code.",
+    lead: "No accounts for guests. Free to start; upgrade when you need longer meetings and more people. Start a meeting or paste a code.",
     newMeeting: "New meeting",
     starting: "Starting…",
     joinPlaceholder: "Enter a code or link",

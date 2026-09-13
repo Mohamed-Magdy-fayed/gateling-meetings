@@ -34,6 +34,10 @@ import type {
   TypedResponse,
 } from "@/features/core/auth/types";
 import { getT } from "@/features/core/i18n/server";
+import {
+  createPersonalOrganization,
+  ensurePersonalOrganization,
+} from "@/features/organizations/server/service";
 import { inngest } from "@/integrations/inngest/client";
 import { userRegisteredEvent } from "@/integrations/inngest/functions/on-user-registered";
 import {
@@ -92,7 +96,11 @@ export async function signInAction(
       return { isError: true, message: t("auth.error.credentials") };
     }
 
-    await createUserSession({ user, hasPassword: true }, await cookies());
+    const org = await ensurePersonalOrganization(db, user);
+    await createUserSession(
+      { user, hasPassword: true, orgId: org.id },
+      await cookies(),
+    );
     signedInUser = user;
   } catch (error) {
     return authError(error);
@@ -162,7 +170,13 @@ export async function signUpAction(
       passwordSalt: salt,
     });
 
-    return createdUser;
+    const org = await createPersonalOrganization(
+      trx,
+      createdUser,
+      createdUser.id,
+    );
+
+    return { ...createdUser, orgId: org.id };
   });
 
   // The account already exists in the DB at this point — a failure past
@@ -182,7 +196,10 @@ export async function signUpAction(
   }
 
   try {
-    await createUserSession({ user, hasPassword: true }, await cookies());
+    await createUserSession(
+      { user, hasPassword: true, orgId: user.orgId },
+      await cookies(),
+    );
   } catch (error) {
     console.error("Failed to create session after sign-up", error);
     redirect("/auth/sign-in?error=session_failed");

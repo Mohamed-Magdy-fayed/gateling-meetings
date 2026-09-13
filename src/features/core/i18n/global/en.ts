@@ -1,5 +1,8 @@
+import { adminEn } from "@/features/admin/translations/admin-en";
+import { billingEn } from "@/features/billing/translations/billing-en";
 import { integrationsEn } from "@/features/integrations/translations/integrations-en";
 import { meetingsEn } from "@/features/meetings/translations/meetings-en";
+import { organizationsEn } from "@/features/organizations/translations/organizations-en";
 import type { LanguageMessages } from "../lib";
 
 export default {
@@ -126,7 +129,7 @@ export default {
     },
     signUp: {
       title: "Create your account",
-      description: "Host your own meetings — free, no time limits.",
+      description: "Host your own meetings — free to start.",
       nameLabel: "Full name",
       emailLabel: "Email",
       phoneLabel: "Phone number",
@@ -234,4 +237,7 @@ export default {
   },
   meetings: meetingsEn,
   integrations: integrationsEn,
+  billing: billingEn,
+  organizations: organizationsEn,
+  admin: adminEn,
 } as const satisfies LanguageMessages;

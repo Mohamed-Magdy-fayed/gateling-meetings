@@ -74,7 +74,12 @@ export async function GET(request: Request) {
       get: (name) => cookieStore.get(name),
       delete: () => {},
     });
-    await createUserSession({ user }, cookieSetter(response));
+    // The meeting's org is the one the host should land in; it may differ
+    // from their personal org once integrations are org-owned.
+    await createUserSession(
+      { user, orgId: meeting.organizationId },
+      cookieSetter(response),
+    );
   } else {
     const inviteToken = await ensureSsoInvite(db, integration, meeting, claims);
     target.searchParams.set("invite", inviteToken);

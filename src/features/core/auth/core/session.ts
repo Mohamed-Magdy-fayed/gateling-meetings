@@ -31,6 +31,7 @@ export async function createUserSession(
   options: {
     user: PartialUser;
     hasPassword?: boolean;
+    orgId?: string | null;
   },
   cookies: Pick<Cookies, "set">,
 ) {
@@ -39,6 +40,8 @@ export async function createUserSession(
     sessionId,
     exp: getSessionExpirationSeconds(),
     hasPassword: options.hasPassword ?? false,
+    // Omitted rather than stored as null: HSET has no null, only strings.
+    ...(options.orgId ? { orgId: options.orgId } : {}),
     user: options.user,
   });
 
@@ -68,6 +71,18 @@ export async function updateUserSessionData(
   await redisClient.hset(sessionKey(sessionId), {
     user: sessionSchema.shape.user.parse(user),
   });
+}
+
+/** Switches the active organization; the caller has verified membership. */
+export async function setSessionOrganization(
+  orgId: string,
+  cookies: Pick<Cookies, "get">,
+) {
+  const sessionId = cookies.get(COOKIE_SESSION_KEY)?.value;
+  if (sessionId == null) return null;
+  if (!(await redisClient.exists(sessionKey(sessionId)))) return null;
+
+  await redisClient.hset(sessionKey(sessionId), { orgId });
 }
 
 export async function updateUserSessionExpiration(

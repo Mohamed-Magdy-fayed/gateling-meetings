@@ -23,6 +23,7 @@ import {
   updatedBy,
 } from "@/drizzle/schemas/helpers";
 import { IntegrationsTable } from "@/drizzle/schemas/integrations/integrations-table";
+import { OrganizationsTable } from "@/drizzle/schemas/organizations/organizations-table";
 import { BreakoutRoomsTable } from "./breakout-rooms-table";
 import { JoinRequestsTable } from "./join-requests-table";
 import { MeetingInvitesTable } from "./meeting-invites-table";
@@ -51,6 +52,14 @@ export const MeetingsTable = pgTable(
     hostId: uuid()
       .notNull()
       .references(() => UsersTable.id, { onDelete: "cascade" }),
+    /**
+     * The org whose plan governs this room (participant cap, duration…).
+     * The host's *active* org at creation time — not re-derived from the
+     * host later, so switching orgs never changes a live meeting's limits.
+     */
+    organizationId: uuid()
+      .notNull()
+      .references(() => OrganizationsTable.id, { onDelete: "cascade" }),
     code: varchar({ length: 12 }).notNull(),
     title: varchar({ length: 200 }).notNull(),
     // Hashed like a password — a leaked database must not leak room passcodes.
@@ -86,6 +95,10 @@ export const MeetingsTable = pgTable(
   (table) => [
     uniqueIndex("meetings_code_unique").on(table.code),
     index("meetings_host_idx").on(table.hostId),
+    index("meetings_organization_status_idx").on(
+      table.organizationId,
+      table.status,
+    ),
     index("meetings_scheduled_at_idx").on(table.scheduledAt),
     index("meetings_integration_external_ref_idx").on(
       table.integrationId,
@@ -102,6 +115,10 @@ export const meetingsRelations = relations(MeetingsTable, ({ one, many }) => ({
   integration: one(IntegrationsTable, {
     fields: [MeetingsTable.integrationId],
     references: [IntegrationsTable.id],
+  }),
+  organization: one(OrganizationsTable, {
+    fields: [MeetingsTable.organizationId],
+    references: [OrganizationsTable.id],
   }),
   joinRequests: many(JoinRequestsTable),
   participants: many(MeetingParticipantsTable),

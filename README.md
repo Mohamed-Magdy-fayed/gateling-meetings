@@ -42,8 +42,10 @@ server above to be running (`livekit.dev.yaml` posts room events to the dev
 server, which hands them to Inngest — that is how the attendance log and the
 integration webhooks work locally) and a verified host account `host@example.test` / `Passw0rd!Local` (sign up
 once, then `UPDATE users SET "emailVerifiedAt" = now()` if SMTP isn't
-configured locally). `e2e/visual.spec.ts` writes RTL/mobile screenshots to
-`test-results/visual/`.
+configured locally). `e2e/entitlements.spec.ts` and `e2e/admin.spec.ts` also need a
+*second*, non-admin account `member@example.test` / `Passw0rd!Local` (same steps; it must
+**not** be in `ADMIN_EMAILS`, because admin accounts bypass every plan cap).
+`e2e/visual.spec.ts` writes RTL/mobile screenshots to `test-results/visual/`.
 
 ## Architecture in one paragraph
 

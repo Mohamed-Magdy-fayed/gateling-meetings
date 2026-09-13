@@ -21,6 +21,7 @@ const PROTECTED_PATH_PREFIXES = [
   "/schedule",
   "/meetings",
   "/settings",
+  "/admin",
 ];
 
 const AUTH_ROUTE_PREFIX = "/auth";
