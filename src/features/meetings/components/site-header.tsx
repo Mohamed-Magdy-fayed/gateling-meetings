@@ -10,7 +10,11 @@ import { getUserSession } from "@/features/core/auth/core/session";
 import { SignOutButton } from "@/features/core/auth/nextjs/components/sign-out-button";
 import { LanguageToggle } from "@/features/core/i18n/client";
 import { getT } from "@/features/core/i18n/server";
-import { loadActiveOrganization } from "@/features/organizations/server/service";
+import { OrgSwitcher } from "@/features/organizations/components/org-switcher";
+import {
+  listUserOrganizations,
+  loadActiveOrganization,
+} from "@/features/organizations/server/service";
 
 /** Shared top bar for the landing page and the host dashboard. */
 export async function SiteHeader() {
@@ -22,9 +26,12 @@ export async function SiteHeader() {
   const isAdmin = isAdminEmail(user?.email);
   // Org owners/admins on a plan with API access get the integrations link;
   // platform admins reach it through /admin instead.
-  const active = session
-    ? await loadActiveOrganization(db, session.user.id, session.orgId ?? null)
-    : null;
+  const [active, memberships] = session
+    ? await Promise.all([
+        loadActiveOrganization(db, session.user.id, session.orgId ?? null),
+        listUserOrganizations(db, session.user.id),
+      ])
+    : [null, []];
   const canManageIntegrations =
     !isAdmin &&
     active != null &&
@@ -50,6 +57,19 @@ export async function SiteHeader() {
           <LanguageToggle variant="ghost" />
           {user ? (
             <>
+              {active && (
+                <OrgSwitcher
+                  activeId={active.organization.id}
+                  organizations={memberships.map(
+                    ({ organization, membership }) => ({
+                      id: organization.id,
+                      name: organization.name,
+                      isPersonal: organization.personalOwnerId != null,
+                      role: membership.role,
+                    }),
+                  )}
+                />
+              )}
               <LinkButton href="/dashboard" variant="ghost">
                 {t("meetings.dashboard.title")}
               </LinkButton>

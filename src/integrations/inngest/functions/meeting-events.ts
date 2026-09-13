@@ -48,3 +48,20 @@ export const meetingStartedEvent = eventType("meeting/started", {
 export const meetingEndedEvent = eventType("meeting/ended", {
   schema: z.object({ meetingId: z.uuid() }),
 });
+
+/**
+ * An org invite exists; email the link. The raw token travels in the
+ * event because only its hash is stored: the link is single-use, expires
+ * in a week, and accepting it requires signing in as the invited address,
+ * so the token alone admits nobody.
+ */
+export const organizationInviteRequestedEvent = eventType(
+  "organization/invite.requested",
+  {
+    schema: z.object({
+      tokenId: z.uuid(),
+      token: z.string().min(1),
+      locale: z.string(),
+    }),
+  },
+);

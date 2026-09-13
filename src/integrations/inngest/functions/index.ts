@@ -4,6 +4,7 @@ import { onLiveKitWebhook } from "./on-livekit-webhook";
 import { onMeetingInvitesRequested } from "./on-meeting-invites-requested";
 import { onMeetingScheduled } from "./on-meeting-scheduled";
 import { enforceMeetingDuration } from "./on-meeting-started";
+import { onOrganizationInvite } from "./on-organization-invite";
 import { onPaddleWebhook } from "./on-paddle-webhook";
 import { onUserRegistered } from "./on-user-registered";
 
@@ -16,4 +17,5 @@ export const functions = [
   enforceMeetingDuration,
   deliverWebhook,
   onPaddleWebhook,
+  onOrganizationInvite,
 ];
