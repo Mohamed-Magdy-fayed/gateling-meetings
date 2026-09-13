@@ -1,6 +1,5 @@
 import { CheckIcon } from "lucide-react";
 
-import { LinkButton } from "@/components/general/link-button";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -14,23 +13,27 @@ import { type PlanId, planValues } from "@/drizzle/schema";
 import { type Entitlements, PLAN_ENTITLEMENTS } from "@/features/billing/plans";
 import { getT } from "@/features/core/i18n/server";
 import { cn } from "@/lib/utils";
+import { PricingCta } from "./pricing-cta";
 
 type PricingTableProps = {
   /** The viewer's current plan, if signed in. */
   currentPlan: PlanId | null;
   isSignedIn: boolean;
+  /** Owner/admin of a billable org, with Paddle configured. */
+  canCheckout: boolean;
 };
 
 const HIGHLIGHTED: PlanId = "pro";
 
 /**
  * Rendered from `PLAN_ENTITLEMENTS` so the page can never drift from what
- * the server enforces. Prices are Paddle's job (Phase 2); until then the
- * paid tiers link to the billing page.
+ * the server enforces. Prices themselves live in Paddle's catalog; the
+ * checkout overlay shows them.
  */
 export async function PricingTable({
   currentPlan,
   isSignedIn,
+  canCheckout,
 }: PricingTableProps) {
   const { t } = await getT();
 
@@ -77,15 +80,12 @@ export async function PricingTable({
               </ul>
             </CardContent>
             <CardFooter>
-              <PlanCta
+              <PricingCta
                 plan={plan}
+                highlighted={highlighted}
                 isCurrent={isCurrent}
                 isSignedIn={isSignedIn}
-                label={{
-                  getStarted: t("billing.pricing.getStarted"),
-                  upgrade: t("billing.pricing.upgrade"),
-                  manage: t("billing.pricing.manage"),
-                }}
+                canCheckout={canCheckout}
               />
             </CardFooter>
           </Card>
@@ -118,44 +118,4 @@ function featureLines(
   if (e.apiAccess) lines.push(t("billing.features.apiAccess"));
   if (e.seatsBillable) lines.push(t("billing.features.seats"));
   return lines;
-}
-
-function PlanCta({
-  plan,
-  isCurrent,
-  isSignedIn,
-  label,
-}: {
-  plan: PlanId;
-  isCurrent: boolean;
-  isSignedIn: boolean;
-  label: { getStarted: string; upgrade: string; manage: string };
-}) {
-  if (!isSignedIn) {
-    return (
-      <LinkButton
-        href="/auth/sign-up"
-        className="w-full"
-        variant={plan === HIGHLIGHTED ? "default" : "outline"}
-      >
-        {label.getStarted}
-      </LinkButton>
-    );
-  }
-  if (isCurrent || plan === "free") {
-    return (
-      <LinkButton href="/settings/billing" className="w-full" variant="outline">
-        {label.manage}
-      </LinkButton>
-    );
-  }
-  return (
-    <LinkButton
-      href="/settings/billing"
-      className="w-full"
-      variant={plan === HIGHLIGHTED ? "default" : "outline"}
-    >
-      {label.upgrade}
-    </LinkButton>
-  );
 }

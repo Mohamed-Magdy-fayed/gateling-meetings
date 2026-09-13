@@ -73,6 +73,9 @@ Schema-first: edit `src/drizzle/schemas/**`, then `npm run db:generate` and
 - **Personal room** — a permanent link per host.
 - **Breakout rooms** — create, assign or shuffle, open, visit, broadcast to all rooms, close all. Seamless on LiveKit Cloud; a quick reconnect on the open-source server.
 - **Attendance log** — from LiveKit webhooks (`/api/livekit/webhook`), via Inngest.
+- **Plans and organizations** — every account owns a personal organization; the org's plan (`free` / `pro` / `business`, see `src/features/billing/plans.ts`) caps participants, meeting length, upcoming scheduled meetings, breakouts and API access. Free is 5 people / 40 minutes. Enforced at the join door, the meeting service and an Inngest duration enforcer — never only in the UI. `ADMIN_EMAILS` accounts are unlimited.
+- **Billing** — Paddle (merchant of record): overlay checkout from `/settings/billing` or `/pricing`, per-seat subscriptions, customer portal, cancellation at period end. Webhooks land in `billing_events` (idempotent by Paddle event id) and are applied by Inngest. A plan set by hand in the admin panel is never overwritten by billing.
+- **Admin panel** — `/admin` (`ADMIN_EMAILS` only): search organizations, put any org on any plan (`manual` source, optional expiry, note), pre-grant a plan to an email before they sign up, list users.
 - **Integration API** — other Gateling systems create meetings and send their signed-in users in through a signed `/sso/join` link, and get signed webhooks back. See [docs/integration.md](docs/integration.md) and [docs/webhooks.md](docs/webhooks.md); admins (`ADMIN_EMAILS`) manage keys at `/settings/integrations`.
 
 ## Deploying (all free tiers)
@@ -82,6 +85,7 @@ Schema-first: edit `src/drizzle/schemas/**`, then `npm run db:generate` and
 3. **Upstash** — a Redis database; `REDIS_URL` + `REDIS_TOKEN`.
 4. **Inngest** — create an app; `INNGEST_SIGNING_KEY` + `INNGEST_EVENT_KEY`. After the first deploy, sync the app at `https://<your-app>/api/inngest`.
 5. **SMTP** — any provider (`SMTP_*`) for invite/reminder/verification emails.
-6. **Vercel** — import the repo, set every variable above plus `BASE_URL`, `OAUTH_REDIRECT_URL_BASE` (`<BASE_URL>/api/oauth`), `JWT_SECRET_KEY` (32+ random chars, signs integration join links), `ADMIN_EMAILS` (who may manage integrations) and, optionally, `GOOGLE_CLIENT_ID/SECRET`. The env module fails the build if a required production value is missing.
+6. **Paddle** — create two recurring per-seat prices (Pro, Business); set `PADDLE_API_KEY`, `PADDLE_WEBHOOK_SECRET`, `PADDLE_PRICE_ID_PRO`, `PADDLE_PRICE_ID_BUSINESS`, `PADDLE_ENVIRONMENT=production`, and the client-side `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` / `NEXT_PUBLIC_PADDLE_ENVIRONMENT`. Add a notification destination for `subscription.*` and `transaction.completed` pointing at `https://<your-app>/api/paddle/webhook`, and approve your domain for checkout. Test in the sandbox first (`PADDLE_ENVIRONMENT=sandbox`).
+7. **Vercel** — import the repo, set every variable above plus `BASE_URL`, `OAUTH_REDIRECT_URL_BASE` (`<BASE_URL>/api/oauth`), `JWT_SECRET_KEY` (32+ random chars, signs integration join links), `ADMIN_EMAILS` (who may open `/admin` and manage integrations) and, optionally, `GOOGLE_CLIENT_ID/SECRET`. The env module fails the build if a required production value is missing.
 
 Self-hosting LiveKit instead: run `livekit/livekit-server` with a real config (open UDP range, TURN), and point `LIVEKIT_URL`/key/secret at it. Nothing in the app changes.

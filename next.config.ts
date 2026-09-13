@@ -23,7 +23,7 @@ const securityHeaders = [
   {
     key: "Permissions-Policy",
     value:
-      "camera=(self), microphone=(self), display-capture=(self), geolocation=(), payment=(), usb=()",
+      'camera=(self), microphone=(self), display-capture=(self), geolocation=(), payment=(self "https://buy.paddle.com" "https://sandbox-buy.paddle.com"), usb=()',
   },
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
 ];

@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  index,
   integer,
   pgEnum,
   pgTable,
@@ -63,6 +64,15 @@ export const OrganizationsTable = pgTable(
     /** Admin-facing note: who comped this org and why. */
     planNote: text(),
     seatLimit: integer().notNull().default(1),
+    // Paddle. Present whenever the org has ever checked out, even if its
+    // plan is now `manual` — the customer portal link still needs them.
+    paddleCustomerId: varchar({ length: 64 }),
+    paddleSubscriptionId: varchar({ length: 64 }),
+    paddleSubscriptionStatus: varchar({ length: 32 }),
+    paddlePriceId: varchar({ length: 64 }),
+    currentPeriodEndsAt: timestamp({ withTimezone: true }),
+    /** `occurred_at` of the last Paddle event applied; older ones are ignored. */
+    paddleSyncedAt: timestamp({ withTimezone: true }),
     createdAt,
     createdBy,
     updatedAt,
@@ -74,6 +84,10 @@ export const OrganizationsTable = pgTable(
     uniqueIndex("organizations_personal_owner_unique").on(
       table.personalOwnerId,
     ),
+    uniqueIndex("organizations_paddle_subscription_unique").on(
+      table.paddleSubscriptionId,
+    ),
+    index("organizations_paddle_customer_idx").on(table.paddleCustomerId),
   ],
 );
 

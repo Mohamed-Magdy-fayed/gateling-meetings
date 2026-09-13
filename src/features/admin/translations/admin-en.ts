@@ -30,6 +30,9 @@ export const adminEn = {
     recentMeetings: "Recent meetings",
     noMeetings: "No meetings yet.",
     membersTitle: "Members",
+    billingEvents: "Billing events",
+    occurred: "{when:date}",
+    pending: "Pending",
     joined: "Joined {when:date}",
   },
   setPlan: {

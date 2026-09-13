@@ -3,6 +3,7 @@ import { and, desc, eq, ilike, inArray, isNull, or } from "drizzle-orm";
 import { z } from "zod";
 
 import {
+  BillingEventsTable,
   MeetingsTable,
   OrganizationMembershipsTable,
   OrganizationsTable,
@@ -20,6 +21,7 @@ import {
 } from "./schemas";
 
 const RECENT_MEETINGS = 20;
+const RECENT_BILLING_EVENTS = 30;
 
 /**
  * The platform operator's view: every org, its plan, and the levers to
@@ -100,6 +102,19 @@ export const adminRouter = createTRPCRouter({
             createdAt: true,
           },
         });
+        const billingEvents = await ctx.db.query.BillingEventsTable.findMany({
+          where: eq(BillingEventsTable.organizationId, org.id),
+          orderBy: [desc(BillingEventsTable.occurredAt)],
+          limit: RECENT_BILLING_EVENTS,
+          columns: {
+            id: true,
+            eventType: true,
+            occurredAt: true,
+            processedAt: true,
+            outcome: true,
+            error: true,
+          },
+        });
         const { memberships, personalOwner, ...fields } = org;
         return {
           ...fields,
@@ -111,6 +126,7 @@ export const adminRouter = createTRPCRouter({
             createdAt: m.createdAt,
           })),
           meetings,
+          billingEvents,
         };
       }),
 

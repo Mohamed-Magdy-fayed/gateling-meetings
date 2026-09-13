@@ -42,6 +42,16 @@ export const env = createEnv({
     JWT_SECRET_KEY: z.string().min(32).optional(),
     ADMIN_EMAILS: z.string().min(1).optional(),
 
+    // Paddle (merchant of record). All optional locally — without them the
+    // billing page shows the plan and no checkout, and the webhook route
+    // answers 503 — but a production deploy must have the full set, and
+    // must not be pointed at the sandbox.
+    PADDLE_API_KEY: z.string().min(1).optional(),
+    PADDLE_WEBHOOK_SECRET: z.string().min(1).optional(),
+    PADDLE_ENVIRONMENT: z.enum(["sandbox", "production"]).default("sandbox"),
+    PADDLE_PRICE_ID_PRO: z.string().min(1).optional(),
+    PADDLE_PRICE_ID_BUSINESS: z.string().min(1).optional(),
+
     GOOGLE_CLIENT_ID: z.string().min(1).optional(),
     GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
 
@@ -134,4 +144,27 @@ export const adminEmails: ReadonlySet<string> = new Set(
     .split(",")
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean),
+);
+
+// Billing must be whole in production: half-configured Paddle means paying
+// customers whose webhooks are dropped, which is worse than no billing.
+if (env.VERCEL_ENV === "production") {
+  if (
+    !env.PADDLE_API_KEY ||
+    !env.PADDLE_WEBHOOK_SECRET ||
+    !env.PADDLE_PRICE_ID_PRO ||
+    !env.PADDLE_PRICE_ID_BUSINESS
+  ) {
+    throw new Error(
+      "PADDLE_API_KEY, PADDLE_WEBHOOK_SECRET, PADDLE_PRICE_ID_PRO and PADDLE_PRICE_ID_BUSINESS are required in production.",
+    );
+  }
+  if (env.PADDLE_ENVIRONMENT !== "production") {
+    throw new Error("PADDLE_ENVIRONMENT must be 'production' in production.");
+  }
+}
+
+/** True when checkout can actually be offered. */
+export const isBillingConfigured = Boolean(
+  env.PADDLE_API_KEY && env.PADDLE_PRICE_ID_PRO && env.PADDLE_PRICE_ID_BUSINESS,
 );

@@ -52,6 +52,47 @@ export function OrganizationDetail({ id }: { id: string }) {
 
       <OrganizationPlanForm organization={org} />
 
+      {org.billingEvents.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("admin.organizations.billingEvents")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y divide-border">
+              {org.billingEvents.map((event) => (
+                <li
+                  key={event.id}
+                  className="flex items-center justify-between gap-3 py-2 text-sm"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate font-mono text-xs">
+                      {event.eventType}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {t("admin.organizations.occurred", {
+                        when: event.occurredAt,
+                      })}
+                      {event.error ? ` · ${event.error}` : ""}
+                    </div>
+                  </div>
+                  <Badge
+                    variant={
+                      event.outcome === "applied"
+                        ? "success"
+                        : event.outcome === "error"
+                          ? "destructive"
+                          : "outline"
+                    }
+                  >
+                    {event.outcome ?? t("admin.organizations.pending")}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>

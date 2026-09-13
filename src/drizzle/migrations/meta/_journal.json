@@ -57,6 +57,13 @@
       "when": 1789331370207,
       "tag": "0007_talented_karen_page",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789333814127,
+      "tag": "0008_nebulous_hiroim",
+      "breakpoints": true
     }
   ]
 }

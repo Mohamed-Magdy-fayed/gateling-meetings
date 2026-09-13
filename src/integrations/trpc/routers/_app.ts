@@ -1,4 +1,5 @@
 import { adminRouter } from "@/features/admin/server/admin-router";
+import { billingRouter } from "@/features/billing/server/billing-router";
 import { integrationsRouter } from "@/features/integrations/server/integrations-router";
 import {
   breakoutsRouter,
@@ -21,6 +22,7 @@ export const appRouter = createTRPCRouter({
   integrations: integrationsRouter,
   organizations: organizationsRouter,
   admin: adminRouter,
+  billing: billingRouter,
 });
 
 export type AppRouter = typeof appRouter;

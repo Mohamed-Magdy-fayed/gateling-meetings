@@ -39,6 +39,9 @@ export const adminAr = {
     recentMeetings: "أحدث الاجتماعات",
     noMeetings: "لا توجد اجتماعات بعد.",
     membersTitle: "الأعضاء",
+    billingEvents: "أحداث الفوترة",
+    occurred: "{when:date}",
+    pending: "قيد المعالجة",
     joined: "انضم في {when:date}",
   },
   setPlan: {

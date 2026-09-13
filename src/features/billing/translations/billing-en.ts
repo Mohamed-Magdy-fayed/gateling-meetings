@@ -53,6 +53,33 @@ export const billingEn = {
       plural: { count: { one: "{?} minute", other: "{?} minutes" } },
     }),
     comparePlans: "Compare plans",
+    subscriptionStatus: "Subscription: {status}",
+    renews: "Renews {when:date}",
+    upgradeTitle: "Upgrade",
+    upgradeLead: "Pick a plan and how many seats. You can change both later.",
+    choose: "Choose {plan}",
+    seatsTitle: "Seats",
+    seatsLead:
+      "Each member of the organization takes a seat. Changes are prorated immediately.",
+    updateSeats: "Update seats",
+    seatsUpdated:
+      "Seat change sent — it applies as soon as Paddle confirms it.",
+    fewerSeats: "Fewer seats",
+    moreSeats: "More seats",
+    cancel: "Cancel subscription",
+    cancelConfirm:
+      "Cancel at the end of the current period? You keep your plan until then, and drop to Free after.",
+    cancelled: "Cancellation scheduled for the end of the period.",
+  },
+  errors: {
+    granted:
+      "This organization's plan is managed by hand. Contact us to change it.",
+    noSubscription: "There is no active subscription for this organization.",
+    alreadySubscribed:
+      "This organization already has a subscription — manage it below.",
+    tooFewSeats:
+      "You have {used:number} members; the seat count cannot go below that.",
+    checkoutUnavailable: "Checkout is not available right now.",
   },
   pricing: {
     nav: "Pricing",

@@ -26,6 +26,9 @@ const PROTECTED_PATH_PREFIXES = [
 
 const AUTH_ROUTE_PREFIX = "/auth";
 
+/** Pages that open Paddle's overlay checkout and so may frame it. */
+const BILLING_PATH_PREFIXES = ["/pricing", "/settings/billing"];
+
 function startsWithAny(pathname: string, prefixes: string[]) {
   return prefixes.some((prefix) => pathname.startsWith(prefix));
 }
@@ -36,6 +39,7 @@ export async function proxy(request: NextRequest) {
     nonce,
     isDevelopment: process.env.NODE_ENV === "development",
     liveKitUrl: env.LIVEKIT_URL,
+    paddle: startsWithAny(request.nextUrl.pathname, BILLING_PATH_PREFIXES),
   });
 
   const response =
