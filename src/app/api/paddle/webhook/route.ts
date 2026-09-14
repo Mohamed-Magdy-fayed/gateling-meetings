@@ -5,11 +5,18 @@ import { parsePaddleEvent } from "@/features/billing/server/paddle-events";
 import { inngest } from "@/integrations/inngest/client";
 import { paddleWebhookReceivedEvent } from "@/integrations/inngest/functions/billing-events";
 import { getPaddle } from "@/integrations/paddle/client";
+import {
+  enforcePaddleIpAllowlist,
+  paddleIpAllowlist,
+} from "@/integrations/paddle/ip-allowlist";
+import { clientIpFromHeaders } from "@/integrations/paddle/ips";
 
 /**
  * Paddle posts every notification here (configure the destination in
  * Paddle → Developer tools → Notifications, with all `subscription.*` and
- * `transaction.completed` events). The body is verified against the
+ * `transaction.completed` events). In production the caller must be one
+ * of Paddle's published IPs (403 otherwise; 503 while that list cannot
+ * be fetched so Paddle retries), and the body is verified against the
  * webhook secret — an unsigned POST is a 401, never a row.
  *
  * The insert into `billing_events` is the idempotency claim: Paddle
@@ -21,6 +28,18 @@ import { getPaddle } from "@/integrations/paddle/client";
 export async function POST(request: Request) {
   if (!env.PADDLE_WEBHOOK_SECRET) {
     return new Response("billing not configured", { status: 503 });
+  }
+
+  if (enforcePaddleIpAllowlist) {
+    const ip = clientIpFromHeaders(request.headers);
+    const verdict = await paddleIpAllowlist.check(ip);
+    if (verdict === "denied") {
+      console.warn("[paddle] webhook from non-Paddle address", ip);
+      return new Response("forbidden", { status: 403 });
+    }
+    if (verdict === "unknown") {
+      return new Response("ip allowlist unavailable", { status: 503 });
+    }
   }
 
   const raw = await request.text();

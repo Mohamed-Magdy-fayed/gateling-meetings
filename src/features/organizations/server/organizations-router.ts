@@ -121,7 +121,12 @@ async function countOwners(ctx: OrgContext) {
 export const organizationsRouter = createTRPCRouter({
   /** The active org, the caller's role in it, and what it may do. */
   current: orgProcedure.query(({ ctx }) => ({
-    organization: summary(ctx.organization),
+    organization: {
+      ...summary(ctx.organization),
+      // Paddle.js identifies the buyer to Retain with this; it is an
+      // opaque `ctm_` id, safe in the browser.
+      paddleCustomerId: ctx.organization.paddleCustomerId,
+    },
     role: ctx.membership.role,
     isAdmin: ctx.isAdmin,
     entitlements: ctx.entitlements,

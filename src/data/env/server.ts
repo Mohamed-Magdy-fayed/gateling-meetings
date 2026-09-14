@@ -162,6 +162,23 @@ if (env.VERCEL_ENV === "production") {
   if (env.PADDLE_ENVIRONMENT !== "production") {
     throw new Error("PADDLE_ENVIRONMENT must be 'production' in production.");
   }
+  // The browser half is checked here too: the client env module cannot
+  // see VERCEL_ENV, and a sandbox token (`test_…`) or environment on a
+  // live deploy would open checkouts nobody can pay.
+  if (env.PADDLE_API_KEY.startsWith("pdl_sdbx_")) {
+    throw new Error("PADDLE_API_KEY is a sandbox key; use a live API key.");
+  }
+  const clientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ?? "";
+  if (!clientToken.startsWith("live_")) {
+    throw new Error(
+      "NEXT_PUBLIC_PADDLE_CLIENT_TOKEN must be a live client-side token (live_…) in production.",
+    );
+  }
+  if (process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT !== "production") {
+    throw new Error(
+      "NEXT_PUBLIC_PADDLE_ENVIRONMENT must be 'production' in production.",
+    );
+  }
 }
 
 /** True when checkout can actually be offered. */

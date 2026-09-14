@@ -34,7 +34,7 @@ export default async function BillingSettingsPage() {
           {t("billing.settings.lead", { name: current.organization.name })}
         </p>
       </div>
-      <PaddleProvider>
+      <PaddleProvider customerId={current.organization.paddleCustomerId}>
         <HydrateClient>
           <Suspense fallback={<Skeleton className="h-64 w-full" />}>
             <BillingSummary />

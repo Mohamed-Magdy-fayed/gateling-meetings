@@ -49,7 +49,7 @@ export default async function PricingPage() {
           {t("billing.pricing.lead")}
         </p>
       </div>
-      <PaddleProvider>
+      <PaddleProvider customerId={active?.organization.paddleCustomerId}>
         <PricingTable
           currentPlan={currentPlan}
           isSignedIn={session != null}
