@@ -9,6 +9,7 @@ import { resolveEntitlements } from "@/features/billing/plans";
 import { getUserSession } from "@/features/core/auth/core";
 import { isAdminEmail } from "@/features/core/auth/core/admin";
 import { getT } from "@/features/core/i18n/server";
+import { LEGAL_ENTITY } from "@/features/legal/content/types";
 import { loadActiveOrganization } from "@/features/organizations/server/service";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -57,7 +58,13 @@ export default async function PricingPage() {
         />
       </PaddleProvider>
       <p className="mt-10 text-center text-sm text-muted-foreground">
-        {t("billing.pricing.contactLead")}
+        {t("billing.pricing.contactLead")}{" "}
+        <a
+          href={`mailto:${LEGAL_ENTITY.email}`}
+          className="font-medium text-foreground underline underline-offset-4"
+        >
+          {t("billing.pricing.contact")}
+        </a>
       </p>
     </main>
   );

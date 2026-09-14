@@ -1,14 +1,28 @@
+import { CalendarClockIcon, LayoutGridIcon, LinkIcon } from "lucide-react";
+
 import { LinkButton } from "@/components/general/link-button";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { getCurrentUser } from "@/features/core/auth/nextjs/currentUser";
 import { getT } from "@/features/core/i18n/server";
 import { JoinByCodeForm } from "@/features/meetings/components/join-by-code-form";
 import { NewMeetingButton } from "@/features/meetings/components/new-meeting-button";
 
+const FEATURES = [
+  { key: "instant", Icon: CalendarClockIcon },
+  { key: "guests", Icon: LinkIcon },
+  { key: "rooms", Icon: LayoutGridIcon },
+] as const;
+
 export default async function HomePage() {
   const [{ t }, user] = await Promise.all([getT(), getCurrentUser()]);
 
   return (
-    <main className="relative flex flex-1 items-center overflow-hidden">
+    <main className="relative flex flex-1 flex-col justify-center overflow-hidden">
       {/* Atmosphere: a warm brand glow bleeding in from the top-start corner. */}
       <div
         aria-hidden
@@ -47,6 +61,33 @@ export default async function HomePage() {
             {t("meetings.home.join")}
           </p>
           <JoinByCodeForm />
+        </div>
+      </section>
+
+      <section
+        aria-labelledby="home-features"
+        className="mx-auto w-full max-w-5xl px-4 pb-16 md:pb-24"
+      >
+        <h2
+          id="home-features"
+          className="mb-5 font-display text-2xl tracking-tight"
+        >
+          {t("meetings.home.features.heading")}
+        </h2>
+        <div className="grid gap-4 md:grid-cols-3">
+          {FEATURES.map(({ key, Icon }) => (
+            <Card key={key} className="bg-card/80 backdrop-blur">
+              <CardHeader>
+                <Icon aria-hidden className="mb-1 size-5 text-primary" />
+                <CardTitle className="font-display text-lg">
+                  {t(`meetings.home.features.${key}.title`)}
+                </CardTitle>
+                <CardDescription className="text-pretty">
+                  {t(`meetings.home.features.${key}.body`)}
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          ))}
         </div>
       </section>
     </main>

@@ -11,7 +11,9 @@ import {
 } from "@/components/ui/card";
 import { type PlanId, planValues } from "@/drizzle/schema";
 import { type Entitlements, PLAN_ENTITLEMENTS } from "@/features/billing/plans";
-import { getT } from "@/features/core/i18n/server";
+import { formatDisplayPrice } from "@/features/billing/price-format";
+import { getDisplayPrices } from "@/features/billing/server/catalog";
+import { getLocaleCookie, getT } from "@/features/core/i18n/server";
 import { cn } from "@/lib/utils";
 import { PricingCta } from "./pricing-cta";
 
@@ -27,15 +29,19 @@ const HIGHLIGHTED: PlanId = "pro";
 
 /**
  * Rendered from `PLAN_ENTITLEMENTS` so the page can never drift from what
- * the server enforces. Prices themselves live in Paddle's catalog; the
- * checkout overlay shows them.
+ * the server enforces, and priced from Paddle's catalog so it cannot drift
+ * from what the checkout charges either.
  */
 export async function PricingTable({
   currentPlan,
   isSignedIn,
   canCheckout,
 }: PricingTableProps) {
-  const { t } = await getT();
+  const [{ t }, locale, prices] = await Promise.all([
+    getT(),
+    getLocaleCookie(),
+    getDisplayPrices(),
+  ]);
 
   return (
     <div className="grid gap-4 md:grid-cols-3">
@@ -43,6 +49,7 @@ export async function PricingTable({
         const e = PLAN_ENTITLEMENTS[plan];
         const isCurrent = currentPlan === plan;
         const highlighted = plan === HIGHLIGHTED;
+        const price = plan === "free" ? null : prices?.[plan];
         return (
           <Card
             key={plan}
@@ -63,10 +70,19 @@ export async function PricingTable({
               <CardDescription>
                 {t(`billing.plans.${plan}.tagline`)}
               </CardDescription>
-              <p className="pt-2 text-sm text-muted-foreground">
-                {plan === "free"
-                  ? t("billing.pricing.free")
-                  : t("billing.pricing.perSeat")}
+              <p className="flex items-baseline gap-1.5 pt-2">
+                {price && (
+                  <span className="font-display text-3xl tracking-tight">
+                    {formatDisplayPrice(price, locale)}
+                  </span>
+                )}
+                <span className="text-sm text-muted-foreground">
+                  {plan === "free"
+                    ? t("billing.pricing.free")
+                    : price?.interval === "year"
+                      ? t("billing.pricing.perSeatYear")
+                      : t("billing.pricing.perSeat")}
+                </span>
               </p>
             </CardHeader>
             <CardContent className="flex-1">

@@ -86,6 +86,7 @@ export const billingEn = {
     title: "Simple pricing",
     lead: "Start free. Upgrade when you need longer meetings, more people, or the API.",
     perSeat: "per seat / month",
+    perSeatYear: "per seat / year",
     free: "Free forever",
     current: "Current plan",
     getStarted: "Get started",

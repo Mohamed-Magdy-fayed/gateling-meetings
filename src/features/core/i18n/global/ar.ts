@@ -1,6 +1,7 @@
 import { adminAr } from "@/features/admin/translations/admin-ar";
 import { billingAr } from "@/features/billing/translations/billing-ar";
 import { integrationsAr } from "@/features/integrations/translations/integrations-ar";
+import { legalAr } from "@/features/legal/translations/legal-ar";
 import { meetingsAr } from "@/features/meetings/translations/meetings-ar";
 import { organizationsAr } from "@/features/organizations/translations/organizations-ar";
 import type { LanguageMessages } from "../lib";
@@ -240,4 +241,5 @@ export default {
   billing: billingAr,
   organizations: organizationsAr,
   admin: adminAr,
+  legal: legalAr,
 } as const satisfies LanguageMessages;

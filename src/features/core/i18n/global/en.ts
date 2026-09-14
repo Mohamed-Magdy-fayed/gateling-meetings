@@ -1,6 +1,7 @@
 import { adminEn } from "@/features/admin/translations/admin-en";
 import { billingEn } from "@/features/billing/translations/billing-en";
 import { integrationsEn } from "@/features/integrations/translations/integrations-en";
+import { legalEn } from "@/features/legal/translations/legal-en";
 import { meetingsEn } from "@/features/meetings/translations/meetings-en";
 import { organizationsEn } from "@/features/organizations/translations/organizations-en";
 import type { LanguageMessages } from "../lib";
@@ -240,4 +241,5 @@ export default {
   billing: billingEn,
   organizations: organizationsEn,
   admin: adminEn,
+  legal: legalEn,
 } as const satisfies LanguageMessages;

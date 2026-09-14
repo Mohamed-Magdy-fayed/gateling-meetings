@@ -33,6 +33,21 @@ export const meetingsEn = {
     joinPlaceholder: "Enter a code or link",
     join: "Join",
     signInToHost: "Sign in to host",
+    features: {
+      heading: "What you get",
+      instant: {
+        title: "Instant or scheduled",
+        body: "Start a meeting right now, or schedule one and everyone gets a calendar invite and a reminder.",
+      },
+      guests: {
+        title: "Guests need nothing",
+        body: "Share a code or a link. No downloads and no accounts for the people you invite — they type a name and join.",
+      },
+      rooms: {
+        title: "Made for real meetings",
+        body: "Waiting room, screen sharing, chat, reactions, hand-raising and breakout rooms — plus an API to create meetings from your own systems on Business.",
+      },
+    },
   },
   dashboard: {
     title: "Your meetings",
