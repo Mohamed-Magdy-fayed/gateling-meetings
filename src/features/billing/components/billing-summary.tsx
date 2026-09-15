@@ -30,8 +30,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useTranslation } from "@/features/core/i18n/client";
 import { useTRPC } from "@/integrations/trpc/client";
+import { BILLING_INTERVALS, type BillingInterval } from "../tiers";
 import { CheckoutButton } from "./checkout-button";
 import { PlanBadge } from "./plan-badge";
 import { SeatStepper } from "./seat-stepper";
@@ -43,6 +45,7 @@ export function BillingSummary() {
   const { data } = useSuspenseQuery(trpc.billing.summary.queryOptions());
   const { organization, entitlements, seatsUsed, subscription } = data;
   const [seats, setSeats] = useState(Math.max(organization.seatLimit, 1));
+  const [interval, setInterval] = useState<BillingInterval>("month");
 
   const onError = (error: { message: string }) => toast.error(error.message);
   const invalidate = () =>
@@ -179,18 +182,32 @@ export function BillingSummary() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <SegmentedControl
+              size="sm"
+              value={interval}
+              onValueChange={(value) => setInterval(value as BillingInterval)}
+              options={BILLING_INTERVALS.map((value) => ({
+                value,
+                label: t(`billing.pricing.interval.${value}`),
+              }))}
+            />
             <SeatStepper
               value={seats}
               min={Math.max(seatsUsed, 1)}
               onChange={setSeats}
             />
             <div className="flex flex-wrap gap-2">
-              <CheckoutButton plan="pro" seats={seats}>
+              <CheckoutButton plan="pro" interval={interval} seats={seats}>
                 {t("billing.settings.choose", {
                   plan: t("billing.plans.pro.name"),
                 })}
               </CheckoutButton>
-              <CheckoutButton plan="business" seats={seats} variant="outline">
+              <CheckoutButton
+                plan="business"
+                interval={interval}
+                seats={seats}
+                variant="outline"
+              >
                 {t("billing.settings.choose", {
                   plan: t("billing.plans.business.name"),
                 })}

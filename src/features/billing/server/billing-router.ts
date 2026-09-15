@@ -2,24 +2,22 @@ import { TRPCError } from "@trpc/server";
 import { count, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { env, isBillingConfigured } from "@/data/env/server";
+import { isBillingConfigured } from "@/data/env/server";
 import { OrganizationMembershipsTable } from "@/drizzle/schema";
 import { getPaddle } from "@/integrations/paddle/client";
-import { createPriceMap, planToPriceId } from "@/integrations/paddle/prices";
+import { planToPriceId } from "@/integrations/paddle/prices";
 import {
   createTRPCRouter,
   type OrgContext,
   orgAdminProcedure,
   orgProcedure,
 } from "@/integrations/trpc/init";
+import { getPriceMap } from "./price-map";
 
 const MAX_SEATS = 500;
 
 function prices() {
-  const map = createPriceMap({
-    pro: env.PADDLE_PRICE_ID_PRO,
-    business: env.PADDLE_PRICE_ID_BUSINESS,
-  });
+  const map = getPriceMap();
   if (!map) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
@@ -51,6 +49,29 @@ function requireSubscription(ctx: OrgContext) {
     });
   }
   return { paddleSubscriptionId, paddleCustomerId };
+}
+
+/**
+ * The Paddle customer the checkout should open as. Once the org has bought
+ * something it has one; before that, the buyer's own email is looked up or
+ * registered so the checkout opens with it prefilled. Attached server-side
+ * because a checkout opened from a transaction id takes its customer from
+ * the transaction, not from Paddle.js.
+ */
+async function customerIdFor(ctx: OrgContext): Promise<string | undefined> {
+  if (ctx.organization.paddleCustomerId) {
+    return ctx.organization.paddleCustomerId;
+  }
+  const email = ctx.session.user.email;
+  // A session without an email (mid-OAuth edge case) just gets asked at checkout.
+  if (!email) return undefined;
+  const paddle = getPaddle();
+  const [existing] = await paddle.customers
+    .list({ email: [email], perPage: 1 })
+    .next();
+  if (existing) return existing.id;
+  const created = await paddle.customers.create({ email });
+  return created.id;
 }
 
 async function seatsUsed(ctx: OrgContext) {
@@ -107,12 +128,15 @@ export const billingRouter = createTRPCRouter({
 
   /**
    * A Paddle transaction for the overlay checkout to open. Created here,
-   * not from Paddle.js with price ids, so the org binding is ours.
+   * not from Paddle.js with price ids, so the org binding is ours. Paddle
+   * localizes it to the buyer's country at checkout, the same way the
+   * pricing page previewed it.
    */
   createCheckout: orgAdminProcedure
     .input(
       z.object({
         plan: z.enum(["pro", "business"]),
+        interval: z.enum(["month", "year"]),
         seats: z.number().int().min(1).max(MAX_SEATS),
       }),
     )
@@ -134,11 +158,11 @@ export const billingRouter = createTRPCRouter({
       const transaction = await getPaddle().transactions.create({
         items: [
           {
-            priceId: planToPriceId(prices(), input.plan),
+            priceId: planToPriceId(prices(), input.plan, input.interval),
             quantity: input.seats,
           },
         ],
-        customerId: ctx.organization.paddleCustomerId ?? undefined,
+        customerId: await customerIdFor(ctx),
         customData: { organizationId: ctx.organization.id },
       });
       return { transactionId: transaction.id };

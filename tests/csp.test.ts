@@ -16,6 +16,7 @@ describe("buildContentSecurityPolicy", () => {
     const policy = buildContentSecurityPolicy(base);
     expect(directive(policy, "frame-src")).toBe("'none'");
     expect(directive(policy, "script-src")).not.toContain("paddle");
+    expect(directive(policy, "style-src")).not.toContain("paddle");
     expect(directive(policy, "connect-src")).not.toContain("paddle");
   });
 
@@ -25,6 +26,9 @@ describe("buildContentSecurityPolicy", () => {
       "https://buy.paddle.com https://sandbox-buy.paddle.com",
     );
     expect(directive(policy, "script-src")).toContain("https://cdn.paddle.com");
+    expect(directive(policy, "style-src")).toContain(
+      "https://cdn.paddle.com https://sandbox-cdn.paddle.com",
+    );
     expect(directive(policy, "connect-src")).toContain("https://*.paddle.com");
     // Never the other way round: framing *us* stays forbidden.
     expect(directive(policy, "frame-ancestors")).toBe("'none'");

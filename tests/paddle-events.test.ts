@@ -13,7 +13,10 @@ import {
   priceIdToPlan,
 } from "@/integrations/paddle/prices";
 
-const prices = { pro: "pri_pro", business: "pri_biz" } as const;
+const prices = {
+  pro: { month: "pri_pro", year: "pri_pro_year" },
+  business: { month: "pri_biz", year: "pri_biz_year" },
+} as const;
 const NOW = new Date("2026-09-13T12:00:00Z");
 const DAY = 24 * 60 * 60 * 1000;
 const periodEnd = new Date(NOW.getTime() + 20 * DAY);
@@ -31,18 +34,47 @@ function sub(overrides: Partial<SubscriptionFacts> = {}): SubscriptionFacts {
 }
 
 describe("price map", () => {
-  it("is null until both ids are set", () => {
-    expect(createPriceMap({ pro: "a", business: undefined })).toBeNull();
+  it("is null until all four ids are set", () => {
+    expect(
+      createPriceMap({
+        pro: { month: "a", year: "b" },
+        business: { month: "c", year: undefined },
+      }),
+    ).toBeNull();
+    expect(
+      createPriceMap({
+        pro: { month: "a", year: "b" },
+        business: { month: "c", year: "d" },
+      }),
+    ).toEqual({
+      pro: { month: "a", year: "b" },
+      business: { month: "c", year: "d" },
+    });
   });
-  it("maps ids both ways and rejects strangers", () => {
+  it("maps ids of either interval to a plan and rejects strangers", () => {
     expect(priceIdToPlan(prices, "pri_biz")).toBe("business");
+    expect(priceIdToPlan(prices, "pri_biz_year")).toBe("business");
+    expect(priceIdToPlan(prices, "pri_pro_year")).toBe("pro");
     expect(priceIdToPlan(prices, "pri_other")).toBeNull();
     expect(priceIdToPlan(prices, null)).toBeNull();
-    expect(planToPriceId(prices, "pro")).toBe("pri_pro");
+    expect(planToPriceId(prices, "pro", "month")).toBe("pri_pro");
+    expect(planToPriceId(prices, "business", "year")).toBe("pri_biz_year");
   });
 });
 
 describe("subscriptionToPlanChange", () => {
+  it("recognises a yearly price as the same plan", () => {
+    const change = subscriptionToPlanChange(
+      sub({ items: [{ priceId: "pri_biz_year", quantity: 2 }] }),
+      prices,
+      NOW,
+    );
+    expect(change).toMatchObject({
+      plan: "business",
+      seatLimit: 2,
+      paddlePriceId: "pri_biz_year",
+    });
+  });
   it("puts an active subscription on its plan with the bought seats", () => {
     const change = subscriptionToPlanChange(sub(), prices, NOW);
     expect(change).toMatchObject({

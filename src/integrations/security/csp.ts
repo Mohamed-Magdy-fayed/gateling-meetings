@@ -42,6 +42,11 @@ const PADDLE_FRAME_HOSTS = [
   "https://sandbox-buy.paddle.com",
 ] as const;
 const PADDLE_SCRIPT_HOST = "https://cdn.paddle.com";
+/** Paddle.js pulls its overlay stylesheet from the CDN of whichever environment it runs in. */
+const PADDLE_STYLE_HOSTS = [
+  "https://cdn.paddle.com",
+  "https://sandbox-cdn.paddle.com",
+] as const;
 const PADDLE_CONNECT_HOSTS = ["https://*.paddle.com"] as const;
 
 /** `wss://x.livekit.cloud` → `["wss://x.livekit.cloud", "https://x.livekit.cloud"]`. */
@@ -79,7 +84,8 @@ function liveKitOrigins(liveKitUrl: string | undefined): string[] {
  * - `upgrade-insecure-requests` is production-only — it would break
  *   `http://localhost:3000`.
  * - `frame-src` is `'none'` except on billing pages, which frame Paddle's
- *   checkout; `frame-ancestors` stays `'none'` everywhere.
+ *   checkout and load its overlay stylesheet from Paddle's CDN;
+ *   `frame-ancestors` stays `'none'` everywhere.
  * - `frame-ancestors 'none'` is the real clickjacking control; the
  *   `X-Frame-Options` header in `next.config.ts` is its legacy twin.
  */
@@ -105,7 +111,12 @@ export function buildContentSecurityPolicy({
   const directives: [string, string][] = [
     ["default-src", "'self'"],
     ["script-src", scriptSrc.join(" ")],
-    ["style-src", "'self' 'unsafe-inline'"],
+    [
+      "style-src",
+      paddle
+        ? `'self' 'unsafe-inline' ${PADDLE_STYLE_HOSTS.join(" ")}`
+        : "'self' 'unsafe-inline'",
+    ],
     ["img-src", `'self' data: blob: ${IMAGE_HOSTS.join(" ")}`],
     ["font-src", "'self'"],
     ["connect-src", connectSrc.join(" ")],

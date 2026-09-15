@@ -42,15 +42,23 @@ export const env = createEnv({
     JWT_SECRET_KEY: z.string().min(32).optional(),
     ADMIN_EMAILS: z.string().min(1).optional(),
 
-    // Paddle (merchant of record). All optional locally — without them the
-    // billing page shows the plan and no checkout, and the webhook route
-    // answers 503 — but a production deploy must have the full set, and
-    // must not be pointed at the sandbox.
+    // Paddle (merchant of record). Key, secret and price ids are optional
+    // locally — without them the billing page shows the plans and no
+    // checkout, and the webhook route answers 503 — but a production deploy
+    // must have the full set. The environment is never defaulted: an unset
+    // value fails at boot rather than quietly picking sandbox (or live).
     PADDLE_API_KEY: z.string().min(1).optional(),
     PADDLE_WEBHOOK_SECRET: z.string().min(1).optional(),
-    PADDLE_ENVIRONMENT: z.enum(["sandbox", "production"]).default("sandbox"),
-    PADDLE_PRICE_ID_PRO: z.string().min(1).optional(),
-    PADDLE_PRICE_ID_BUSINESS: z.string().min(1).optional(),
+    PADDLE_ENVIRONMENT: z.enum(["sandbox", "production"], {
+      error:
+        "PADDLE_ENVIRONMENT must be 'sandbox' or 'production' — it is never defaulted.",
+    }),
+    // One recurring per-seat price per plan and billing interval. Sandbox
+    // and live catalogs have different ids.
+    PADDLE_PRICE_ID_PRO_MONTH: z.string().min(1).optional(),
+    PADDLE_PRICE_ID_PRO_YEAR: z.string().min(1).optional(),
+    PADDLE_PRICE_ID_BUSINESS_MONTH: z.string().min(1).optional(),
+    PADDLE_PRICE_ID_BUSINESS_YEAR: z.string().min(1).optional(),
 
     GOOGLE_CLIENT_ID: z.string().min(1).optional(),
     GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
@@ -146,17 +154,19 @@ export const adminEmails: ReadonlySet<string> = new Set(
     .filter(Boolean),
 );
 
+const hasAllPriceIds = Boolean(
+  env.PADDLE_PRICE_ID_PRO_MONTH &&
+    env.PADDLE_PRICE_ID_PRO_YEAR &&
+    env.PADDLE_PRICE_ID_BUSINESS_MONTH &&
+    env.PADDLE_PRICE_ID_BUSINESS_YEAR,
+);
+
 // Billing must be whole in production: half-configured Paddle means paying
 // customers whose webhooks are dropped, which is worse than no billing.
 if (env.VERCEL_ENV === "production") {
-  if (
-    !env.PADDLE_API_KEY ||
-    !env.PADDLE_WEBHOOK_SECRET ||
-    !env.PADDLE_PRICE_ID_PRO ||
-    !env.PADDLE_PRICE_ID_BUSINESS
-  ) {
+  if (!env.PADDLE_API_KEY || !env.PADDLE_WEBHOOK_SECRET || !hasAllPriceIds) {
     throw new Error(
-      "PADDLE_API_KEY, PADDLE_WEBHOOK_SECRET, PADDLE_PRICE_ID_PRO and PADDLE_PRICE_ID_BUSINESS are required in production.",
+      "PADDLE_API_KEY, PADDLE_WEBHOOK_SECRET and all four PADDLE_PRICE_ID_{PRO,BUSINESS}_{MONTH,YEAR} are required in production.",
     );
   }
   if (env.PADDLE_ENVIRONMENT !== "production") {
@@ -183,5 +193,5 @@ if (env.VERCEL_ENV === "production") {
 
 /** True when checkout can actually be offered. */
 export const isBillingConfigured = Boolean(
-  env.PADDLE_API_KEY && env.PADDLE_PRICE_ID_PRO && env.PADDLE_PRICE_ID_BUSINESS,
+  env.PADDLE_API_KEY && hasAllPriceIds,
 );

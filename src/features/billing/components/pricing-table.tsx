@@ -1,4 +1,7 @@
+"use client";
+
 import { CheckIcon } from "lucide-react";
+import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -9,15 +12,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { type PlanId, planValues } from "@/drizzle/schema";
-import { type Entitlements, PLAN_ENTITLEMENTS } from "@/features/billing/plans";
-import { formatDisplayPrice } from "@/features/billing/price-format";
-import { getDisplayPrices } from "@/features/billing/server/catalog";
-import { getLocaleCookie, getT } from "@/features/core/i18n/server";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { PlanId } from "@/drizzle/schema";
+import { useTranslation } from "@/features/core/i18n/client";
 import { cn } from "@/lib/utils";
+import { BILLING_INTERVALS, type BillingInterval, type Tier } from "../tiers";
+import { usePaddle } from "./paddle-provider";
 import { PricingCta } from "./pricing-cta";
+import { usePaddlePrices } from "./use-paddle-prices";
 
 type PricingTableProps = {
+  tiers: Tier[];
+  /** ISO 3166-1 alpha-2 from the CDN, or undefined to let Paddle infer it. */
+  countryCode: string | undefined;
   /** The viewer's current plan, if signed in. */
   currentPlan: PlanId | null;
   isSignedIn: boolean;
@@ -25,113 +33,106 @@ type PricingTableProps = {
   canCheckout: boolean;
 };
 
-const HIGHLIGHTED: PlanId = "pro";
-
 /**
- * Rendered from `PLAN_ENTITLEMENTS` so the page can never drift from what
- * the server enforces, and priced from Paddle's catalog so it cannot drift
- * from what the checkout charges either.
+ * Two paid tiers, priced by Paddle for the visitor's country. The amount
+ * on a card is the string `PricePreview` returned — never computed or
+ * re-formatted here — so it is by construction what the checkout charges.
  */
-export async function PricingTable({
+export function PricingTable({
+  tiers,
+  countryCode,
   currentPlan,
   isSignedIn,
   canCheckout,
 }: PricingTableProps) {
-  const [{ t }, locale, prices] = await Promise.all([
-    getT(),
-    getLocaleCookie(),
-    getDisplayPrices(),
-  ]);
+  const { t } = useTranslation();
+  const paddle = usePaddle();
+  const [interval, setInterval] = useState<BillingInterval>("month");
+  const { status, prices } = usePaddlePrices(paddle, tiers, countryCode);
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
-      {planValues.map((plan) => {
-        const e = PLAN_ENTITLEMENTS[plan];
-        const isCurrent = currentPlan === plan;
-        const highlighted = plan === HIGHLIGHTED;
-        const price = plan === "free" ? null : prices?.[plan];
-        return (
-          <Card
-            key={plan}
-            className={cn(
-              "relative flex flex-col",
-              highlighted && "border-primary shadow-[var(--shadow-brand-sm)]",
-            )}
-          >
-            <CardHeader>
-              <div className="flex items-center justify-between gap-2">
-                <CardTitle className="font-display text-lg">
-                  {t(`billing.plans.${plan}.name`)}
-                </CardTitle>
-                {isCurrent && (
-                  <Badge variant="info">{t("billing.pricing.current")}</Badge>
-                )}
-              </div>
-              <CardDescription>
-                {t(`billing.plans.${plan}.tagline`)}
-              </CardDescription>
-              <p className="flex items-baseline gap-1.5 pt-2">
-                {price && (
-                  <span className="font-display text-3xl tracking-tight">
-                    {formatDisplayPrice(price, locale)}
-                  </span>
-                )}
-                <span className="text-sm text-muted-foreground">
-                  {plan === "free"
-                    ? t("billing.pricing.free")
-                    : price?.interval === "year"
-                      ? t("billing.pricing.perSeatYear")
-                      : t("billing.pricing.perSeat")}
-                </span>
-              </p>
-            </CardHeader>
-            <CardContent className="flex-1">
-              <ul className="space-y-2 text-sm">
-                {featureLines(e, t).map((line) => (
-                  <li key={line} className="flex items-start gap-2">
-                    <CheckIcon className="mt-0.5 size-4 shrink-0 text-primary" />
-                    <span>{line}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-            <CardFooter>
-              <PricingCta
-                plan={plan}
-                highlighted={highlighted}
-                isCurrent={isCurrent}
-                isSignedIn={isSignedIn}
-                canCheckout={canCheckout}
-              />
-            </CardFooter>
-          </Card>
-        );
-      })}
+    <div className="space-y-8">
+      <div className="flex justify-center">
+        <SegmentedControl
+          value={interval}
+          onValueChange={(value) => setInterval(value as BillingInterval)}
+          options={BILLING_INTERVALS.map((value) => ({
+            value,
+            label: t(`billing.pricing.interval.${value}`),
+          }))}
+        />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {tiers.map((tier) => {
+          const isCurrent = currentPlan === tier.name;
+          const priceId = tier.priceId[interval];
+          const formatted = prices[priceId];
+          return (
+            <Card
+              key={tier.name}
+              className={cn(
+                "relative flex flex-col",
+                tier.highlighted &&
+                  "border-primary shadow-[var(--shadow-brand-sm)]",
+              )}
+            >
+              <CardHeader>
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle className="font-display text-lg">
+                    {t(`billing.plans.${tier.name}.name`)}
+                  </CardTitle>
+                  {isCurrent && (
+                    <Badge variant="info">{t("billing.pricing.current")}</Badge>
+                  )}
+                </div>
+                <CardDescription>{t(tier.description)}</CardDescription>
+                <div className="flex items-baseline gap-1.5 pt-2">
+                  {formatted ? (
+                    <span
+                      data-testid="tier-price"
+                      className="font-display text-3xl tracking-tight"
+                    >
+                      {formatted}
+                    </span>
+                  ) : status === "error" ? (
+                    <span className="text-sm text-muted-foreground">
+                      {t("billing.pricing.unavailable")}
+                    </span>
+                  ) : (
+                    <Skeleton className="h-9 w-24" />
+                  )}
+                  {formatted && (
+                    <span className="text-sm text-muted-foreground">
+                      {t(`billing.pricing.perSeat.${interval}`)}
+                    </span>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1">
+                <ul className="space-y-2 text-sm">
+                  {tier.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2">
+                      <CheckIcon className="mt-0.5 size-4 shrink-0 text-primary" />
+                      <span>{t(feature)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+              <CardFooter>
+                <PricingCta
+                  plan={tier.name}
+                  interval={interval}
+                  highlighted={tier.highlighted}
+                  isCurrent={isCurrent}
+                  isSignedIn={isSignedIn}
+                  canCheckout={canCheckout}
+                />
+              </CardFooter>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
-}
-
-function featureLines(
-  e: Entitlements,
-  t: Awaited<ReturnType<typeof getT>>["t"],
-): string[] {
-  const lines = [
-    t("billing.features.participants", { max: e.maxParticipants }),
-  ];
-  if (e.maxMeetingMinutes == null) {
-    lines.push(t("billing.features.unlimitedDuration"));
-  } else if (e.maxMeetingMinutes % 60 === 0) {
-    lines.push(t("billing.features.hours", { max: e.maxMeetingMinutes / 60 }));
-  } else {
-    lines.push(t("billing.features.minutes", { max: e.maxMeetingMinutes }));
-  }
-  lines.push(
-    e.maxUpcomingScheduled == null
-      ? t("billing.features.unlimitedUpcoming")
-      : t("billing.features.upcoming", { max: e.maxUpcomingScheduled }),
-  );
-  if (e.breakouts) lines.push(t("billing.features.breakouts"));
-  if (e.apiAccess) lines.push(t("billing.features.apiAccess"));
-  if (e.seatsBillable) lines.push(t("billing.features.seats"));
-  return lines;
 }

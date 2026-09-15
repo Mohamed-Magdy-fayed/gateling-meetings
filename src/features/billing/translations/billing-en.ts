@@ -81,19 +81,47 @@ export const billingEn = {
       "You have {used:number} members; the seat count cannot go below that.",
     checkoutUnavailable: "Checkout is not available right now.",
   },
+  tiers: {
+    pro: {
+      participants: "Up to 50 participants",
+      duration: "Meetings up to 24 hours",
+      scheduling: "Unlimited scheduled meetings",
+      breakouts: "Breakout rooms",
+      seats: "Per-seat pricing for your team",
+    },
+    business: {
+      participants: "Up to 200 participants",
+      duration: "Meetings up to 24 hours",
+      scheduling: "Unlimited scheduled meetings",
+      breakouts: "Breakout rooms",
+      api: "API access, webhooks and SSO join links",
+      seats: "Per-seat pricing for your team",
+    },
+  },
   pricing: {
     nav: "Pricing",
     title: "Simple pricing",
     lead: "Start free. Upgrade when you need longer meetings, more people, or the API.",
-    perSeat: "per seat / month",
-    perSeatYear: "per seat / year",
-    free: "Free forever",
+    interval: { month: "Monthly", year: "Yearly" },
+    perSeat: { month: "per seat / month", year: "per seat / year" },
     current: "Current plan",
-    getStarted: "Get started",
+    subscribe: "Subscribe",
     upgrade: "Upgrade",
     manage: "Manage billing",
+    unavailable: "Prices are not available right now.",
+    freeNote:
+      "The Free plan (5 participants, 40-minute meetings) needs no card — just sign up.",
     contact: "Talk to us",
     contactLead:
       "Need custom limits or an invoice? We can set your organization up by hand.",
+  },
+  welcome: {
+    title: "Welcome aboard!",
+    leadActive: "{org} is upgraded and ready to go. Thanks for subscribing.",
+    leadPending:
+      "Thanks for subscribing — {org} is being upgraded right now. It usually takes a few seconds.",
+    pendingNote:
+      "You can leave this page; the plan switches by itself once Paddle confirms the payment. If it has not after a few minutes, check the billing page or contact us.",
+    goToDashboard: "Go to dashboard",
   },
 } as const;

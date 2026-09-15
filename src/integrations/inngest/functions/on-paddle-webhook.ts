@@ -1,7 +1,6 @@
 import { eq } from "drizzle-orm";
 import { NonRetriableError } from "inngest";
 
-import { env } from "@/data/env/server";
 import { db } from "@/drizzle";
 import {
   type BillingEventOutcome,
@@ -9,12 +8,12 @@ import {
   OrganizationsTable,
 } from "@/drizzle/schema";
 import { parsePaddleEvent } from "@/features/billing/server/paddle-events";
+import { getPriceMap } from "@/features/billing/server/price-map";
 import { subscriptionToPlanChange } from "@/features/billing/server/subscription-mapping";
 import {
   applyPaddleSubscription,
   findOrganizationForPaddle,
 } from "@/features/billing/server/subscriptions";
-import { createPriceMap } from "@/integrations/paddle/prices";
 import { inngest } from "../client";
 import { paddleWebhookReceivedEvent } from "./billing-events";
 
@@ -48,10 +47,7 @@ export const onPaddleWebhook = inngest.createFunction(
         });
         if (!row) throw new NonRetriableError("billing event row missing");
 
-        const prices = createPriceMap({
-          pro: env.PADDLE_PRICE_ID_PRO,
-          business: env.PADDLE_PRICE_ID_BUSINESS,
-        });
+        const prices = getPriceMap();
         if (!prices) throw new NonRetriableError("Paddle price ids not set");
 
         const parsed = parsePaddleEvent(row.eventType, row.payload);
