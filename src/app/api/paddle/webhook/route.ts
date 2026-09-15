@@ -1,3 +1,5 @@
+import { eq } from "drizzle-orm";
+
 import { env } from "@/data/env/server";
 import { db } from "@/drizzle";
 import { BillingEventsTable } from "@/drizzle/schema";
@@ -71,7 +73,7 @@ export async function POST(request: Request) {
     // Unparseable data is still stored; the function marks it unhandled.
   }
 
-  const [row] = await db
+  const [inserted] = await db
     .insert(BillingEventsTable)
     .values({
       paddleEventId: event.eventId,
@@ -82,6 +84,13 @@ export async function POST(request: Request) {
     })
     .onConflictDoNothing()
     .returning({ id: BillingEventsTable.id });
+
+  // A replay of an id we already hold is normally a no-op — unless the
+  // first delivery stored the row and then failed to dispatch (Inngest
+  // down, misconfigured env). Answering 200 then would strand the event,
+  // so an unprocessed duplicate is dispatched again; Inngest dedupes on
+  // the idempotency `id` if the first send did in fact land.
+  const row = inserted ?? (await unprocessedDuplicate(event.eventId));
 
   if (row) {
     await inngest.send({
@@ -94,4 +103,12 @@ export async function POST(request: Request) {
   }
 
   return new Response("ok", { status: 200 });
+}
+
+async function unprocessedDuplicate(paddleEventId: string) {
+  const existing = await db.query.BillingEventsTable.findFirst({
+    where: eq(BillingEventsTable.paddleEventId, paddleEventId),
+    columns: { id: true, processedAt: true },
+  });
+  return existing && !existing.processedAt ? { id: existing.id } : null;
 }
