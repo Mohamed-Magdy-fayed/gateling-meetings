@@ -12,9 +12,10 @@ import {
 import { clientIpFromHeaders } from "@/integrations/paddle/ips";
 
 /**
- * Paddle posts every notification here (configure the destination in
- * Paddle → Developer tools → Notifications, with all `subscription.*` and
- * `transaction.completed` events). In production the caller must be one
+ * Paddle posts every notification here (the destination in Paddle →
+ * Developer tools → Notifications subscribes to `HANDLED_PADDLE_EVENTS`:
+ * `subscription.*`, `customer.created/updated` and `transaction.completed`;
+ * anything else is stored and marked unhandled). In production the caller must be one
  * of Paddle's published IPs (403 otherwise; 503 while that list cannot
  * be fetched so Paddle retries), and the body is verified against the
  * webhook secret — an unsigned POST is a 401, never a row.
@@ -63,7 +64,9 @@ export async function POST(request: Request) {
   let organizationId: string | null = null;
   try {
     const parsed = parsePaddleEvent(event.eventType, payload);
-    if (parsed.kind !== "other") organizationId = parsed.organizationId;
+    if (parsed.kind === "subscription" || parsed.kind === "transaction") {
+      organizationId = parsed.organizationId;
+    }
   } catch {
     // Unparseable data is still stored; the function marks it unhandled.
   }

@@ -55,6 +55,11 @@ export const billingEn = {
     comparePlans: "Compare plans",
     subscriptionStatus: "Subscription: {status}",
     renews: "Renews {when:date}",
+    scheduledCancel: "Cancels on {when:date} — you keep your plan until then.",
+    scheduledPause: "Pauses on {when:date} — you keep your plan until then.",
+    scheduledResume: "Resumes on {when:date}.",
+    portalUnavailable:
+      "The billing portal could not be opened. Try again in a moment.",
     upgradeTitle: "Upgrade",
     upgradeLead: "Pick a plan and how many seats. You can change both later.",
     choose: "Choose {plan}",

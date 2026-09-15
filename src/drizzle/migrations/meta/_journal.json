@@ -71,6 +71,13 @@
       "when": 1789334633035,
       "tag": "0009_fair_dormammu",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789511428094,
+      "tag": "0010_gifted_nehzno",
+      "breakpoints": true
     }
   ]
 }

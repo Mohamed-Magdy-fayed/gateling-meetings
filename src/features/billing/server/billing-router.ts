@@ -12,6 +12,7 @@ import {
   orgAdminProcedure,
   orgProcedure,
 } from "@/integrations/trpc/init";
+import { findMirroredSubscription } from "./mirror";
 import { getPriceMap } from "./price-map";
 
 const MAX_SEATS = 500;
@@ -74,6 +75,22 @@ async function customerIdFor(ctx: OrgContext): Promise<string | undefined> {
   return created.id;
 }
 
+/**
+ * A cancel or pause Paddle has queued for the period end. The org still
+ * has its plan (status is unchanged until then), but the page should say
+ * so — the mirror is the only place this is kept.
+ */
+async function scheduledChangeFor(ctx: OrgContext, subscriptionId: string) {
+  const mirrored = await findMirroredSubscription(ctx.db, subscriptionId);
+  if (!mirrored?.scheduledChangeAction || !mirrored.scheduledChangeAt) {
+    return null;
+  }
+  return {
+    action: mirrored.scheduledChangeAction,
+    effectiveAt: mirrored.scheduledChangeAt,
+  };
+}
+
 async function seatsUsed(ctx: OrgContext) {
   const [row] = await ctx.db
     .select({ value: count() })
@@ -111,6 +128,10 @@ export const billingRouter = createTRPCRouter({
         ? {
             status: org.paddleSubscriptionStatus,
             currentPeriodEndsAt: org.currentPeriodEndsAt,
+            scheduledChange: await scheduledChangeFor(
+              ctx,
+              org.paddleSubscriptionId,
+            ),
           }
         : null,
       billingConfigured: isBillingConfigured,

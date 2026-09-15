@@ -5,6 +5,8 @@ import {
   decideApply,
   PAST_DUE_GRACE_MS,
   type SubscriptionFacts,
+  subscriptionAccess,
+  subscriptionGrantsAccess,
   subscriptionToPlanChange,
 } from "@/features/billing/server/subscription-mapping";
 import {
@@ -26,9 +28,11 @@ function sub(overrides: Partial<SubscriptionFacts> = {}): SubscriptionFacts {
     id: "sub_1",
     customerId: "ctm_1",
     status: "active",
-    items: [{ priceId: "pri_pro", quantity: 3 }],
-    currentBillingPeriod: { endsAt: periodEnd.toISOString() },
+    items: [{ priceId: "pri_pro", productId: "pro_pro", quantity: 3 }],
+    currentBillingPeriod: { startsAt: null, endsAt: periodEnd.toISOString() },
     scheduledChange: null,
+    canceledAt: null,
+    pausedAt: null,
     ...overrides,
   };
 }
@@ -65,7 +69,9 @@ describe("price map", () => {
 describe("subscriptionToPlanChange", () => {
   it("recognises a yearly price as the same plan", () => {
     const change = subscriptionToPlanChange(
-      sub({ items: [{ priceId: "pri_biz_year", quantity: 2 }] }),
+      sub({
+        items: [{ priceId: "pri_biz_year", productId: "pro_biz", quantity: 2 }],
+      }),
       prices,
       NOW,
     );
@@ -109,22 +115,37 @@ describe("subscriptionToPlanChange", () => {
     );
   });
 
-  it("keeps a paused plan until the scheduled instant, else now", () => {
+  it("drops a paused subscription to free but keeps its id for the portal", () => {
     const resumeAt = new Date(NOW.getTime() + 5 * DAY).toISOString();
-    expect(
-      subscriptionToPlanChange(
-        sub({
-          status: "paused",
-          scheduledChange: { action: "pause", effectiveAt: resumeAt },
-        }),
-        prices,
-        NOW,
-      )?.planExpiresAt?.toISOString(),
-    ).toBe(resumeAt);
-    expect(
-      subscriptionToPlanChange(sub({ status: "paused" }), prices, NOW)
-        ?.planExpiresAt,
-    ).toEqual(NOW);
+    const change = subscriptionToPlanChange(
+      sub({
+        status: "paused",
+        scheduledChange: { action: "resume", effectiveAt: resumeAt },
+      }),
+      prices,
+      NOW,
+    );
+    expect(change).toMatchObject({
+      plan: "free",
+      planSource: "free",
+      seatLimit: 1,
+      paddleSubscriptionId: "sub_1",
+      paddleSubscriptionStatus: "paused",
+    });
+  });
+
+  it("does not revoke an active plan because a cancel is scheduled", () => {
+    const change = subscriptionToPlanChange(
+      sub({
+        scheduledChange: {
+          action: "cancel",
+          effectiveAt: periodEnd.toISOString(),
+        },
+      }),
+      prices,
+      NOW,
+    );
+    expect(change).toMatchObject({ plan: "pro", planExpiresAt: null });
   });
 
   it("keeps a cancelled-but-paid-up plan until the period ends", () => {
@@ -158,7 +179,9 @@ describe("subscriptionToPlanChange", () => {
   it("ignores a subscription for a price that is not ours", () => {
     expect(
       subscriptionToPlanChange(
-        sub({ items: [{ priceId: "pri_stranger", quantity: 1 }] }),
+        sub({
+          items: [{ priceId: "pri_stranger", productId: null, quantity: 1 }],
+        }),
         prices,
         NOW,
       ),
@@ -168,11 +191,74 @@ describe("subscriptionToPlanChange", () => {
   it("never reports fewer than one seat", () => {
     expect(
       subscriptionToPlanChange(
-        sub({ items: [{ priceId: "pri_biz", quantity: 0 }] }),
+        sub({
+          items: [{ priceId: "pri_biz", productId: "pro_biz", quantity: 0 }],
+        }),
         prices,
         NOW,
       )?.seatLimit,
     ).toBe(1);
+  });
+});
+
+describe("subscriptionAccess", () => {
+  it("grants active and trialing indefinitely, scheduled change or not", () => {
+    expect(subscriptionAccess(sub(), NOW)).toEqual({
+      granted: true,
+      until: null,
+    });
+    expect(subscriptionAccess(sub({ status: "trialing" }), NOW)).toEqual({
+      granted: true,
+      until: null,
+    });
+    const scheduled = sub({
+      scheduledChange: {
+        action: "cancel",
+        effectiveAt: periodEnd.toISOString(),
+      },
+    });
+    expect(subscriptionGrantsAccess(scheduled, NOW)).toBe(true);
+    expect(
+      subscriptionGrantsAccess(
+        sub({
+          scheduledChange: {
+            action: "pause",
+            effectiveAt: periodEnd.toISOString(),
+          },
+        }),
+        NOW,
+      ),
+    ).toBe(true);
+  });
+
+  it("grants past_due only through the grace period", () => {
+    const pastDue = sub({ status: "past_due" });
+    expect(subscriptionGrantsAccess(pastDue, NOW)).toBe(true);
+    const afterGrace = new Date(periodEnd.getTime() + PAST_DUE_GRACE_MS + 1);
+    expect(subscriptionGrantsAccess(pastDue, afterGrace)).toBe(false);
+  });
+
+  it("revokes paused and effective cancellations", () => {
+    expect(subscriptionGrantsAccess(sub({ status: "paused" }), NOW)).toBe(
+      false,
+    );
+    expect(
+      subscriptionGrantsAccess(
+        sub({ status: "canceled", currentBillingPeriod: null }),
+        NOW,
+      ),
+    ).toBe(false);
+  });
+
+  it("keeps a cancellation in its notice period until the instant", () => {
+    const verdict = subscriptionAccess(sub({ status: "canceled" }), NOW);
+    expect(verdict).toEqual({ granted: true, until: periodEnd });
+    expect(subscriptionGrantsAccess(sub({ status: "canceled" }), NOW)).toBe(
+      true,
+    );
+    expect(
+      subscriptionGrantsAccess(sub({ status: "canceled" }), periodEnd),
+    ).toBe(false);
   });
 });
 
@@ -212,16 +298,73 @@ describe("parsePaddleEvent", () => {
         id: "sub_9",
         customer_id: "ctm_9",
         status: "active",
-        items: [{ quantity: 4, price: { id: "pri_biz" } }],
-        current_billing_period: { ends_at: periodEnd.toISOString() },
-        scheduled_change: null,
+        items: [
+          { quantity: 4, price: { id: "pri_biz", product_id: "pro_biz" } },
+        ],
+        current_billing_period: {
+          starts_at: NOW.toISOString(),
+          ends_at: periodEnd.toISOString(),
+        },
+        scheduled_change: {
+          action: "cancel",
+          effective_at: periodEnd.toISOString(),
+        },
+        canceled_at: null,
+        paused_at: null,
         custom_data: { organizationId: "3b241101-e2bb-4255-8caf-4136c566a962" },
       },
     });
     expect(parsed.kind).toBe("subscription");
     if (parsed.kind !== "subscription") throw new Error("unreachable");
-    expect(parsed.facts.items[0]).toEqual({ priceId: "pri_biz", quantity: 4 });
+    expect(parsed.facts.items[0]).toEqual({
+      priceId: "pri_biz",
+      productId: "pro_biz",
+      quantity: 4,
+    });
+    expect(parsed.facts.currentBillingPeriod?.startsAt).toBe(NOW.toISOString());
+    expect(parsed.facts.scheduledChange).toEqual({
+      action: "cancel",
+      effectiveAt: periodEnd.toISOString(),
+    });
     expect(parsed.organizationId).toBe("3b241101-e2bb-4255-8caf-4136c566a962");
+  });
+
+  it("tolerates the fields Paddle omits on older or minimal payloads", () => {
+    const parsed = parsePaddleEvent("subscription.created", {
+      data: {
+        id: "sub_9",
+        customer_id: "ctm_9",
+        status: "active",
+        items: [{ quantity: 1, price: { id: "pri_pro" } }],
+      },
+    });
+    if (parsed.kind !== "subscription") throw new Error("unreachable");
+    expect(parsed.facts).toMatchObject({
+      items: [{ priceId: "pri_pro", productId: null, quantity: 1 }],
+      currentBillingPeriod: null,
+      scheduledChange: null,
+      canceledAt: null,
+      pausedAt: null,
+    });
+  });
+
+  it("reads a customer payload", () => {
+    expect(
+      parsePaddleEvent("customer.updated", {
+        data: { id: "ctm_1", email: "a@b.test", name: null, status: "active" },
+      }),
+    ).toEqual({
+      kind: "customer",
+      facts: { id: "ctm_1", email: "a@b.test", name: null, status: "active" },
+    });
+  });
+
+  it("refuses a customer payload without an email", () => {
+    expect(() =>
+      parsePaddleEvent("customer.created", {
+        data: { id: "ctm_1", status: "active" },
+      }),
+    ).toThrow();
   });
 
   it("reads a completed transaction's ids", () => {

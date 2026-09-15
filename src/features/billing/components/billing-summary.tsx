@@ -10,6 +10,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { LinkButton } from "@/components/general/link-button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,7 +39,24 @@ import { CheckoutButton } from "./checkout-button";
 import { PlanBadge } from "./plan-badge";
 import { SeatStepper } from "./seat-stepper";
 
-export function BillingSummary() {
+const SCHEDULED_CHANGE_KEYS = {
+  cancel: "billing.settings.scheduledCancel",
+  pause: "billing.settings.scheduledPause",
+  resume: "billing.settings.scheduledResume",
+} as const;
+
+function isScheduledAction(
+  action: string,
+): action is keyof typeof SCHEDULED_CHANGE_KEYS {
+  return action in SCHEDULED_CHANGE_KEYS;
+}
+
+export function BillingSummary({
+  portalUnavailable = false,
+}: {
+  /** Set when `/settings/billing/portal` bounced back instead of redirecting. */
+  portalUnavailable?: boolean;
+}) {
   const { t } = useTranslation();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -53,12 +71,6 @@ export function BillingSummary() {
       queryKey: trpc.billing.summary.queryKey(),
     });
 
-  const portal = useMutation(
-    trpc.billing.portalUrl.mutationOptions({
-      onSuccess: ({ overview }) => window.open(overview, "_blank", "noopener"),
-      onError,
-    }),
-  );
   const updateSeats = useMutation(
     trpc.billing.updateSeats.mutationOptions({
       onSuccess: () => {
@@ -78,8 +90,17 @@ export function BillingSummary() {
     }),
   );
 
+  const scheduled = subscription?.scheduledChange ?? null;
+
   return (
     <div className="space-y-6">
+      {portalUnavailable && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            {t("billing.settings.portalUnavailable")}
+          </AlertDescription>
+        </Alert>
+      )}
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -106,7 +127,15 @@ export function BillingSummary() {
                 status: subscription.status,
               })}
               {subscription.currentPeriodEndsAt &&
+                !scheduled &&
                 ` · ${t("billing.settings.renews", { when: subscription.currentPeriodEndsAt })}`}
+            </CardDescription>
+          )}
+          {scheduled && isScheduledAction(scheduled.action) && (
+            <CardDescription>
+              {t(SCHEDULED_CHANGE_KEYS[scheduled.action], {
+                when: scheduled.effectiveAt,
+              })}
             </CardDescription>
           )}
         </CardHeader>
@@ -160,14 +189,18 @@ export function BillingSummary() {
               {t("billing.settings.comparePlans")}
             </LinkButton>
             {data.canManage && (
-              <Button
+              // The route mints a fresh portal session per visit, so it
+              // must never be prefetched.
+              <LinkButton
+                href="/settings/billing/portal"
                 variant="outline"
-                disabled={portal.isPending}
-                onClick={() => portal.mutate()}
+                prefetch={false}
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 {t("billing.pricing.manage")}
                 <ExternalLinkIcon data-icon="inline-end" />
-              </Button>
+              </LinkButton>
             )}
           </div>
         </CardContent>

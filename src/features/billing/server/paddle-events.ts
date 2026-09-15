@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { SubscriptionFacts } from "./subscription-mapping";
+import type { CustomerFacts, SubscriptionFacts } from "./subscription-mapping";
 
 /**
  * The parts of a Paddle event payload this app reads, parsed from the raw
@@ -20,18 +20,36 @@ const subscriptionDataSchema = z.object({
   items: z.array(
     z.object({
       quantity: z.number().int(),
-      price: z.object({ id: z.string() }).nullable().optional(),
+      price: z
+        .object({
+          id: z.string(),
+          product_id: z.string().nullable().optional(),
+        })
+        .nullable()
+        .optional(),
     }),
   ),
   current_billing_period: z
-    .object({ ends_at: z.string() })
+    .object({
+      starts_at: z.string().nullable().optional(),
+      ends_at: z.string(),
+    })
     .nullable()
     .optional(),
   scheduled_change: z
     .object({ action: z.string(), effective_at: z.string() })
     .nullable()
     .optional(),
+  canceled_at: z.string().nullable().optional(),
+  paused_at: z.string().nullable().optional(),
   custom_data: customDataSchema,
+});
+
+const customerDataSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  name: z.string().nullable().optional(),
+  status: z.enum(["active", "archived"]),
 });
 
 const transactionDataSchema = z.object({
@@ -52,12 +70,27 @@ export const SUBSCRIPTION_EVENTS = new Set([
   "subscription.trialing",
 ]);
 
+export const CUSTOMER_EVENTS = new Set([
+  "customer.created",
+  "customer.updated",
+]);
+
+export const TRANSACTION_EVENTS = new Set(["transaction.completed"]);
+
+/** Everything the notification destination must be subscribed to. */
+export const HANDLED_PADDLE_EVENTS = [
+  ...SUBSCRIPTION_EVENTS,
+  ...CUSTOMER_EVENTS,
+  ...TRANSACTION_EVENTS,
+] as const;
+
 export type ParsedPaddleEvent =
   | {
       kind: "subscription";
       facts: SubscriptionFacts;
       organizationId: string | null;
     }
+  | { kind: "customer"; facts: CustomerFacts }
   | {
       kind: "transaction";
       customerId: string | null;
@@ -81,10 +114,14 @@ export function parsePaddleEvent(
         status: sub.status,
         items: sub.items.map((item) => ({
           priceId: item.price?.id ?? null,
+          productId: item.price?.product_id ?? null,
           quantity: item.quantity,
         })),
         currentBillingPeriod: sub.current_billing_period
-          ? { endsAt: sub.current_billing_period.ends_at }
+          ? {
+              startsAt: sub.current_billing_period.starts_at ?? null,
+              endsAt: sub.current_billing_period.ends_at,
+            }
           : null,
         scheduledChange: sub.scheduled_change
           ? {
@@ -92,11 +129,25 @@ export function parsePaddleEvent(
               effectiveAt: sub.scheduled_change.effective_at,
             }
           : null,
+        canceledAt: sub.canceled_at ?? null,
+        pausedAt: sub.paused_at ?? null,
       },
       organizationId: sub.custom_data?.organizationId ?? null,
     };
   }
-  if (eventType === "transaction.completed") {
+  if (CUSTOMER_EVENTS.has(eventType)) {
+    const customer = customerDataSchema.parse(data);
+    return {
+      kind: "customer",
+      facts: {
+        id: customer.id,
+        email: customer.email,
+        name: customer.name ?? null,
+        status: customer.status,
+      },
+    };
+  }
+  if (TRANSACTION_EVENTS.has(eventType)) {
     const tx = transactionDataSchema.parse(data);
     return {
       kind: "transaction",

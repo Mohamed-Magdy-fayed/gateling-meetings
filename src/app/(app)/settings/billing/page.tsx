@@ -18,8 +18,13 @@ export async function generateMetadata(): Promise<Metadata> {
  * owners and admins — the checkout, seat count and Paddle portal. Only
  * this page and `/pricing` may frame Paddle (see `proxy.ts`).
  */
-export default async function BillingSettingsPage() {
+export default async function BillingSettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ portal?: string }>;
+}) {
   await getCurrentUser({ redirectIfNotFound: true });
+  const { portal } = await searchParams;
   const [{ t }, current] = await Promise.all([
     getT(),
     api().then((caller) => caller.organizations.current()),
@@ -37,7 +42,7 @@ export default async function BillingSettingsPage() {
       <PaddleProvider customerId={current.organization.paddleCustomerId}>
         <HydrateClient>
           <Suspense fallback={<Skeleton className="h-64 w-full" />}>
-            <BillingSummary />
+            <BillingSummary portalUnavailable={portal === "unavailable"} />
           </Suspense>
         </HydrateClient>
       </PaddleProvider>
