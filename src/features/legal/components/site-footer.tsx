@@ -6,8 +6,8 @@ import { LEGAL_ENTITY } from "../content/types";
 
 /**
  * Legal links and a way to reach us, on every page outside a meeting room.
- * Paddle's domain review wants the policies reachable from navigation and
- * contact details within two clicks of the homepage; this is that.
+ * Card-scheme and payment-provider reviews want the policies reachable from
+ * navigation and contact details within two clicks of the homepage; this is that.
  */
 export async function SiteFooter() {
   const { t } = await getT();

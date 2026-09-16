@@ -13,42 +13,40 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { Skeleton } from "@/components/ui/skeleton";
 import type { PlanId } from "@/drizzle/schema";
 import { useTranslation } from "@/features/core/i18n/client";
 import { cn } from "@/lib/utils";
-import { BILLING_INTERVALS, type BillingInterval, type Tier } from "../tiers";
-import { usePaddle } from "./paddle-provider";
+import {
+  BILLING_CURRENCY,
+  BILLING_INTERVALS,
+  type BillingInterval,
+  type Tier,
+} from "../tiers";
+import { formatMoney } from "./format-money";
 import { PricingCta } from "./pricing-cta";
-import { usePaddlePrices } from "./use-paddle-prices";
 
 type PricingTableProps = {
   tiers: Tier[];
-  /** ISO 3166-1 alpha-2 from the CDN, or undefined to let Paddle infer it. */
-  countryCode: string | undefined;
   /** The viewer's current plan, if signed in. */
   currentPlan: PlanId | null;
   isSignedIn: boolean;
-  /** Owner/admin of a billable org, with Paddle configured. */
+  /** Owner/admin of a billable org, with billing configured. */
   canCheckout: boolean;
 };
 
 /**
- * Two paid tiers, priced by Paddle for the visitor's country. The amount
- * on a card is the string `PricePreview` returned — never computed or
- * re-formatted here — so it is by construction what the checkout charges.
+ * Two paid tiers, priced per seat in EGP from `tiers.ts` — the same number
+ * the checkout charges, so the card is by construction what the payment
+ * page shows.
  */
 export function PricingTable({
   tiers,
-  countryCode,
   currentPlan,
   isSignedIn,
   canCheckout,
 }: PricingTableProps) {
-  const { t } = useTranslation();
-  const paddle = usePaddle();
+  const { t, locale } = useTranslation();
   const [interval, setInterval] = useState<BillingInterval>("month");
-  const { status, prices } = usePaddlePrices(paddle, tiers, countryCode);
 
   return (
     <div className="space-y-8">
@@ -66,8 +64,11 @@ export function PricingTable({
       <div className="grid gap-4 md:grid-cols-2">
         {tiers.map((tier) => {
           const isCurrent = currentPlan === tier.name;
-          const priceId = tier.priceId[interval];
-          const formatted = prices[priceId];
+          const formatted = formatMoney(
+            tier.unitAmountCents[interval],
+            BILLING_CURRENCY,
+            locale,
+          );
           return (
             <Card
               key={tier.name}
@@ -88,25 +89,15 @@ export function PricingTable({
                 </div>
                 <CardDescription>{t(tier.description)}</CardDescription>
                 <div className="flex items-baseline gap-1.5 pt-2">
-                  {formatted ? (
-                    <span
-                      data-testid="tier-price"
-                      className="font-display text-3xl tracking-tight"
-                    >
-                      {formatted}
-                    </span>
-                  ) : status === "error" ? (
-                    <span className="text-sm text-muted-foreground">
-                      {t("billing.pricing.unavailable")}
-                    </span>
-                  ) : (
-                    <Skeleton className="h-9 w-24" />
-                  )}
-                  {formatted && (
-                    <span className="text-sm text-muted-foreground">
-                      {t(`billing.pricing.perSeat.${interval}`)}
-                    </span>
-                  )}
+                  <span
+                    data-testid="tier-price"
+                    className="font-display text-3xl tracking-tight"
+                  >
+                    {formatted}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {t(`billing.pricing.perSeat.${interval}`)}
+                  </span>
                 </div>
               </CardHeader>
               <CardContent className="flex-1">
@@ -133,6 +124,9 @@ export function PricingTable({
           );
         })}
       </div>
+      <p className="text-center text-xs text-muted-foreground">
+        {t("billing.pricing.currencyNote")}
+      </p>
     </div>
   );
 }

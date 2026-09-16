@@ -2,37 +2,39 @@ import { expect, test } from "@playwright/test";
 import { MEMBER, signInAs } from "./helpers";
 
 /**
- * The pricing page → Paddle sandbox checkout → /welcome flow, end to end
- * against the real sandbox. Needs the local stack (README) plus a sandbox
- * `.env` with all four price ids and the client token, and the sandbox
- * account's default payment link set to http://localhost:3000/pricing.
+ * The pricing page → billing details → Paymob test-mode checkout → /welcome
+ * flow, end to end against Paymob's hosted page. Needs the stack running
+ * with test keys and all four plan ids in `.env`.
  *
  * The buyer must be an owner of an org with no subscription. `MEMBER`
- * is; a completed run leaves a sandbox subscription behind, but nothing
- * lands on the org locally (no webhook can reach localhost), so it stays
- * buyable for the next run.
+ * is; a completed run leaves a test-mode subscription behind at Paymob,
+ * but nothing lands on the org locally unless the callback can reach the
+ * app (it cannot on localhost), so it stays buyable for the next run. On
+ * the preview deployment the callback does land and the plan flips.
  */
 const CONFIGURED =
-  !!process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN &&
-  !!process.env.PADDLE_PRICE_ID_PRO_MONTH;
+  process.env.BILLING_PROVIDER === "paymob" &&
+  !!process.env.PAYMOB_PLAN_ID_PRO_MONTH;
 
-/** Paddle's published sandbox card; not a real card. */
+/** Paymob's published test card; not a real card. */
 const TEST_CARD = {
-  number: "4242 4242 4242 4242",
-  expiry: "12 / 30",
-  cvv: "100",
+  number: "5123456789012346",
+  holder: "Test Account",
+  expiryMonth: "01",
+  expiryYear: "39",
+  cvv: "123",
 };
 
-test.describe("billing checkout (Paddle sandbox)", () => {
-  test.skip(!CONFIGURED, "Paddle sandbox is not configured in .env");
+test.describe("billing checkout (Paymob test mode)", () => {
+  test.skip(!CONFIGURED, "Paymob test mode is not configured in .env");
 
-  test("localized prices, yearly toggle, one-page overlay, redirect to /welcome", async ({
+  test("EGP prices, yearly toggle, billing details, hosted checkout, redirect to /welcome", async ({
     page,
   }) => {
     await signInAs(page, MEMBER);
     await page.goto("/pricing");
 
-    // Prices come from Paddle.PricePreview — some currency-looking string.
+    // Prices are the EGP amounts from tiers.ts.
     const amounts = page.getByTestId("tier-price");
     await expect(amounts).toHaveCount(2);
     await expect(amounts.first()).toHaveText(/\d/);
@@ -45,27 +47,43 @@ test.describe("billing checkout (Paddle sandbox)", () => {
     await page.getByRole("button", { name: "Monthly" }).click();
     await expect(amounts.first()).toHaveText(monthly ?? "");
 
-    // Subscribe on the first (Pro) card opens the overlay for the price shown.
+    // Subscribe on the first (Pro) card asks for the billing contact first.
     await page.getByRole("button", { name: "Subscribe" }).first().click();
-    const checkout = page.frameLocator('iframe[name="paddle_frame"]');
-    const cardNumber = checkout.getByTestId("cardNumberInput");
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText("Billing details");
+    await dialog.getByLabel("Full name").fill(MEMBER.name);
+    await dialog.getByLabel("Phone number").fill("+201001234567");
+    await dialog.getByRole("button", { name: "Continue to payment" }).click();
+
+    // A top-level navigation to Paymob's unified checkout.
+    await page.waitForURL(/accept\.paymob\.com\/unifiedcheckout/, {
+      timeout: 45_000,
+    });
+    await expect(page.locator("body")).toContainText(/EGP|ج\.م/);
+
+    const cardNumber = page.getByPlaceholder(/card number/i).first();
     await cardNumber.waitFor({ timeout: 45_000 });
-
-    // One-page: customer, country and card are on the same screen; the
-    // signed-in buyer's email is prefilled and the total matches the card.
-    await expect(checkout.locator("body")).toContainText(MEMBER.email);
-    await expect(checkout.locator("body")).toContainText(monthly ?? "");
-    await expect(checkout.getByTestId("countriesSelect")).not.toHaveValue("");
-
-    await checkout.getByTestId("cardholderNameInput").fill(MEMBER.name);
     await cardNumber.fill(TEST_CARD.number);
-    await checkout.getByTestId("expiryDateField").fill(TEST_CARD.expiry);
-    await checkout
-      .getByTestId("cardVerificationValueInput")
+    await page.getByPlaceholder(/name/i).first().fill(TEST_CARD.holder);
+    await page.getByPlaceholder(/mm/i).first().fill(TEST_CARD.expiryMonth);
+    await page.getByPlaceholder(/yy/i).first().fill(TEST_CARD.expiryYear);
+    await page
+      .getByPlaceholder(/cvv|cvc/i)
+      .first()
       .fill(TEST_CARD.cvv);
-    await checkout.getByTestId("cardPaymentFormSubmitButton").click();
+    await page.getByRole("button", { name: /pay/i }).first().click();
 
-    await page.waitForURL(/\/welcome$/, { timeout: 90_000 });
+    // Test mode may show a 3-D Secure simulator; it accepts any OTP.
+    const otp = page.getByPlaceholder(/otp|password/i).first();
+    if (await otp.isVisible({ timeout: 10_000 }).catch(() => false)) {
+      await otp.fill("123456");
+      await page
+        .getByRole("button", { name: /submit|confirm|ok/i })
+        .first()
+        .click();
+    }
+
+    await page.waitForURL(/\/welcome/, { timeout: 90_000 });
     await expect(page.getByText("Welcome aboard!")).toBeVisible();
   });
 });

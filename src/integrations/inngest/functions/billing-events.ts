@@ -2,12 +2,12 @@ import { eventType } from "inngest";
 import { z } from "zod";
 
 /**
- * A `billing_events` row exists (signature verified, id claimed); apply
- * it. Only the row id travels — the payload is read back inside the
- * function so a retry processes exactly what was stored.
+ * A `billing_events` row exists (authenticated, id claimed); apply it.
+ * Only the row id travels — the payload is read back inside the function
+ * so a retry processes exactly what was stored.
  */
-export const paddleWebhookReceivedEvent = eventType(
-  "billing/paddle.webhook.received",
+export const billingWebhookReceivedEvent = eventType(
+  "billing/webhook.received",
   {
     schema: z.object({
       billingEventId: z.uuid(),

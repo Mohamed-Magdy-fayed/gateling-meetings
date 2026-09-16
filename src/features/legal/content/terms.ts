@@ -12,7 +12,7 @@ export const termsDocuments: LegalDocuments = {
     effectiveDate: LEGAL_EFFECTIVE_DATE,
     intro: [
       `These Terms of Service ("Terms") govern your use of ${E.product}, the video-meeting service available at ${E.productUrl} (the "Service"), operated by ${E.name}, ${E.country} ("${E.name}", "we", "us"). By creating an account, hosting or joining a meeting, or otherwise using the Service, you agree to these Terms. If you use the Service on behalf of an organization, you confirm you are authorized to bind that organization, and "you" includes it.`,
-      `Paid plans are sold through our authorized reseller, Paddle.com Market Ltd and its affiliates ("Paddle"). Paddle is the Merchant of Record for all orders: it processes payment, issues invoices and receipts, collects applicable taxes and handles refunds under our Refund and Cancellation Policy. Paddle's Buyer Terms (paddle.com/legal/buyer-terms) also apply to your purchase.`,
+      `Paid plans are sold by . Payments are processed on our behalf by Paymob (Paymob Solutions S.A.E., Egypt, "Paymob"), a licensed payment service provider: Paymob takes your card details on its own hosted page, keeps a secure token of your card for renewals, and never shares the card number with us. Prices are in Egyptian pounds (EGP). Refunds are issued by us through Paymob under our Refund and Cancellation Policy.`,
     ],
     sections: [
       {
@@ -34,15 +34,15 @@ export const termsDocuments: LegalDocuments = {
         paragraphs: [
           "Every account has a personal organization; you may also create team organizations and invite members. A plan (Free, Pro or Business) applies to an organization and sets its limits — for example the number of participants per meeting, meeting duration, upcoming scheduled meetings, breakout rooms and API access. The current limits of each plan are listed on our pricing page and enforced by the Service.",
           "Paid plans are priced per seat. A seat is consumed by each member of the organization and each pending invitation. Owners and admins may add seats at any time and reduce them to no fewer than the current number of members.",
-          "We may grant a plan to an organization by hand — for example for a pilot, a partner or a trial — with or without an expiry date. Such a grant is not a purchase, carries no payment obligation, may be changed or withdrawn by us, and is not overwritten by a later Paddle subscription unless we say so.",
+          "We may grant a plan to an organization by hand — for example for a pilot, a partner or a trial — with or without an expiry date. Such a grant is not a purchase, carries no payment obligation, may be changed or withdrawn by us, and is not overwritten by a later paid subscription unless we say so.",
         ],
       },
       {
         heading: "4. Fees, billing and renewals",
         paragraphs: [
-          "Prices are shown on our pricing page and at checkout, exclusive of taxes unless stated. Taxes are calculated and collected by Paddle based on your location. Subscriptions renew automatically at the end of each billing period at the then-current price until cancelled.",
-          "Adding seats is charged immediately on a prorated basis for the remainder of the current period. Reducing seats and cancelling take effect at the end of the current period; the organization keeps its plan until then. Refunds are governed by our Refund and Cancellation Policy.",
-          "If a payment fails, Paddle will retry and notify you. If it is not settled within seven days of the period end, the organization returns to the Free plan and its limits apply immediately. Your data is not deleted; you can resubscribe at any time.",
+          "Prices are shown on our pricing page and at checkout in Egyptian pounds and include Egyptian value-added tax where it applies. Subscriptions renew automatically at the end of each billing period (every 30 days for monthly plans, every 365 days for yearly plans) by charging the card saved with Paymob, at the then-current price, until cancelled.",
+          "Adding seats makes them available immediately; the new seat total is charged from your next renewal — there is no prorated charge mid-period. Reducing seats also takes effect at the next renewal. Cancelling stops all future charges at once; the organization keeps its plan until the end of the period already paid for. Refunds are governed by our Refund and Cancellation Policy.",
+          "If a renewal payment fails, Paymob retries it over the following days and you are notified. If it is not settled within seven days of the period end, the organization returns to the Free plan and its limits apply immediately. Your data is not deleted; you can resubscribe at any time.",
           "We may change prices. Changes take effect at your next renewal after we give at least 30 days' notice by email or in the Service.",
         ],
       },
@@ -121,7 +121,7 @@ export const termsDocuments: LegalDocuments = {
       {
         heading: "15. Contact",
         paragraphs: [
-          `${E.name}, ${E.country} — ${E.email} — ${E.site}. For questions about a charge, invoice or refund you may also contact Paddle at paddle.net.`,
+          `,  —  — . Questions about a charge, receipt or refund go to the same address; Paymob only processes the payment and cannot change your plan.`,
         ],
       },
     ],
@@ -131,7 +131,7 @@ export const termsDocuments: LegalDocuments = {
     effectiveDate: LEGAL_EFFECTIVE_DATE,
     intro: [
       `تحكم شروط الخدمة هذه ("الشروط") استخدامك لـ ${E.product}، خدمة الاجتماعات المرئية المتاحة على ${E.productUrl} ("الخدمة")، والتي تشغّلها ${E.name}، ${E.country} ("${E.name}"، "نحن"). بإنشاء حساب أو استضافة اجتماع أو الانضمام إليه أو استخدام الخدمة بأي شكل آخر، فإنك توافق على هذه الشروط. إذا كنت تستخدم الخدمة نيابةً عن مؤسسة، فإنك تؤكد أنك مخوَّل بإلزامها، وتشمل كلمة "أنت" تلك المؤسسة.`,
-      `تُباع الخطط المدفوعة عبر موزعنا المعتمد Paddle.com Market Ltd والشركات التابعة لها ("Paddle"). Paddle هي التاجر المسجَّل (Merchant of Record) لجميع الطلبات: فهي تعالج الدفع، وتُصدر الفواتير والإيصالات، وتحصّل الضرائب المطبقة، وتتولى الاسترداد وفق سياسة الاسترداد والإلغاء الخاصة بنا. تنطبق أيضًا شروط المشتري لدى Paddle ‏(paddle.com/legal/buyer-terms) على عملية الشراء.`,
+      `تُباع الخطط المدفوعة من . تُعالَج المدفوعات نيابةً عنا عبر Paymob (شركة Paymob Solutions S.A.E.، مصر، "Paymob")، مزوّد خدمات دفع مرخَّص: تستقبل Paymob بيانات بطاقتك على صفحتها المستضافة، وتحتفظ برمز آمن للبطاقة لأغراض التجديد، ولا تشاركنا رقم البطاقة أبدًا. الأسعار بالجنيه المصري. نُصدر عمليات الاسترداد بأنفسنا عبر Paymob وفق سياسة الاسترداد والإلغاء الخاصة بنا.`,
     ],
     sections: [
       {
@@ -153,15 +153,15 @@ export const termsDocuments: LegalDocuments = {
         paragraphs: [
           "لكل حساب مؤسسة شخصية؛ ويمكنك أيضًا إنشاء مؤسسات فريق ودعوة أعضاء. تُطبَّق الخطة (مجاني، Pro أو Business) على المؤسسة وتحدد حدودها — مثل عدد المشاركين في الاجتماع، ومدة الاجتماع، وعدد الاجتماعات المجدولة القادمة، والغرف الفرعية، والوصول إلى الـ API. الحدود الحالية لكل خطة مذكورة في صفحة الأسعار وتفرضها الخدمة.",
           "تُسعَّر الخطط المدفوعة لكل مقعد. يشغل كل عضو في المؤسسة وكل دعوة معلّقة مقعدًا. يمكن للمالكين والمشرفين إضافة مقاعد في أي وقت وتقليلها بما لا يقل عن عدد الأعضاء الحاليين.",
-          "قد نمنح خطة لمؤسسة يدويًا — مثلًا لتجربة أو شريك أو فترة تجريبية — بتاريخ انتهاء أو بدونه. لا يُعد هذا المنح شراءً، ولا يترتب عليه أي التزام بالدفع، ويجوز لنا تغييره أو سحبه، ولا يُستبدل باشتراك Paddle لاحق ما لم نقرر ذلك.",
+          "قد نمنح خطة لمؤسسة يدويًا — مثلًا لتجربة أو شريك أو فترة تجريبية — بتاريخ انتهاء أو بدونه. لا يُعد هذا المنح شراءً، ولا يترتب عليه أي التزام بالدفع، ويجوز لنا تغييره أو سحبه، ولا يُستبدل باشتراك مدفوع لاحق ما لم نقرر ذلك.",
         ],
       },
       {
         heading: "4. الرسوم والفوترة والتجديد",
         paragraphs: [
-          "تُعرض الأسعار في صفحة الأسعار وعند الدفع، غير شاملة الضرائب ما لم يُذكر خلاف ذلك. تحتسب Paddle الضرائب وتحصّلها بناءً على موقعك. تتجدد الاشتراكات تلقائيًا في نهاية كل فترة فوترة بالسعر الساري حينها حتى يتم الإلغاء.",
-          "تُحتسب إضافة المقاعد فورًا بشكل تناسبي لما تبقى من الفترة الحالية. يسري تقليل المقاعد والإلغاء في نهاية الفترة الحالية؛ وتحتفظ المؤسسة بخطتها حتى ذلك الحين. يخضع الاسترداد لسياسة الاسترداد والإلغاء الخاصة بنا.",
-          "إذا فشل الدفع، ستعيد Paddle المحاولة وتخطرك. إذا لم يُسدَّد خلال سبعة أيام من نهاية الفترة، تعود المؤسسة إلى الخطة المجانية وتُطبَّق حدودها فورًا. لا تُحذف بياناتك؛ ويمكنك إعادة الاشتراك في أي وقت.",
+          "تُعرض الأسعار في صفحة الأسعار وعند الدفع بالجنيه المصري، وتشمل ضريبة القيمة المضافة المصرية حيثما تنطبق. تتجدد الاشتراكات تلقائيًا في نهاية كل فترة فوترة (كل 30 يومًا للخطط الشهرية وكل 365 يومًا للخطط السنوية) بالخصم من البطاقة المحفوظة لدى Paymob بالسعر الساري حينها، حتى يتم الإلغاء.",
+          "تصبح المقاعد المضافة متاحة فورًا؛ ويُخصم إجمالي المقاعد الجديد بدءًا من التجديد التالي — لا يوجد خصم تناسبي في منتصف الفترة. يسري تقليل المقاعد أيضًا عند التجديد التالي. يوقف الإلغاء جميع الخصومات المستقبلية فورًا؛ وتحتفظ المؤسسة بخطتها حتى نهاية الفترة المدفوعة بالفعل. يخضع الاسترداد لسياسة الاسترداد والإلغاء الخاصة بنا.",
+          "إذا فشل خصم التجديد، تعيد Paymob المحاولة خلال الأيام التالية ويتم إخطارك. إذا لم يُسدَّد خلال سبعة أيام من نهاية الفترة، تعود المؤسسة إلى الخطة المجانية وتُطبَّق حدودها فورًا. لا تُحذف بياناتك؛ ويمكنك إعادة الاشتراك في أي وقت.",
           "يجوز لنا تغيير الأسعار. تسري التغييرات عند التجديد التالي بعد إشعار لا يقل عن 30 يومًا بالبريد الإلكتروني أو داخل الخدمة.",
         ],
       },
@@ -240,7 +240,7 @@ export const termsDocuments: LegalDocuments = {
       {
         heading: "15. التواصل",
         paragraphs: [
-          `${E.name}، ${E.country} — ${E.email} — ${E.site}. للاستفسارات المتعلقة بعملية دفع أو فاتورة أو استرداد، يمكنك أيضًا التواصل مع Paddle عبر paddle.net.`,
+          `،  —  — . تُرسل الاستفسارات المتعلقة بعملية دفع أو إيصال أو استرداد إلى العنوان نفسه؛ فـ Paymob تعالج الدفع فقط ولا يمكنها تغيير خطتك.`,
         ],
       },
     ],

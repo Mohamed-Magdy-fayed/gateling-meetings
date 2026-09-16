@@ -18,7 +18,7 @@ export type LegalDocument = {
 
 export type LegalDocuments = Record<"en" | "ar", LegalDocument>;
 
-/** The seller named in every document; Paddle is the merchant of record. */
+/** The seller named in every document; Paymob only processes the payments. */
 export const LEGAL_ENTITY = {
   name: "Gateling Solutions",
   country: "Egypt",

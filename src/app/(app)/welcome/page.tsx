@@ -1,4 +1,4 @@
-import { PartyPopperIcon } from "lucide-react";
+import { CircleAlertIcon, PartyPopperIcon } from "lucide-react";
 import type { Metadata } from "next";
 
 import { LinkButton } from "@/components/general/link-button";
@@ -17,13 +17,21 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * Where Paddle's checkout sends the buyer on success. Purely a greeting:
- * the plan itself lands via the webhook, which usually beats the redirect
- * but may not — so a still-free org is told the upgrade is on its way
- * rather than shown a stale "Free" as if the payment had failed.
+ * Where the provider's payment page sends the buyer afterwards. Purely a
+ * greeting: the plan itself lands via the payment callback, which usually
+ * beats the redirect but may not — so a still-free org is told the upgrade
+ * is on its way rather than shown a stale "Free" as if the payment had
+ * failed. Paymob appends its own result fields to the return URL; only
+ * `success=false` is read, and only to pick the copy — never to grant.
  */
-export default async function WelcomePage() {
+export default async function WelcomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ success?: string }>;
+}) {
   await getCurrentUser({ redirectIfNotFound: true });
+  const { success } = await searchParams;
+  const isDeclined = success === "false";
   const [{ t }, current] = await Promise.all([
     getT(),
     api().then((caller) => caller.organizations.current()),
@@ -31,6 +39,34 @@ export default async function WelcomePage() {
   const { organization } = current;
   const { effectivePlan } = resolveEntitlements(organization);
   const isActivated = effectivePlan !== "free";
+
+  if (isDeclined && !isActivated) {
+    return (
+      <div className="mx-auto max-w-xl space-y-6">
+        <Card>
+          <CardContent>
+            <EmptyState
+              icon={<CircleAlertIcon />}
+              title={t("billing.welcome.declinedTitle")}
+              description={t("billing.welcome.declinedLead", {
+                org: organization.name,
+              })}
+              action={
+                <div className="flex flex-wrap justify-center gap-2">
+                  <LinkButton href="/settings/billing">
+                    {t("billing.welcome.tryAgain")}
+                  </LinkButton>
+                  <LinkButton href="/dashboard" variant="outline">
+                    {t("billing.welcome.goToDashboard")}
+                  </LinkButton>
+                </div>
+              }
+            />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-xl space-y-6">

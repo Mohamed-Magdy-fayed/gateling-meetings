@@ -2,10 +2,11 @@
 
 import {
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { ExternalLinkIcon } from "lucide-react";
+import { CreditCardIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -34,8 +35,14 @@ import {
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useTranslation } from "@/features/core/i18n/client";
 import { useTRPC } from "@/integrations/trpc/client";
-import { BILLING_INTERVALS, type BillingInterval } from "../tiers";
+import {
+  BILLING_CURRENCY,
+  BILLING_INTERVALS,
+  type BillingInterval,
+} from "../tiers";
+import { BillingContactDialog } from "./billing-contact-dialog";
 import { CheckoutButton } from "./checkout-button";
+import { formatMoney } from "./format-money";
 import { PlanBadge } from "./plan-badge";
 import { SeatStepper } from "./seat-stepper";
 
@@ -52,16 +59,16 @@ function isScheduledAction(
 }
 
 export function BillingSummary({
-  portalUnavailable = false,
+  cardUpdated = false,
 }: {
-  /** Set when `/settings/billing/portal` bounced back instead of redirecting. */
-  portalUnavailable?: boolean;
+  /** Set when the provider sent the browser back from a card-update page. */
+  cardUpdated?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { data } = useSuspenseQuery(trpc.billing.summary.queryOptions());
-  const { organization, entitlements, seatsUsed, subscription } = data;
+  const { organization, entitlements, seatsUsed, subscription, card } = data;
   const [seats, setSeats] = useState(Math.max(organization.seatLimit, 1));
   const [interval, setInterval] = useState<BillingInterval>("month");
 
@@ -90,14 +97,30 @@ export function BillingSummary({
     }),
   );
 
+  const updateCard = useMutation(
+    trpc.billing.updateCardUrl.mutationOptions({
+      // A top-level navigation to the provider's hosted page.
+      onSuccess: ({ url }) => window.location.assign(url),
+      onError,
+    }),
+  );
+
   const scheduled = subscription?.scheduledChange ?? null;
+  const isCanceled = subscription?.status === "canceled";
 
   return (
     <div className="space-y-6">
-      {portalUnavailable && (
-        <Alert variant="destructive">
+      {cardUpdated && (
+        <Alert>
           <AlertDescription>
-            {t("billing.settings.portalUnavailable")}
+            {t("billing.settings.cardUpdated")}
+          </AlertDescription>
+        </Alert>
+      )}
+      {data.awaitingSubscription && (
+        <Alert>
+          <AlertDescription>
+            {t("billing.settings.awaitingSubscription")}
           </AlertDescription>
         </Alert>
       )}
@@ -128,6 +151,7 @@ export function BillingSummary({
               })}
               {subscription.currentPeriodEndsAt &&
                 !scheduled &&
+                !isCanceled &&
                 ` · ${t("billing.settings.renews", { when: subscription.currentPeriodEndsAt })}`}
             </CardDescription>
           )}
@@ -188,23 +212,43 @@ export function BillingSummary({
             <LinkButton href="/pricing" variant="outline">
               {t("billing.settings.comparePlans")}
             </LinkButton>
-            {data.canManage && (
-              // The route mints a fresh portal session per visit, so it
-              // must never be prefetched.
-              <LinkButton
-                href="/settings/billing/portal"
-                variant="outline"
-                prefetch={false}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {t("billing.pricing.manage")}
-                <ExternalLinkIcon data-icon="inline-end" />
-              </LinkButton>
-            )}
           </div>
         </CardContent>
       </Card>
+
+      {data.canManage && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("billing.settings.paymentTitle")}</CardTitle>
+            <CardDescription>
+              {card
+                ? t("billing.settings.cardOnFile", {
+                    brand: card.brand ?? t("billing.settings.card"),
+                    last4: card.maskedPan.slice(-4),
+                  })
+                : t("billing.settings.noCard")}
+              {subscription?.currentPeriodEndsAt &&
+                !isCanceled &&
+                ` · ${t("billing.settings.nextCharge", { when: subscription.currentPeriodEndsAt })}`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <BillingContactDialog
+              trigger={<Button variant="outline" />}
+              title={t("billing.settings.updateCard")}
+              lead={t("billing.settings.updateCardLead")}
+              submitLabel={t("billing.checkout.continue")}
+              contact={data.billingContact}
+              isPending={updateCard.isPending || updateCard.isSuccess}
+              onSubmit={(values) => updateCard.mutate(values)}
+            >
+              <CreditCardIcon data-icon="inline-start" />
+              {t("billing.settings.updateCard")}
+            </BillingContactDialog>
+            <Invoices />
+          </CardContent>
+        </Card>
+      )}
 
       {data.canCheckout && (
         <Card>
@@ -229,8 +273,29 @@ export function BillingSummary({
               min={Math.max(seatsUsed, 1)}
               onChange={setSeats}
             />
+            <p className="text-sm text-muted-foreground">
+              {t("billing.settings.quote", {
+                pro: formatMoney(
+                  data.pricing.unitAmountCents.pro[interval] * seats,
+                  BILLING_CURRENCY,
+                  locale,
+                ),
+                business: formatMoney(
+                  data.pricing.unitAmountCents.business[interval] * seats,
+                  BILLING_CURRENCY,
+                  locale,
+                ),
+                unit: t(`billing.settings.unit.${interval}`),
+                seats,
+              })}
+            </p>
             <div className="flex flex-wrap gap-2">
-              <CheckoutButton plan="pro" interval={interval} seats={seats}>
+              <CheckoutButton
+                plan="pro"
+                interval={interval}
+                seats={seats}
+                contact={data.billingContact}
+              >
                 {t("billing.settings.choose", {
                   plan: t("billing.plans.pro.name"),
                 })}
@@ -239,6 +304,7 @@ export function BillingSummary({
                 plan="business"
                 interval={interval}
                 seats={seats}
+                contact={data.billingContact}
                 variant="outline"
               >
                 {t("billing.settings.choose", {
@@ -296,6 +362,53 @@ export function BillingSummary({
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+/** Paid charges on the subscription, straight from the provider. */
+function Invoices() {
+  const { t, locale } = useTranslation();
+  const trpc = useTRPC();
+  const { data: charges } = useQuery(trpc.billing.invoices.queryOptions());
+  if (!charges || charges.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      <h3 className="text-sm font-medium">{t("billing.settings.invoices")}</h3>
+      <ul className="divide-y divide-border rounded-md border border-border text-sm">
+        {charges.map((charge) => (
+          <li
+            key={charge.id}
+            className="flex items-center justify-between gap-3 px-3 py-2"
+          >
+            <span className="text-muted-foreground">
+              {charge.paidAt
+                ? t("billing.settings.chargedOn", { when: charge.paidAt })
+                : `#${charge.id}`}
+            </span>
+            <span className="flex items-center gap-2 font-medium">
+              {formatMoney(charge.amountCents, charge.currency, locale)}
+              <Badge
+                variant={
+                  charge.refunded
+                    ? "secondary"
+                    : charge.success
+                      ? "success"
+                      : "destructive"
+                }
+              >
+                {t(
+                  charge.refunded
+                    ? "billing.settings.refunded"
+                    : charge.success
+                      ? "billing.settings.paid"
+                      : "billing.settings.failed",
+                )}
+              </Badge>
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

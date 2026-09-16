@@ -42,23 +42,44 @@ export const env = createEnv({
     JWT_SECRET_KEY: z.string().min(32).optional(),
     ADMIN_EMAILS: z.string().min(1).optional(),
 
-    // Paddle (merchant of record). Key, secret and price ids are optional
-    // locally — without them the billing page shows the plans and no
-    // checkout, and the webhook route answers 503 — but a production deploy
-    // must have the full set. The environment is never defaulted: an unset
-    // value fails at boot rather than quietly picking sandbox (or live).
-    PADDLE_API_KEY: z.string().min(1).optional(),
-    PADDLE_WEBHOOK_SECRET: z.string().min(1).optional(),
-    PADDLE_ENVIRONMENT: z.enum(["sandbox", "production"], {
-      error:
-        "PADDLE_ENVIRONMENT must be 'sandbox' or 'production' — it is never defaulted.",
+    // Billing. Which provider adapter is live; unset means "no billing" —
+    // the pricing page shows the plans and no checkout, and the webhook
+    // routes answer 503. A production deploy must have the full set for
+    // the chosen provider (fail-closed check below).
+    BILLING_PROVIDER: z.enum(["paymob"]).optional(),
+
+    // Paymob (Egypt). Four credentials from the dashboard: the legacy API
+    // key (bearer auth for plan/subscription endpoints), the secret key
+    // (intention / unified checkout), the public key (checkout URL) and
+    // the HMAC secret (callback verification). Test and live keys are
+    // distinct; test integration ids only work with the test secret key.
+    // The mode is never defaulted: an unset value fails at boot rather
+    // than quietly running test keys in production (or the reverse).
+    PAYMOB_API_KEY: z.string().min(1).optional(),
+    PAYMOB_SECRET_KEY: z.string().min(1).optional(),
+    PAYMOB_PUBLIC_KEY: z.string().min(1).optional(),
+    PAYMOB_HMAC_SECRET: z.string().min(1).optional(),
+    PAYMOB_MODE: z.enum(["test", "live"], {
+      error: "PAYMOB_MODE must be 'test' or 'live' — it is never defaulted.",
     }),
-    // One recurring per-seat price per plan and billing interval. Sandbox
-    // and live catalogs have different ids.
-    PADDLE_PRICE_ID_PRO_MONTH: z.string().min(1).optional(),
-    PADDLE_PRICE_ID_PRO_YEAR: z.string().min(1).optional(),
-    PADDLE_PRICE_ID_BUSINESS_MONTH: z.string().min(1).optional(),
-    PADDLE_PRICE_ID_BUSINESS_YEAR: z.string().min(1).optional(),
+    // The online-card integration the checkout and the recurring
+    // deductions run on (wallets cannot be tokenised, so cards only).
+    PAYMOB_CARD_INTEGRATION_ID: z.coerce.number().int().positive().optional(),
+    // One Paymob subscription plan per paid plan and billing interval
+    // (`scripts/seed-paymob-plans.ts` creates them). Test and live differ.
+    PAYMOB_PLAN_ID_PRO_MONTH: z.string().min(1).optional(),
+    PAYMOB_PLAN_ID_PRO_YEAR: z.string().min(1).optional(),
+    PAYMOB_PLAN_ID_BUSINESS_MONTH: z.string().min(1).optional(),
+    PAYMOB_PLAN_ID_BUSINESS_YEAR: z.string().min(1).optional(),
+    // Paymob's subscription webhook carries no signature, so its route is
+    // only reachable at a path that includes this unguessable token — and
+    // even then the event is only a hint; the subscription is re-read from
+    // Paymob's API before anything is applied.
+    PAYMOB_SUBSCRIPTION_WEBHOOK_TOKEN: z.string().min(16).optional(),
+    // Set by Vercel when "Protection Bypass for Automation" is enabled on
+    // the project. Appended to the callback URLs handed to Paymob so its
+    // posts get through Vercel Authentication on the preview deployment.
+    VERCEL_AUTOMATION_BYPASS_SECRET: z.string().min(1).optional(),
 
     GOOGLE_CLIENT_ID: z.string().min(1).optional(),
     GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
@@ -154,44 +175,37 @@ export const adminEmails: ReadonlySet<string> = new Set(
     .filter(Boolean),
 );
 
-const hasAllPriceIds = Boolean(
-  env.PADDLE_PRICE_ID_PRO_MONTH &&
-    env.PADDLE_PRICE_ID_PRO_YEAR &&
-    env.PADDLE_PRICE_ID_BUSINESS_MONTH &&
-    env.PADDLE_PRICE_ID_BUSINESS_YEAR,
+const hasAllPaymobPlanIds = Boolean(
+  env.PAYMOB_PLAN_ID_PRO_MONTH &&
+    env.PAYMOB_PLAN_ID_PRO_YEAR &&
+    env.PAYMOB_PLAN_ID_BUSINESS_MONTH &&
+    env.PAYMOB_PLAN_ID_BUSINESS_YEAR,
 );
 
-// Billing must be whole in production: half-configured Paddle means paying
-// customers whose webhooks are dropped, which is worse than no billing.
-if (env.VERCEL_ENV === "production") {
-  if (!env.PADDLE_API_KEY || !env.PADDLE_WEBHOOK_SECRET || !hasAllPriceIds) {
+const isPaymobConfigured = Boolean(
+  env.PAYMOB_API_KEY &&
+    env.PAYMOB_SECRET_KEY &&
+    env.PAYMOB_PUBLIC_KEY &&
+    env.PAYMOB_HMAC_SECRET &&
+    env.PAYMOB_CARD_INTEGRATION_ID &&
+    env.PAYMOB_SUBSCRIPTION_WEBHOOK_TOKEN &&
+    hasAllPaymobPlanIds,
+);
+
+// Billing must be whole in production: a half-configured provider means
+// paying customers whose callbacks are dropped, which is worse than no
+// billing.
+if (env.VERCEL_ENV === "production" && env.BILLING_PROVIDER === "paymob") {
+  if (!isPaymobConfigured) {
     throw new Error(
-      "PADDLE_API_KEY, PADDLE_WEBHOOK_SECRET and all four PADDLE_PRICE_ID_{PRO,BUSINESS}_{MONTH,YEAR} are required in production.",
+      "PAYMOB_API_KEY, PAYMOB_SECRET_KEY, PAYMOB_PUBLIC_KEY, PAYMOB_HMAC_SECRET, PAYMOB_CARD_INTEGRATION_ID, PAYMOB_SUBSCRIPTION_WEBHOOK_TOKEN and all four PAYMOB_PLAN_ID_{PRO,BUSINESS}_{MONTH,YEAR} are required in production.",
     );
   }
-  if (env.PADDLE_ENVIRONMENT !== "production") {
-    throw new Error("PADDLE_ENVIRONMENT must be 'production' in production.");
-  }
-  // The browser half is checked here too: the client env module cannot
-  // see VERCEL_ENV, and a sandbox token (`test_…`) or environment on a
-  // live deploy would open checkouts nobody can pay.
-  if (env.PADDLE_API_KEY.startsWith("pdl_sdbx_")) {
-    throw new Error("PADDLE_API_KEY is a sandbox key; use a live API key.");
-  }
-  const clientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ?? "";
-  if (!clientToken.startsWith("live_")) {
-    throw new Error(
-      "NEXT_PUBLIC_PADDLE_CLIENT_TOKEN must be a live client-side token (live_…) in production.",
-    );
-  }
-  if (process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT !== "production") {
-    throw new Error(
-      "NEXT_PUBLIC_PADDLE_ENVIRONMENT must be 'production' in production.",
-    );
+  if (env.PAYMOB_MODE !== "live") {
+    throw new Error("PAYMOB_MODE must be 'live' in production.");
   }
 }
 
 /** True when checkout can actually be offered. */
-export const isBillingConfigured = Boolean(
-  env.PADDLE_API_KEY && hasAllPriceIds,
-);
+export const isBillingConfigured =
+  env.BILLING_PROVIDER === "paymob" && isPaymobConfigured;

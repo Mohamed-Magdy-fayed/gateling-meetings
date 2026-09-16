@@ -31,7 +31,7 @@ export const planEnum = pgEnum("plan", planValues);
  * *Why* an org is on its plan. Enforcement never looks at this — it only
  * reads the resolved entitlements — but writers do: billing webhooks only
  * ever touch `subscription`/`free` orgs, so a `manual` grant made from the
- * admin panel is never clobbered by a stray Paddle event.
+ * admin panel is never clobbered by a stray billing event.
  */
 export const planSourceValues = [
   "free",
@@ -64,15 +64,19 @@ export const OrganizationsTable = pgTable(
     /** Admin-facing note: who comped this org and why. */
     planNote: text(),
     seatLimit: integer().notNull().default(1),
-    // Paddle. Present whenever the org has ever checked out, even if its
-    // plan is now `manual` — the customer portal link still needs them.
-    paddleCustomerId: varchar({ length: 64 }),
-    paddleSubscriptionId: varchar({ length: 64 }),
-    paddleSubscriptionStatus: varchar({ length: 32 }),
-    paddlePriceId: varchar({ length: 64 }),
+    // Billing provider ids. Present whenever the org has ever checked out,
+    // even if its plan is now `manual` — card updates and invoices still
+    // need them. Which provider they belong to is on the mirror row.
+    billingCustomerId: varchar({ length: 64 }),
+    billingSubscriptionId: varchar({ length: 64 }),
+    billingSubscriptionStatus: varchar({ length: 32 }),
+    billingPlanId: varchar({ length: 64 }),
     currentPeriodEndsAt: timestamp({ withTimezone: true }),
-    /** `occurred_at` of the last Paddle event applied; older ones are ignored. */
-    paddleSyncedAt: timestamp({ withTimezone: true }),
+    /** Instant of the last billing event applied; older ones are ignored. */
+    billingSyncedAt: timestamp({ withTimezone: true }),
+    /** Billing contact the provider requires on every payment page (Paymob `billing_data`). */
+    billingName: varchar({ length: 128 }),
+    billingPhone: varchar({ length: 32 }),
     createdAt,
     createdBy,
     updatedAt,
@@ -84,10 +88,10 @@ export const OrganizationsTable = pgTable(
     uniqueIndex("organizations_personal_owner_unique").on(
       table.personalOwnerId,
     ),
-    uniqueIndex("organizations_paddle_subscription_unique").on(
-      table.paddleSubscriptionId,
+    uniqueIndex("organizations_billing_subscription_unique").on(
+      table.billingSubscriptionId,
     ),
-    index("organizations_paddle_customer_idx").on(table.paddleCustomerId),
+    index("organizations_billing_customer_idx").on(table.billingCustomerId),
   ],
 );
 

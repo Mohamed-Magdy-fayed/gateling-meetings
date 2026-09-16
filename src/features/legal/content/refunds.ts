@@ -11,13 +11,13 @@ export const refundsDocuments: LegalDocuments = {
     title: "Refund and Cancellation Policy",
     effectiveDate: LEGAL_EFFECTIVE_DATE,
     intro: [
-      `This policy explains how cancellations and refunds work for paid ${E.product} plans. Payments are processed by Paddle, our Merchant of Record, and refunds are issued by Paddle to the original payment method.`,
+      `This policy explains how cancellations and refunds work for paid ${E.product} plans. Payments are processed by Paymob on our behalf, and refunds are issued by us through Paymob to the original card.`,
     ],
     sections: [
       {
         heading: "1. Cancelling a subscription",
         paragraphs: [
-          "You can cancel at any time from Settings → Billing, or through the customer portal link Paddle sends with every receipt. Cancellation takes effect at the end of the current billing period: your organization keeps its plan until then, is not charged again, and then returns to the Free plan. Nothing is deleted — your account, organizations and meetings stay as they are, subject to the Free plan's limits.",
+          "You can cancel at any time from Settings → Billing. Cancelling stops all future charges immediately; your organization keeps its plan until the end of the period already paid for, and then returns to the Free plan. Nothing is deleted — your account, organizations and meetings stay as they are, subject to the Free plan's limits.",
         ],
       },
       {
@@ -59,7 +59,7 @@ export const refundsDocuments: LegalDocuments = {
       {
         heading: "8. How to request a refund",
         paragraphs: [
-          `Email ${E.email} from the address on the account, with the organization name and the receipt or invoice number. You may also contact Paddle directly at paddle.net with the receipt. Approved refunds are issued by Paddle within 5–10 business days to the original payment method; your bank may take longer to show it.`,
+          `Email ${E.email} from the address on the account, with the organization name and the receipt or invoice number. Approved refunds are issued through Paymob within 5–10 business days to the original card; your bank may take up to 14 business days to show it.`,
         ],
       },
       {
@@ -74,13 +74,13 @@ export const refundsDocuments: LegalDocuments = {
     title: "سياسة الاسترداد والإلغاء",
     effectiveDate: LEGAL_EFFECTIVE_DATE,
     intro: [
-      `توضح هذه السياسة كيفية عمل الإلغاء والاسترداد لخطط ${E.product} المدفوعة. تعالج Paddle المدفوعات بصفتها التاجر المسجَّل، وتُصدر Paddle المبالغ المستردة إلى وسيلة الدفع الأصلية.`,
+      `توضح هذه السياسة كيفية عمل الإلغاء والاسترداد لخطط ${E.product} المدفوعة. تعالج Paymob المدفوعات نيابةً عنا، ونُصدر نحن المبالغ المستردة عبر Paymob إلى البطاقة الأصلية.`,
     ],
     sections: [
       {
         heading: "1. إلغاء الاشتراك",
         paragraphs: [
-          "يمكنك الإلغاء في أي وقت من الإعدادات ← الفوترة، أو عبر رابط بوابة العملاء الذي ترسله Paddle مع كل إيصال. يسري الإلغاء في نهاية فترة الفوترة الحالية: تحتفظ مؤسستك بخطتها حتى ذلك الحين، ولا تُحاسَب مجددًا، ثم تعود إلى الخطة المجانية. لا يُحذف شيء — يبقى حسابك ومؤسساتك واجتماعاتك كما هي، مع خضوعها لحدود الخطة المجانية.",
+          "يمكنك الإلغاء في أي وقت من الإعدادات ← الفوترة. يوقف الإلغاء جميع الخصومات المستقبلية فورًا؛ تحتفظ مؤسستك بخطتها حتى نهاية الفترة المدفوعة بالفعل، ثم تعود إلى الخطة المجانية. لا يُحذف شيء — يبقى حسابك ومؤسساتك واجتماعاتك كما هي، مع خضوعها لحدود الخطة المجانية.",
         ],
       },
       {
@@ -122,7 +122,7 @@ export const refundsDocuments: LegalDocuments = {
       {
         heading: "8. كيفية طلب الاسترداد",
         paragraphs: [
-          `راسلنا على ${E.email} من البريد الإلكتروني المسجَّل في الحساب، مع ذكر اسم المؤسسة ورقم الإيصال أو الفاتورة. يمكنك أيضًا التواصل مع Paddle مباشرة عبر paddle.net مع الإيصال. تُصدر Paddle المبالغ المستردة الموافَق عليها خلال 5–10 أيام عمل إلى وسيلة الدفع الأصلية؛ وقد يستغرق بنكك وقتًا أطول لإظهارها.`,
+          `راسلنا على ${E.email} من البريد الإلكتروني المسجَّل في الحساب، مع ذكر اسم المؤسسة ورقم الإيصال أو الفاتورة. تُصدر المبالغ المستردة الموافَق عليها عبر Paymob خلال 5–10 أيام عمل إلى البطاقة الأصلية؛ وقد يستغرق بنكك حتى 14 يوم عمل لإظهارها.`,
         ],
       },
       {

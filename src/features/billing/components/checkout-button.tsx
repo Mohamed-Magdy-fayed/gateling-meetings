@@ -7,64 +7,64 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/features/core/i18n/client";
 import { useTRPC } from "@/integrations/trpc/client";
 import type { BillingInterval, PaidPlanId } from "../tiers";
-import { usePaddle } from "./paddle-provider";
+import {
+  type BillingContact,
+  BillingContactDialog,
+} from "./billing-contact-dialog";
 
 type CheckoutButtonProps = {
   plan: PaidPlanId;
   interval: BillingInterval;
   seats: number;
+  /** Prefills the dialog for an org that has paid before. */
+  contact?: BillingContact | null;
   variant?: "default" | "outline";
   className?: string;
   children: React.ReactNode;
 };
 
 /**
- * Asks the server for a transaction bound to the active org (and to the
- * signed-in buyer's Paddle customer, so their email is prefilled), then
- * hands it to Paddle's overlay. Disabled until Paddle.js is up.
+ * Collects the buyer's contact, asks the server for a checkout bound to
+ * the active org, and sends the browser to the provider's hosted page.
+ * Nothing about the price travels from the browser; the amount is
+ * computed server-side from the plan, interval and seats.
  */
 export function CheckoutButton({
   plan,
   interval,
   seats,
+  contact,
   variant = "default",
   className,
   children,
 }: CheckoutButtonProps) {
-  const { t, locale } = useTranslation();
+  const { t } = useTranslation();
   const trpc = useTRPC();
-  const paddle = usePaddle();
 
   const createCheckout = useMutation(
     trpc.billing.createCheckout.mutationOptions({
-      onSuccess: ({ transactionId }) => {
-        if (!paddle) {
-          toast.error(t("billing.errors.checkoutUnavailable"));
-          return;
-        }
-        paddle.Checkout.open({
-          transactionId,
-          settings: {
-            displayMode: "overlay",
-            variant: "one-page",
-            locale,
-            // The webhook lands the plan; this page just says hello.
-            successUrl: `${window.location.origin}/welcome`,
-          },
-        });
-      },
+      // A top-level navigation: the payment page is never framed.
+      onSuccess: ({ url }) => window.location.assign(url),
       onError: (error) => toast.error(error.message),
     }),
   );
 
   return (
-    <Button
-      variant={variant}
-      className={className}
-      disabled={!paddle || createCheckout.isPending}
-      onClick={() => createCheckout.mutate({ plan, interval, seats })}
+    <BillingContactDialog
+      trigger={<Button variant={variant} className={className} />}
+      title={t("billing.checkout.title")}
+      lead={t("billing.checkout.lead", {
+        plan: t(`billing.plans.${plan}.name`),
+        seats,
+      })}
+      submitLabel={t("billing.checkout.continue")}
+      contact={contact}
+      isPending={createCheckout.isPending || createCheckout.isSuccess}
+      onSubmit={(values) =>
+        createCheckout.mutate({ plan, interval, seats, ...values })
+      }
     >
       {children}
-    </Button>
+    </BillingContactDialog>
   );
 }

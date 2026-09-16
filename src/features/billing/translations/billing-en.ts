@@ -58,17 +58,34 @@ export const billingEn = {
     scheduledCancel: "Cancels on {when:date} — you keep your plan until then.",
     scheduledPause: "Pauses on {when:date} — you keep your plan until then.",
     scheduledResume: "Resumes on {when:date}.",
-    portalUnavailable:
-      "The billing portal could not be opened. Try again in a moment.",
+    paymentTitle: "Payment",
+    card: "Card",
+    cardOnFile: "{brand} ending in {last4}",
+    noCard: "No saved card yet.",
+    nextCharge: "Next charge {when:date}",
+    updateCard: "Update card",
+    updateCardLead:
+      "You will be sent to our payment provider to enter the new card. It becomes the card your subscription is charged to.",
+    cardUpdated: "Your new card is saved and will be used for the next charge.",
+    awaitingSubscription:
+      "Your payment went through and your plan is active. Seat changes and cancellation become available once our payment provider confirms the subscription — usually within a few minutes.",
+    invoices: "Charges",
+    chargedOn: "{when:date}",
+    paid: "Paid",
+    failed: "Failed",
+    refunded: "Refunded",
+    quote:
+      "For {seats:number} seat(s): Pro {pro} · Business {business} per {unit}, in EGP.",
+    unit: { month: "month", year: "year" },
     upgradeTitle: "Upgrade",
     upgradeLead: "Pick a plan and how many seats. You can change both later.",
     choose: "Choose {plan}",
     seatsTitle: "Seats",
     seatsLead:
-      "Each member of the organization takes a seat. Changes are prorated immediately.",
+      "Each member of the organization takes a seat. New seats are available at once; the new amount is charged from your next billing date.",
     updateSeats: "Update seats",
     seatsUpdated:
-      "Seat change sent — it applies as soon as Paddle confirms it.",
+      "Seats updated — the new amount applies from your next charge.",
     fewerSeats: "Fewer seats",
     moreSeats: "More seats",
     cancel: "Cancel subscription",
@@ -85,6 +102,25 @@ export const billingEn = {
     tooFewSeats:
       "You have {used:number} members; the seat count cannot go below that.",
     checkoutUnavailable: "Checkout is not available right now.",
+    emailRequired:
+      "Your account needs a verified email address before you can subscribe.",
+    providerUnavailable:
+      "Our payment provider did not respond. Nothing was charged — please try again in a moment.",
+  },
+  checkout: {
+    title: "Billing details",
+    lead: "{plan} · {seats:number} seat(s). Our payment provider needs a name and a phone number for the receipt.",
+    name: "Full name",
+    namePlaceholder: "As it should appear on the receipt",
+    phone: "Phone number",
+    phoneHint: "International format, e.g. +201001234567.",
+    redirectNote:
+      "You will be sent to Paymob, our payment provider, to pay by card. Cards only — recurring charges cannot run on a mobile wallet.",
+    continue: "Continue to payment",
+  },
+  validation: {
+    name: "Enter your full name.",
+    phone: "Enter a phone number in international format, e.g. +201001234567.",
   },
   tiers: {
     pro: {
@@ -114,6 +150,8 @@ export const billingEn = {
     upgrade: "Upgrade",
     manage: "Manage billing",
     unavailable: "Prices are not available right now.",
+    currencyNote:
+      "Prices are in Egyptian pounds and charged by card through Paymob. Seats are billed together; changes apply from the next billing date.",
     freeNote:
       "The Free plan (5 participants, 40-minute meetings) needs no card — just sign up.",
     contact: "Talk to us",
@@ -126,7 +164,11 @@ export const billingEn = {
     leadPending:
       "Thanks for subscribing — {org} is being upgraded right now. It usually takes a few seconds.",
     pendingNote:
-      "You can leave this page; the plan switches by itself once Paddle confirms the payment. If it has not after a few minutes, check the billing page or contact us.",
+      "You can leave this page; the plan switches by itself once the payment is confirmed. If it has not after a few minutes, check the billing page or contact us.",
+    declinedTitle: "Payment not completed",
+    declinedLead:
+      "The payment for {org} was declined or cancelled. Nothing was charged. You can try again with another card.",
+    tryAgain: "Try again",
     goToDashboard: "Go to dashboard",
   },
 } as const;

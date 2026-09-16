@@ -28,26 +28,7 @@ export type CspOptions = {
    * Media itself rides WebRTC, which CSP does not govern.
    */
   liveKitUrl?: string;
-  /**
-   * Allow Paddle's overlay checkout: its script from Paddle's CDN, the
-   * checkout iframe, and its API calls. Only the pages that open a checkout
-   * ask for this — a meeting room never needs to frame anything.
-   */
-  paddle?: boolean;
 };
-
-/** Both environments' checkout hosts; which one is used is decided at runtime. */
-const PADDLE_FRAME_HOSTS = [
-  "https://buy.paddle.com",
-  "https://sandbox-buy.paddle.com",
-] as const;
-const PADDLE_SCRIPT_HOST = "https://cdn.paddle.com";
-/** Paddle.js pulls its overlay stylesheet from the CDN of whichever environment it runs in. */
-const PADDLE_STYLE_HOSTS = [
-  "https://cdn.paddle.com",
-  "https://sandbox-cdn.paddle.com",
-] as const;
-const PADDLE_CONNECT_HOSTS = ["https://*.paddle.com"] as const;
 
 /** `wss://x.livekit.cloud` → `["wss://x.livekit.cloud", "https://x.livekit.cloud"]`. */
 function liveKitOrigins(liveKitUrl: string | undefined): string[] {
@@ -83,9 +64,9 @@ function liveKitOrigins(liveKitUrl: string | undefined): string[] {
  *   server-side error stacks in the browser. Production never gets it.
  * - `upgrade-insecure-requests` is production-only — it would break
  *   `http://localhost:3000`.
- * - `frame-src` is `'none'` except on billing pages, which frame Paddle's
- *   checkout and load its overlay stylesheet from Paddle's CDN;
- *   `frame-ancestors` stays `'none'` everywhere.
+ * - `frame-src` is `'none'`: payment pages are hosted by the provider and
+ *   opened as a top-level navigation, never framed; `frame-ancestors`
+ *   stays `'none'` everywhere too.
  * - `frame-ancestors 'none'` is the real clickjacking control; the
  *   `X-Frame-Options` header in `next.config.ts` is its legacy twin.
  */
@@ -93,36 +74,28 @@ export function buildContentSecurityPolicy({
   nonce,
   isDevelopment,
   liveKitUrl,
-  paddle = false,
 }: CspOptions): string {
   const scriptSrc = [
     "'self'",
     `'nonce-${nonce}'`,
     "'strict-dynamic'",
     isDevelopment ? "'unsafe-eval'" : null,
-    paddle ? PADDLE_SCRIPT_HOST : null,
   ].filter(Boolean);
 
   const connectSrc = ["'self'", ...liveKitOrigins(liveKitUrl)];
   // `next dev` streams HMR updates over a WebSocket to its own origin.
   if (isDevelopment) connectSrc.push("ws://localhost:*", "wss://localhost:*");
-  if (paddle) connectSrc.push(...PADDLE_CONNECT_HOSTS);
 
   const directives: [string, string][] = [
     ["default-src", "'self'"],
     ["script-src", scriptSrc.join(" ")],
-    [
-      "style-src",
-      paddle
-        ? `'self' 'unsafe-inline' ${PADDLE_STYLE_HOSTS.join(" ")}`
-        : "'self' 'unsafe-inline'",
-    ],
+    ["style-src", "'self' 'unsafe-inline'"],
     ["img-src", `'self' data: blob: ${IMAGE_HOSTS.join(" ")}`],
     ["font-src", "'self'"],
     ["connect-src", connectSrc.join(" ")],
     ["media-src", "'self' blob:"],
     ["worker-src", "'self' blob:"],
-    ["frame-src", paddle ? PADDLE_FRAME_HOSTS.join(" ") : "'none'"],
+    ["frame-src", "'none'"],
     ["object-src", "'none'"],
     ["base-uri", "'self'"],
     ["form-action", "'self'"],

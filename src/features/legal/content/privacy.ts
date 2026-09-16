@@ -11,7 +11,7 @@ export const privacyDocuments: LegalDocuments = {
     title: "Privacy Policy",
     effectiveDate: LEGAL_EFFECTIVE_DATE,
     intro: [
-      `This policy describes what personal data ${E.name}, ${E.country} ("we") collects when you use ${E.product} at ${E.productUrl} (the "Service"), why, who we share it with and what rights you have. We are the controller of this data. Paddle, our Merchant of Record, is a separate controller for the payment data it collects at checkout — see paddle.com/legal/privacy.`,
+      `This policy describes what personal data ${E.name}, ${E.country} ("we") collects when you use ${E.product} at ${E.productUrl} (the "Service"), why, who we share it with and what rights you have. We are the controller of this data. Paymob (Paymob Solutions S.A.E., Egypt), our payment processor, is a separate controller for the card data it collects on its hosted payment page — see paymob.com/en/privacy-policy.`,
     ],
     sections: [
       {
@@ -23,7 +23,7 @@ export const privacyDocuments: LegalDocuments = {
             bullets: [
               "name, email address and phone number when you sign up; a password (stored only as a hash) or a passkey (we store only the public key); your Google account's name, email and profile picture if you sign in with Google;",
               "organization names, the members and roles you set up, and the email addresses you invite;",
-              "your plan, seat count and — once you buy a plan — the identifiers Paddle assigns to your customer and subscription. We never receive or store card numbers.",
+              "your plan, seat count and — once you buy a plan — the billing name and phone number you enter at checkout, the identifiers Paymob assigns to your subscription and saved card, and the card brand and last four digits so you can recognise it. We never receive or store full card numbers.",
             ],
           },
           {
@@ -63,7 +63,7 @@ export const privacyDocuments: LegalDocuments = {
           "Vercel (application hosting, logs) — United States and edge locations worldwide;",
           "Neon (database) and Upstash (session store) — United States / EU regions;",
           "LiveKit (real-time audio, video and chat relay) — global media servers close to participants;",
-          "Paddle (checkout, payment, invoices, tax) — United Kingdom / United States; Paddle receives your name, email, country and what you bought;",
+          "Paymob (hosted checkout, card tokenisation, recurring charges) — Egypt; Paymob receives your name, email, phone number and the amount charged;",
           "Inngest (background jobs such as reminders and duration limits);",
           "Google (only if you sign in with Google);",
           "our email delivery provider (for the transactional emails above).",
@@ -87,7 +87,7 @@ export const privacyDocuments: LegalDocuments = {
           "Meetings and participant records: until you delete the meeting or your account;",
           "Billing records: as long as tax and accounting law requires;",
           "Server logs: up to 30 days;",
-          "Billing event records from Paddle: as long as needed to handle disputes and meet accounting obligations.",
+          "Billing records and payment callbacks from Paymob: as long as needed to handle disputes and meet accounting and tax obligations.",
         ],
       },
       {
@@ -125,7 +125,7 @@ export const privacyDocuments: LegalDocuments = {
     title: "سياسة الخصوصية",
     effectiveDate: LEGAL_EFFECTIVE_DATE,
     intro: [
-      `توضح هذه السياسة البيانات الشخصية التي تجمعها ${E.name}، ${E.country} ("نحن") عند استخدامك لـ ${E.product} على ${E.productUrl} ("الخدمة")، ولماذا، ومع من نشاركها، وما حقوقك. نحن المتحكم في هذه البيانات. أما Paddle، التاجر المسجَّل لدينا، فهي متحكم مستقل في بيانات الدفع التي تجمعها عند الشراء — انظر paddle.com/legal/privacy.`,
+      `توضح هذه السياسة البيانات الشخصية التي تجمعها ${E.name}، ${E.country} ("نحن") عند استخدامك لـ ${E.product} على ${E.productUrl} ("الخدمة")، ولماذا، ومع من نشاركها، وما حقوقك. نحن المتحكم في هذه البيانات. أما Paymob (شركة Paymob Solutions S.A.E.، مصر)، معالج الدفع لدينا، فهي متحكم مستقل في بيانات البطاقة التي تجمعها على صفحة الدفع المستضافة الخاصة بها — انظر paymob.com/en/privacy-policy.`,
     ],
     sections: [
       {
@@ -137,7 +137,7 @@ export const privacyDocuments: LegalDocuments = {
             bullets: [
               "الاسم والبريد الإلكتروني ورقم الهاتف عند التسجيل؛ وكلمة مرور (تُخزَّن كتجزئة فقط) أو مفتاح مرور (نخزّن المفتاح العام فقط)؛ واسم حساب Google وبريده وصورته إذا سجّلت الدخول عبر Google؛",
               "أسماء المؤسسات، والأعضاء والأدوار التي تحددها، وعناوين البريد التي تدعوها؛",
-              "خطتك وعدد المقاعد — وبعد شراء خطة — المعرّفات التي تخصصها Paddle لعميلك واشتراكك. لا نستلم أرقام البطاقات ولا نخزّنها أبدًا.",
+              "خطتك وعدد المقاعد — وبعد شراء خطة — اسم الفوترة ورقم الهاتف اللذين تدخلهما عند الدفع، والمعرّفات التي تخصصها Paymob لاشتراكك وبطاقتك المحفوظة، ونوع البطاقة وآخر أربعة أرقام منها لتتعرف عليها. لا نستلم أرقام البطاقات الكاملة ولا نخزّنها أبدًا.",
             ],
           },
           {
@@ -177,7 +177,7 @@ export const privacyDocuments: LegalDocuments = {
           "Vercel (استضافة التطبيق، السجلات) — الولايات المتحدة ومواقع طرفية حول العالم؛",
           "Neon (قاعدة البيانات) وUpstash (مخزن الجلسات) — مناطق الولايات المتحدة / الاتحاد الأوروبي؛",
           "LiveKit (نقل الصوت والفيديو والدردشة في الوقت الفعلي) — خوادم وسائط عالمية قريبة من المشاركين؛",
-          "Paddle (الدفع، الفواتير، الضرائب) — المملكة المتحدة / الولايات المتحدة؛ تستلم Paddle اسمك وبريدك وبلدك وما اشتريته؛",
+          "Paymob (صفحة الدفع المستضافة، ترميز البطاقة، الخصومات المتكررة) — مصر؛ تستلم Paymob اسمك وبريدك ورقم هاتفك والمبلغ المخصوم؛",
           "Inngest (المهام الخلفية مثل التذكيرات وحدود المدة)؛",
           "Google (فقط إذا سجّلت الدخول عبر Google)؛",
           "مزود توصيل البريد الإلكتروني لدينا (لرسائل المعاملات المذكورة أعلاه).",
@@ -201,7 +201,7 @@ export const privacyDocuments: LegalDocuments = {
           "الاجتماعات وسجلات المشاركين: حتى تحذف الاجتماع أو حسابك؛",
           "سجلات الفوترة: طوال المدة التي يقتضيها القانون الضريبي والمحاسبي؛",
           "سجلات الخادم: حتى 30 يومًا؛",
-          "سجلات أحداث الفوترة من Paddle: طوال المدة اللازمة لمعالجة النزاعات والوفاء بالالتزامات المحاسبية.",
+          "سجلات الفوترة وإشعارات الدفع من Paymob: طوال المدة اللازمة لمعالجة النزاعات والوفاء بالالتزامات المحاسبية والضريبية.",
         ],
       },
       {

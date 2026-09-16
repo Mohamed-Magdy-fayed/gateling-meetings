@@ -1,20 +1,25 @@
-import { eq, or } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 
 import type { Database } from "@/drizzle";
-import { type BillingEventOutcome, OrganizationsTable } from "@/drizzle/schema";
+import {
+  BillingCheckoutsTable,
+  type BillingEventOutcome,
+  type BillingProviderId,
+  OrganizationsTable,
+} from "@/drizzle/schema";
 import {
   decideApply,
   type PlanChange,
 } from "@/features/billing/server/subscription-mapping";
 
 /**
- * Lands a Paddle-derived change on an org. `FOR UPDATE` serialises two
+ * Lands a billing-derived change on an org. `FOR UPDATE` serialises two
  * events for the same org that arrive together; `decideApply` keeps a
  * hand-granted plan out of billing's reach and drops out-of-order events.
- * Paddle ids are stored even when the plan is left alone, so the customer
- * portal works for a comped org that once paid.
+ * Provider ids are stored even when the plan is left alone, so card
+ * updates and invoices work for a comped org that once paid.
  */
-export async function applyPaddleSubscription(
+export async function applyBillingSubscription(
   db: Database,
   organizationId: string,
   change: PlanChange,
@@ -27,7 +32,7 @@ export async function applyPaddleSubscription(
       .select({
         id: OrganizationsTable.id,
         planSource: OrganizationsTable.planSource,
-        paddleSyncedAt: OrganizationsTable.paddleSyncedAt,
+        billingSyncedAt: OrganizationsTable.billingSyncedAt,
       })
       .from(OrganizationsTable)
       .where(eq(OrganizationsTable.id, organizationId))
@@ -39,10 +44,10 @@ export async function applyPaddleSubscription(
       await trx
         .update(OrganizationsTable)
         .set({
-          paddleCustomerId: change.paddleCustomerId,
-          paddleSubscriptionId: change.paddleSubscriptionId,
-          paddleSubscriptionStatus: change.paddleSubscriptionStatus,
-          updatedBy: "paddle",
+          billingCustomerId: change.billingCustomerId,
+          billingSubscriptionId: change.billingSubscriptionId,
+          billingSubscriptionStatus: change.billingSubscriptionStatus,
+          updatedBy: "billing",
         })
         .where(eq(OrganizationsTable.id, org.id));
       return decision.reason;
@@ -50,22 +55,26 @@ export async function applyPaddleSubscription(
 
     await trx
       .update(OrganizationsTable)
-      .set({ ...change, paddleSyncedAt: occurredAt, updatedBy: "paddle" })
+      .set({ ...change, billingSyncedAt: occurredAt, updatedBy: "billing" })
       .where(eq(OrganizationsTable.id, org.id));
     return "applied";
   });
 }
 
 /**
- * Which org a Paddle event is about. `custom_data.organizationId` is set
- * server-side when the checkout transaction is created and is the primary
- * key; the Paddle ids are the fallback for events Paddle raises later
- * (renewals, dunning) that may not carry custom data.
+ * Which org a billing event is about. The checkout row (matched by the
+ * provider's order id or our own reference, both set server-side when the
+ * checkout was opened) is the primary key; the provider's subscription /
+ * customer ids on the org are the fallback for events the provider raises
+ * later (renewals, dunning) that carry neither.
  */
-export async function findOrganizationForPaddle(
+export async function findOrganizationForBilling(
   db: Database,
+  provider: BillingProviderId,
   hints: {
     organizationId?: string | null;
+    providerOrderId?: string | null;
+    reference?: string | null;
     subscriptionId?: string | null;
     customerId?: string | null;
   },
@@ -77,17 +86,46 @@ export async function findOrganizationForPaddle(
     });
     if (byId) return byId.id;
   }
-  const clauses = [
-    hints.subscriptionId
-      ? eq(OrganizationsTable.paddleSubscriptionId, hints.subscriptionId)
+
+  const checkoutClauses = [
+    hints.providerOrderId
+      ? and(
+          eq(BillingCheckoutsTable.provider, provider),
+          eq(BillingCheckoutsTable.providerOrderId, hints.providerOrderId),
+        )
       : null,
-    hints.customerId
-      ? eq(OrganizationsTable.paddleCustomerId, hints.customerId)
+    hints.reference
+      ? eq(BillingCheckoutsTable.reference, hints.reference)
+      : null,
+    hints.subscriptionId
+      ? and(
+          eq(BillingCheckoutsTable.provider, provider),
+          eq(
+            BillingCheckoutsTable.providerSubscriptionId,
+            hints.subscriptionId,
+          ),
+        )
       : null,
   ].filter((clause) => clause != null);
-  if (clauses.length === 0) return null;
+  if (checkoutClauses.length > 0) {
+    const checkout = await db.query.BillingCheckoutsTable.findFirst({
+      where: or(...checkoutClauses),
+      columns: { organizationId: true },
+    });
+    if (checkout) return checkout.organizationId;
+  }
+
+  const orgClauses = [
+    hints.subscriptionId
+      ? eq(OrganizationsTable.billingSubscriptionId, hints.subscriptionId)
+      : null,
+    hints.customerId
+      ? eq(OrganizationsTable.billingCustomerId, hints.customerId)
+      : null,
+  ].filter((clause) => clause != null);
+  if (orgClauses.length === 0) return null;
   const match = await db.query.OrganizationsTable.findFirst({
-    where: or(...clauses),
+    where: or(...orgClauses),
     columns: { id: true },
   });
   return match?.id ?? null;

@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 
 import { isBillingConfigured } from "@/data/env/server";
 import { db } from "@/drizzle";
-import { PaddleProvider } from "@/features/billing/components/paddle-provider";
 import { PricingTable } from "@/features/billing/components/pricing-table";
 import { resolveEntitlements } from "@/features/billing/plans";
-import { getPriceMap } from "@/features/billing/server/price-map";
+import { getPlanCatalog } from "@/features/billing/server/plan-catalog";
+import { hasLiveSubscription } from "@/features/billing/server/subscription-state";
 import { buildTiers } from "@/features/billing/tiers";
 import { getUserSession } from "@/features/core/auth/core";
 import { isAdminEmail } from "@/features/core/auth/core/admin";
@@ -19,27 +19,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("billing.pricing.title") };
 }
 
-const COUNTRY_CODE = /^[A-Z]{2}$/;
-
-/**
- * Vercel's edge sets `x-vercel-ip-country` on every request. Anything else
- * (local dev, another host, a malformed value) yields `undefined`, and the
- * client then lets Paddle geolocate from the visitor's IP — an app-side
- * "unknown" is never sent to Paddle as if it were a country.
- */
-function detectCountry(h: Headers): string | undefined {
-  const value = h.get("x-vercel-ip-country")?.trim().toUpperCase();
-  return value && COUNTRY_CODE.test(value) ? value : undefined;
-}
-
 export default async function PricingPage() {
-  const [{ t }, session, requestHeaders] = await Promise.all([
+  const [{ t }, session] = await Promise.all([
     getT(),
     getUserSession(await cookies()),
-    headers(),
   ]);
-  const countryCode = detectCountry(requestHeaders);
-  const priceMap = getPriceMap();
+  const catalog = getPlanCatalog();
   const active = session
     ? await loadActiveOrganization(db, session.user.id, session.orgId ?? null)
     : null;
@@ -56,7 +41,7 @@ export default async function PricingPage() {
       ["owner", "admin"].includes(active.membership.role)) &&
     active.organization.planSource !== "manual" &&
     active.organization.planSource !== "trial" &&
-    !active.organization.paddleSubscriptionId;
+    !hasLiveSubscription(active.organization);
 
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-12 md:py-16">
@@ -68,16 +53,13 @@ export default async function PricingPage() {
           {t("billing.pricing.lead")}
         </p>
       </div>
-      {priceMap ? (
-        <PaddleProvider customerId={active?.organization.paddleCustomerId}>
-          <PricingTable
-            tiers={buildTiers(priceMap)}
-            countryCode={countryCode}
-            currentPlan={currentPlan}
-            isSignedIn={session != null}
-            canCheckout={canCheckout}
-          />
-        </PaddleProvider>
+      {catalog ? (
+        <PricingTable
+          tiers={buildTiers(catalog)}
+          currentPlan={currentPlan}
+          isSignedIn={session != null}
+          canCheckout={canCheckout}
+        />
       ) : (
         <p className="text-center text-sm text-muted-foreground">
           {t("billing.pricing.unavailable")}

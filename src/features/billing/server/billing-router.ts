@@ -2,30 +2,77 @@ import { TRPCError } from "@trpc/server";
 import { count, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { isBillingConfigured } from "@/data/env/server";
-import { OrganizationMembershipsTable } from "@/drizzle/schema";
-import { getPaddle } from "@/integrations/paddle/client";
-import { planToPriceId } from "@/integrations/paddle/prices";
+import { baseUrl, isBillingConfigured } from "@/data/env/server";
+import {
+  BillingSubscriptionsTable,
+  OrganizationMembershipsTable,
+  OrganizationsTable,
+} from "@/drizzle/schema";
 import {
   createTRPCRouter,
   type OrgContext,
   orgAdminProcedure,
   orgProcedure,
 } from "@/integrations/trpc/init";
-import { findMirroredSubscription } from "./mirror";
-import { getPriceMap } from "./price-map";
+import { catalogIdToPlanAndInterval } from "../catalog";
+import {
+  BILLING_CURRENCY,
+  subscriptionAmountCents,
+  TIER_DEFINITIONS,
+} from "../tiers";
+import { bindCheckout, openCheckout } from "./checkouts";
+import { findBillingCard, findMirroredSubscription } from "./mirror";
+import {
+  type BillingProvider,
+  type Buyer,
+  getBillingProvider,
+} from "./provider";
+import {
+  canManageSubscription,
+  hasLiveSubscription,
+} from "./subscription-state";
 
 const MAX_SEATS = 500;
 
-function prices() {
-  const map = getPriceMap();
-  if (!map) {
+/** E.164, which is what Paymob's `billing_data.phone_number` expects. */
+export const billingPhoneSchema = z
+  .string()
+  .trim()
+  .regex(/^\+[1-9]\d{6,14}$/, "billing.validation.phone");
+
+export const billingNameSchema = z.string().trim().min(2).max(128);
+
+async function provider(ctx: OrgContext): Promise<BillingProvider> {
+  const live = await getBillingProvider();
+  if (!live?.catalog || !isBillingConfigured) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: "Billing is not configured.",
+      message: ctx.t("billing.errors.checkoutUnavailable"),
     });
   }
-  return map;
+  return live;
+}
+
+/**
+ * Runs a provider call and turns its failure into a message the buyer can
+ * act on. The provider's own words (status codes, endpoint paths) are for
+ * the server log, never for the toast.
+ */
+async function withProvider<T>(
+  ctx: OrgContext,
+  what: string,
+  run: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    console.error(`[billing] ${what} failed`, error);
+    throw new TRPCError({
+      code: "BAD_GATEWAY",
+      message: ctx.t("billing.errors.providerUnavailable"),
+      cause: error,
+    });
+  }
 }
 
 /** A comped or trial org has nothing to buy; the admin owns its plan. */
@@ -42,43 +89,47 @@ function requireBillable(ctx: OrgContext) {
 }
 
 function requireSubscription(ctx: OrgContext) {
-  const { paddleSubscriptionId, paddleCustomerId } = ctx.organization;
-  if (!paddleSubscriptionId || !paddleCustomerId) {
+  const { billingSubscriptionId } = ctx.organization;
+  if (!billingSubscriptionId) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
       message: ctx.t("billing.errors.noSubscription"),
     });
   }
-  return { paddleSubscriptionId, paddleCustomerId };
+  return billingSubscriptionId;
 }
 
 /**
- * The Paddle customer the checkout should open as. Once the org has bought
- * something it has one; before that, the buyer's own email is looked up or
- * registered so the checkout opens with it prefilled. Attached server-side
- * because a checkout opened from a transaction id takes its customer from
- * the transaction, not from Paddle.js.
+ * The buyer as the provider's payment page needs them. Name and phone come
+ * from the checkout dialog and are remembered on the org for later pages
+ * (a card update, a second checkout).
  */
-async function customerIdFor(ctx: OrgContext): Promise<string | undefined> {
-  if (ctx.organization.paddleCustomerId) {
-    return ctx.organization.paddleCustomerId;
-  }
+async function buyerFor(
+  ctx: OrgContext,
+  contact: { name: string; phone: string },
+): Promise<Buyer> {
   const email = ctx.session.user.email;
-  // A session without an email (mid-OAuth edge case) just gets asked at checkout.
-  if (!email) return undefined;
-  const paddle = getPaddle();
-  const [existing] = await paddle.customers
-    .list({ email: [email], perPage: 1 })
-    .next();
-  if (existing) return existing.id;
-  const created = await paddle.customers.create({ email });
-  return created.id;
+  if (!email) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: ctx.t("billing.errors.emailRequired"),
+    });
+  }
+  await ctx.db
+    .update(OrganizationsTable)
+    .set({ billingName: contact.name, billingPhone: contact.phone })
+    .where(eq(OrganizationsTable.id, ctx.organization.id));
+  return {
+    id: ctx.session.user.id,
+    email,
+    name: contact.name,
+    phone: contact.phone,
+  };
 }
 
 /**
- * A cancel or pause Paddle has queued for the period end. The org still
- * has its plan (status is unchanged until then), but the page should say
- * so — the mirror is the only place this is kept.
+ * A cancel the app recorded for the period end. Paymob has no "cancel at
+ * period end" of its own, so the mirror row is where the schedule lives.
  */
 async function scheduledChangeFor(ctx: OrgContext, subscriptionId: string) {
   const mirrored = await findMirroredSubscription(ctx.db, subscriptionId);
@@ -101,17 +152,29 @@ async function seatsUsed(ctx: OrgContext) {
   return row?.value ?? 0;
 }
 
+async function requireSeats(ctx: OrgContext, seats: number) {
+  const used = await seatsUsed(ctx);
+  if (seats < used) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: ctx.t("billing.errors.tooFewSeats", { used }),
+    });
+  }
+}
+
 /**
  * Any member may read the summary; only owners/admins (and platform admins)
- * may buy, resize or cancel. Every Paddle call that binds money to an org
- * happens here, server-side, so `custom_data.organizationId` can never be
- * forged from the browser.
+ * may buy, resize or cancel. Every provider call that binds money to an
+ * org happens here, server-side: the checkout row is opened with the org
+ * from the session, and nothing about *who paid* is ever taken from the
+ * browser or from a callback body alone.
  */
 export const billingRouter = createTRPCRouter({
   summary: orgProcedure.query(async ({ ctx }) => {
     const org = ctx.organization;
     const canEdit =
       ctx.isAdmin || ["owner", "admin"].includes(ctx.membership.role);
+    const card = await findBillingCard(ctx.db, org.id);
     return {
       canEdit,
       organization: {
@@ -124,16 +187,26 @@ export const billingRouter = createTRPCRouter({
       },
       entitlements: ctx.entitlements,
       seatsUsed: await seatsUsed(ctx),
-      subscription: org.paddleSubscriptionId
+      subscription: org.billingSubscriptionId
         ? {
-            status: org.paddleSubscriptionStatus,
+            status: org.billingSubscriptionStatus,
             currentPeriodEndsAt: org.currentPeriodEndsAt,
             scheduledChange: await scheduledChangeFor(
               ctx,
-              org.paddleSubscriptionId,
+              org.billingSubscriptionId,
             ),
           }
         : null,
+      card: card?.maskedPan
+        ? { brand: card.cardBrand, maskedPan: card.maskedPan }
+        : null,
+      billingContact: { name: org.billingName, phone: org.billingPhone },
+      pricing: {
+        currency: BILLING_CURRENCY,
+        unitAmountCents: Object.fromEntries(
+          TIER_DEFINITIONS.map((tier) => [tier.name, tier.unitAmountCents]),
+        ) as Record<"pro" | "business", Record<"month" | "year", number>>,
+      },
       billingConfigured: isBillingConfigured,
       /** Checkout is offered only when there is nothing hand-granted to override. */
       canCheckout:
@@ -141,17 +214,19 @@ export const billingRouter = createTRPCRouter({
         isBillingConfigured &&
         org.planSource !== "manual" &&
         org.planSource !== "trial" &&
-        !org.paddleSubscriptionId,
-      canManage:
-        canEdit && isBillingConfigured && org.paddleSubscriptionId != null,
+        !hasLiveSubscription(org),
+      canManage: canEdit && isBillingConfigured && canManageSubscription(org),
+      /** Paid, but the provider has not yet said which subscription it opened. */
+      awaitingSubscription:
+        hasLiveSubscription(org) && org.billingSubscriptionId == null,
     };
   }),
 
   /**
-   * A Paddle transaction for the overlay checkout to open. Created here,
-   * not from Paddle.js with price ids, so the org binding is ours. Paddle
-   * localizes it to the buyer's country at checkout, the same way the
-   * pricing page previewed it.
+   * Opens a checkout: the row is written first (it is the org binding for
+   * every callback), then the provider is asked for a hosted payment page
+   * the browser is sent to. Nothing is granted here — the payment
+   * callback does that.
    */
   createCheckout: orgAdminProcedure
     .input(
@@ -159,86 +234,193 @@ export const billingRouter = createTRPCRouter({
         plan: z.enum(["pro", "business"]),
         interval: z.enum(["month", "year"]),
         seats: z.number().int().min(1).max(MAX_SEATS),
+        name: billingNameSchema,
+        phone: billingPhoneSchema,
       }),
     )
     .mutation(async ({ ctx, input }) => {
       requireBillable(ctx);
-      if (ctx.organization.paddleSubscriptionId) {
+      if (hasLiveSubscription(ctx.organization)) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
           message: ctx.t("billing.errors.alreadySubscribed"),
         });
       }
-      const used = await seatsUsed(ctx);
-      if (input.seats < used) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: ctx.t("billing.errors.tooFewSeats", { used }),
-        });
-      }
-      const transaction = await getPaddle().transactions.create({
-        items: [
-          {
-            priceId: planToPriceId(prices(), input.plan, input.interval),
-            quantity: input.seats,
-          },
-        ],
-        customerId: await customerIdFor(ctx),
-        customData: { organizationId: ctx.organization.id },
+      await requireSeats(ctx, input.seats);
+      const live = await provider(ctx);
+      const buyer = await buyerFor(ctx, input);
+      const amountCents = subscriptionAmountCents(
+        input.plan,
+        input.interval,
+        input.seats,
+      );
+      const checkout = await openCheckout(ctx.db, {
+        provider: live.id,
+        organizationId: ctx.organization.id,
+        createdByUserId: ctx.session.user.id,
+        kind: "subscribe",
+        plan: input.plan,
+        interval: input.interval,
+        seats: input.seats,
+        amountCents,
+        currency: BILLING_CURRENCY,
       });
-      return { transactionId: transaction.id };
+      const session = await withProvider(ctx, "createCheckout", () =>
+        live.createCheckout({
+          checkoutId: checkout.id,
+          reference: checkout.reference,
+          organizationId: ctx.organization.id,
+          plan: input.plan,
+          interval: input.interval,
+          seats: input.seats,
+          amountCents,
+          currency: BILLING_CURRENCY,
+          buyer,
+          locale: ctx.locale,
+          returnUrl: new URL(
+            `/welcome?checkout=${checkout.id}`,
+            baseUrl,
+          ).toString(),
+        }),
+      );
+      await bindCheckout(ctx.db, checkout.id, {
+        providerIntentionId: session.providerIntentionId,
+        providerOrderId: session.providerOrderId,
+      });
+      return { url: session.url };
     }),
 
-  /** Paddle's hosted portal: invoices, payment method, cancellation. */
-  portalUrl: orgAdminProcedure.mutation(async ({ ctx }) => {
-    const { paddleCustomerId, paddleSubscriptionId } = requireSubscription(ctx);
-    const session = await getPaddle().customerPortalSessions.create(
-      paddleCustomerId,
-      [paddleSubscriptionId],
-    );
-    const forSubscription = session.urls.subscriptions.find(
-      (s) => s.id === paddleSubscriptionId,
-    );
-    return {
-      overview: session.urls.general.overview,
-      updatePaymentMethod:
-        forSubscription?.updateSubscriptionPaymentMethod ?? null,
-      cancel: forSubscription?.cancelSubscription ?? null,
-    };
-  }),
+  /**
+   * A payment page whose only purpose is to tokenise a replacement card
+   * for the live subscription. The TOKEN callback makes it the primary.
+   */
+  updateCardUrl: orgAdminProcedure
+    .input(z.object({ name: billingNameSchema, phone: billingPhoneSchema }))
+    .mutation(async ({ ctx, input }) => {
+      requireBillable(ctx);
+      const subscriptionId = requireSubscription(ctx);
+      const live = await provider(ctx);
+      const buyer = await buyerFor(ctx, input);
+      const checkout = await openCheckout(ctx.db, {
+        provider: live.id,
+        organizationId: ctx.organization.id,
+        createdByUserId: ctx.session.user.id,
+        kind: "update_card",
+        plan: ctx.organization.plan,
+        interval: "month",
+        seats: ctx.organization.seatLimit,
+        amountCents: 0,
+        currency: BILLING_CURRENCY,
+        providerSubscriptionId: subscriptionId,
+      });
+      const session = await withProvider(ctx, "createCardUpdate", () =>
+        live.createCardUpdate({
+          checkoutId: checkout.id,
+          reference: checkout.reference,
+          organizationId: ctx.organization.id,
+          subscriptionId,
+          buyer,
+          locale: ctx.locale,
+          returnUrl: new URL(
+            "/settings/billing?card=updated",
+            baseUrl,
+          ).toString(),
+        }),
+      );
+      await bindCheckout(ctx.db, checkout.id, {
+        providerIntentionId: session.providerIntentionId,
+        providerOrderId: session.providerOrderId,
+      });
+      return { url: session.url };
+    }),
 
-  /** Seat count on the live subscription, prorated immediately. */
+  /**
+   * Seat count on the live subscription. The provider charges the new
+   * amount from the next cycle (no proration); the seat limit itself
+   * moves now, so a team can add a member today.
+   */
   updateSeats: orgAdminProcedure
     .input(z.object({ seats: z.number().int().min(1).max(MAX_SEATS) }))
     .mutation(async ({ ctx, input }) => {
       requireBillable(ctx);
-      const { paddleSubscriptionId } = requireSubscription(ctx);
-      const used = await seatsUsed(ctx);
-      if (input.seats < used) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: ctx.t("billing.errors.tooFewSeats", { used }),
-        });
-      }
-      const priceId = ctx.organization.paddlePriceId;
-      if (!priceId) {
-        throw new TRPCError({ code: "PRECONDITION_FAILED" });
-      }
-      await getPaddle().subscriptions.update(paddleSubscriptionId, {
-        items: [{ priceId, quantity: input.seats }],
-        prorationBillingMode: "prorated_immediately",
+      const subscriptionId = requireSubscription(ctx);
+      await requireSeats(ctx, input.seats);
+      const live = await provider(ctx);
+      const mirrored = await findMirroredSubscription(ctx.db, subscriptionId);
+      const entry = live.catalog
+        ? catalogIdToPlanAndInterval(live.catalog, mirrored?.planId)
+        : null;
+      if (!entry) throw new TRPCError({ code: "PRECONDITION_FAILED" });
+      const amountCents = subscriptionAmountCents(
+        entry.plan,
+        entry.interval,
+        input.seats,
+      );
+      await withProvider(ctx, "updateAmount", () =>
+        live.updateAmount(subscriptionId, amountCents),
+      );
+      await ctx.db.transaction(async (trx) => {
+        await trx
+          .update(BillingSubscriptionsTable)
+          .set({ quantity: input.seats, amountCents })
+          .where(eq(BillingSubscriptionsTable.id, subscriptionId));
+        await trx
+          .update(OrganizationsTable)
+          .set({ seatLimit: input.seats, updatedBy: ctx.session.user.id })
+          .where(eq(OrganizationsTable.id, ctx.organization.id));
       });
-      // The webhook lands the new seat limit; nothing to write here.
       return { ok: true };
     }),
 
-  /** Ends at the period boundary; the webhook downgrades the org then. */
+  /**
+   * Stops future charges at the provider now and lets the paid-for period
+   * run out: `planExpiresAt` is what `resolveEntitlements` enforces, and
+   * the mirror row records the scheduled end for the billing page.
+   */
   cancel: orgAdminProcedure.mutation(async ({ ctx }) => {
     requireBillable(ctx);
-    const { paddleSubscriptionId } = requireSubscription(ctx);
-    await getPaddle().subscriptions.cancel(paddleSubscriptionId, {
-      effectiveFrom: "next_billing_period",
+    const subscriptionId = requireSubscription(ctx);
+    const live = await provider(ctx);
+    await withProvider(ctx, "cancel", () => live.cancel(subscriptionId));
+    const now = new Date();
+    const effectiveAt = ctx.organization.currentPeriodEndsAt ?? now;
+    await ctx.db.transaction(async (trx) => {
+      await trx
+        .update(BillingSubscriptionsTable)
+        .set({
+          status: "canceled",
+          scheduledChangeAction: "cancel",
+          scheduledChangeAt: effectiveAt,
+          canceledAt: now,
+          syncedAt: now,
+        })
+        .where(eq(BillingSubscriptionsTable.id, subscriptionId));
+      await trx
+        .update(OrganizationsTable)
+        .set({
+          billingSubscriptionStatus: "canceled",
+          planExpiresAt: effectiveAt,
+          billingSyncedAt: now,
+          updatedBy: ctx.session.user.id,
+        })
+        .where(eq(OrganizationsTable.id, ctx.organization.id));
     });
-    return { ok: true };
+    return { ok: true, effectiveAt };
+  }),
+
+  /** Paid charges on the subscription, newest first. */
+  invoices: orgProcedure.query(async ({ ctx }) => {
+    const subscriptionId = ctx.organization.billingSubscriptionId;
+    if (!subscriptionId) return [];
+    const live = await getBillingProvider();
+    if (!live) return [];
+    try {
+      return await live.listCharges(subscriptionId);
+    } catch (error) {
+      // The list is decoration on the billing page; a provider hiccup must
+      // not take the page down with it.
+      console.error("[billing] listCharges failed", error);
+      return [];
+    }
   }),
 });
