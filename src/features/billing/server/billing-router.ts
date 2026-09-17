@@ -2,7 +2,11 @@ import { TRPCError } from "@trpc/server";
 import { count, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { baseUrl, isBillingConfigured } from "@/data/env/server";
+import {
+  baseUrl,
+  isBillingConfigured,
+  isBillingInTestMode,
+} from "@/data/env/server";
 import {
   BillingSubscriptionsTable,
   OrganizationMembershipsTable,
@@ -208,6 +212,8 @@ export const billingRouter = createTRPCRouter({
         ) as Record<"pro" | "business", Record<"month" | "year", number>>,
       },
       billingConfigured: isBillingConfigured,
+      /** The provider is in its test environment: checkouts take no real money. */
+      billingTestMode: isBillingInTestMode,
       /** Checkout is offered only when there is nothing hand-granted to override. */
       canCheckout:
         canEdit &&

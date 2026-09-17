@@ -69,6 +69,8 @@ export const billingEn = {
     cardUpdated: "Your new card is saved and will be used for the next charge.",
     awaitingSubscription:
       "Your payment went through and your plan is active. Seat changes and cancellation become available once our payment provider confirms the subscription — usually within a few minutes.",
+    testMode:
+      "Payments are running in test mode while our merchant account is being verified. Checkout uses the payment provider's test environment — no real card is charged.",
     invoices: "Charges",
     chargedOn: "{when:date}",
     paid: "Paid",
@@ -150,6 +152,8 @@ export const billingEn = {
     upgrade: "Upgrade",
     manage: "Manage billing",
     unavailable: "Prices are not available right now.",
+    testMode:
+      "Payments are in test mode while our merchant account is being verified — checkout takes no real money yet.",
     currencyNote:
       "Prices are in Egyptian pounds and charged by card through Paymob. Seats are billed together; changes apply from the next billing date.",
     freeNote:

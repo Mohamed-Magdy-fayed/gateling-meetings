@@ -53,15 +53,21 @@ export const env = createEnv({
     // (intention / unified checkout), the public key (checkout URL) and
     // the HMAC secret (callback verification). Test and live keys are
     // distinct; test integration ids only work with the test secret key.
-    // The mode is never defaulted: an unset value fails at boot rather
-    // than quietly running test keys in production (or the reverse).
+    // The mode is never defaulted: once BILLING_PROVIDER is "paymob" an
+    // unset value fails at boot rather than quietly running test keys in
+    // production (or the reverse). Nothing else reads it — Paymob's API
+    // host is the same in both modes; the keys decide.
     PAYMOB_API_KEY: z.string().min(1).optional(),
     PAYMOB_SECRET_KEY: z.string().min(1).optional(),
     PAYMOB_PUBLIC_KEY: z.string().min(1).optional(),
     PAYMOB_HMAC_SECRET: z.string().min(1).optional(),
-    PAYMOB_MODE: z.enum(["test", "live"], {
-      error: "PAYMOB_MODE must be 'test' or 'live' — it is never defaulted.",
-    }),
+    PAYMOB_MODE: z.enum(["test", "live"]).optional(),
+    // Production normally refuses PAYMOB_MODE=test. Until the merchant
+    // account is verified the live site runs against Paymob's test
+    // environment on purpose — this is the explicit, loud opt-in for that,
+    // so switching to live keys and forgetting the mode still fails the
+    // build. Remove it together with the switch to live.
+    PAYMOB_ALLOW_TEST_IN_PRODUCTION: z.enum(["true"]).optional(),
     // The online-card integration the checkout and the recurring
     // deductions run on (wallets cannot be tokenised, so cards only).
     PAYMOB_CARD_INTEGRATION_ID: z.coerce.number().int().positive().optional(),
@@ -192,6 +198,14 @@ const isPaymobConfigured = Boolean(
     hasAllPaymobPlanIds,
 );
 
+// The mode is only meaningful once the provider is on, and then it must be
+// stated — never inferred from which keys happen to be present.
+if (env.BILLING_PROVIDER === "paymob" && !env.PAYMOB_MODE) {
+  throw new Error(
+    "PAYMOB_MODE must be 'test' or 'live' when BILLING_PROVIDER=paymob — it is never defaulted.",
+  );
+}
+
 // Billing must be whole in production: a half-configured provider means
 // paying customers whose callbacks are dropped, which is worse than no
 // billing.
@@ -201,10 +215,19 @@ if (env.VERCEL_ENV === "production" && env.BILLING_PROVIDER === "paymob") {
       "PAYMOB_API_KEY, PAYMOB_SECRET_KEY, PAYMOB_PUBLIC_KEY, PAYMOB_HMAC_SECRET, PAYMOB_CARD_INTEGRATION_ID, PAYMOB_SUBSCRIPTION_WEBHOOK_TOKEN and all four PAYMOB_PLAN_ID_{PRO,BUSINESS}_{MONTH,YEAR} are required in production.",
     );
   }
-  if (env.PAYMOB_MODE !== "live") {
-    throw new Error("PAYMOB_MODE must be 'live' in production.");
+  if (
+    env.PAYMOB_MODE !== "live" &&
+    env.PAYMOB_ALLOW_TEST_IN_PRODUCTION !== "true"
+  ) {
+    throw new Error(
+      "PAYMOB_MODE must be 'live' in production (set PAYMOB_ALLOW_TEST_IN_PRODUCTION=true to run the live site against Paymob's test environment on purpose).",
+    );
   }
 }
+
+/** Production is deliberately pointed at Paymob's test environment. */
+export const isBillingInTestMode =
+  env.BILLING_PROVIDER === "paymob" && env.PAYMOB_MODE === "test";
 
 /** True when checkout can actually be offered. */
 export const isBillingConfigured =

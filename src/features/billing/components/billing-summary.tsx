@@ -124,6 +124,11 @@ export function BillingSummary({
           </AlertDescription>
         </Alert>
       )}
+      {data.billingTestMode && (
+        <Alert>
+          <AlertDescription>{t("billing.settings.testMode")}</AlertDescription>
+        </Alert>
+      )}
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-3">

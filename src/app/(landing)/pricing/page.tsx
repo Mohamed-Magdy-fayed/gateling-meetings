@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 
-import { isBillingConfigured } from "@/data/env/server";
+import { isBillingConfigured, isBillingInTestMode } from "@/data/env/server";
 import { db } from "@/drizzle";
 import { PricingTable } from "@/features/billing/components/pricing-table";
 import { resolveEntitlements } from "@/features/billing/plans";
@@ -53,6 +53,11 @@ export default async function PricingPage() {
           {t("billing.pricing.lead")}
         </p>
       </div>
+      {isBillingInTestMode && (
+        <p className="mb-6 text-center text-sm text-muted-foreground">
+          {t("billing.pricing.testMode")}
+        </p>
+      )}
       {catalog ? (
         <PricingTable
           tiers={buildTiers(catalog)}
