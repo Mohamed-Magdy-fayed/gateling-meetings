@@ -6,7 +6,6 @@ import { db } from "@/drizzle";
 import { resolveEntitlements } from "@/features/billing/plans";
 import { isAdminEmail } from "@/features/core/auth/core/admin";
 import { getUserSession } from "@/features/core/auth/core/session";
-import { SignOutButton } from "@/features/core/auth/nextjs/components/sign-out-button";
 import { ThemeToggle } from "@/features/core/color-theme/client";
 import { LanguageToggle } from "@/features/core/i18n/client";
 import { getT } from "@/features/core/i18n/server";
@@ -16,7 +15,14 @@ import {
   loadActiveOrganization,
 } from "@/features/organizations/server/service";
 
-/** Shared top bar for the landing page and the host dashboard. */
+import { HeaderNewMeeting } from "./header-new-meeting";
+
+/**
+ * Shared top bar for the landing page and the host dashboard. Built like a
+ * meetings app, not a marketing site: the lockup, one primary action (start
+ * a meeting), and a single account menu that holds navigation, org
+ * switching, settings and sign-out.
+ */
 export async function SiteHeader() {
   const [{ t }, session] = await Promise.all([
     getT(),
@@ -25,7 +31,7 @@ export async function SiteHeader() {
   const user = session?.user ?? null;
   const isAdmin = isAdminEmail(user?.email);
   // Org owners/admins on a plan with API access get the integrations entry
-  // in the org menu; platform admins always do.
+  // in the account menu; platform admins always do.
   const [active, memberships] = session
     ? await Promise.all([
         loadActiveOrganization(db, session.user.id, session.orgId ?? null),
@@ -39,43 +45,38 @@ export async function SiteHeader() {
         resolveEntitlements(active.organization).apiAccess));
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border/60 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-      <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-3 px-4">
+    <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+      <div className="mx-auto flex h-16 w-full max-w-5xl items-center gap-3 px-4">
         <BrandLockup />
-        <nav className="ms-auto flex items-center gap-1">
-          <LinkButton href="/pricing" variant="ghost">
+        <nav className="ms-auto flex items-center gap-1.5">
+          <LinkButton
+            href="/pricing"
+            variant="ghost"
+            className="hidden sm:inline-flex"
+          >
             {t("billing.pricing.nav")}
           </LinkButton>
           <ThemeToggle />
           <LanguageToggle variant="ghost" />
-          {user ? (
+          {user && active ? (
             <>
-              {active && (
-                <OrgSwitcher
-                  activeId={active.organization.id}
-                  showIntegrations={canManageIntegrations}
-                  organizations={memberships.map(
-                    ({ organization, membership }) => ({
-                      id: organization.id,
-                      name: organization.name,
-                      isPersonal: organization.personalOwnerId != null,
-                      role: membership.role,
-                    }),
-                  )}
-                />
-              )}
-              <LinkButton href="/dashboard" variant="ghost">
-                {t("meetings.dashboard.title")}
-              </LinkButton>
-              {isAdmin && (
-                <LinkButton href="/admin" variant="ghost">
-                  {t("admin.title")}
-                </LinkButton>
-              )}
-              <SignOutButton variant="ghost" />
+              <HeaderNewMeeting />
+              <OrgSwitcher
+                activeId={active.organization.id}
+                showIntegrations={canManageIntegrations}
+                isAdmin={isAdmin}
+                organizations={memberships.map(
+                  ({ organization, membership }) => ({
+                    id: organization.id,
+                    name: organization.name,
+                    isPersonal: organization.personalOwnerId != null,
+                    role: membership.role,
+                  }),
+                )}
+              />
             </>
           ) : (
-            <LinkButton href="/auth/sign-in" variant="outline">
+            <LinkButton href="/auth/sign-in" className="ms-1">
               {t("auth.signIn.submit")}
             </LinkButton>
           )}

@@ -39,7 +39,7 @@ export default async function HomePage() {
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute top-[40rem] -end-32 size-[28rem] rounded-full bg-sky-500/10 blur-3xl"
+        className="pointer-events-none absolute top-[40rem] -end-32 size-[28rem] rounded-full bg-orange-500/10 blur-3xl"
       />
 
       {/* Hero */}
@@ -78,7 +78,7 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border/70 bg-card/80 p-5 shadow-[var(--shadow-lg)] backdrop-blur">
+        <div className="rounded-2xl border border-border bg-card p-5">
           <p className="mb-3 text-sm font-medium text-muted-foreground">
             {t("meetings.home.join")}
           </p>
@@ -101,11 +101,11 @@ export default async function HomePage() {
           {STEPS.map((step, index) => (
             <li
               key={step}
-              className="relative rounded-xl border border-border/70 bg-card/60 p-5 ps-16 backdrop-blur"
+              className="relative rounded-xl border border-border bg-card p-5 ps-16"
             >
               <span
                 aria-hidden
-                className="absolute start-5 top-5 grid size-8 place-items-center rounded-full bg-primary font-display text-sm font-bold text-primary-foreground shadow-[var(--shadow-brand-sm)]"
+                className="absolute start-5 top-5 grid size-8 place-items-center rounded-full bg-primary font-display text-sm font-bold text-primary-foreground"
               >
                 {index + 1}
               </span>
@@ -133,7 +133,7 @@ export default async function HomePage() {
         </h2>
         <div className="grid gap-4 md:grid-cols-3">
           {FEATURES.map(({ key, Icon }) => (
-            <Card key={key} className="bg-card/80 backdrop-blur">
+            <Card key={key}>
               <CardHeader>
                 <span className="mb-1 grid size-9 place-items-center rounded-md bg-accent text-accent-foreground">
                   <Icon aria-hidden className="size-4.5" />
@@ -155,10 +155,10 @@ export default async function HomePage() {
         aria-labelledby="home-built-by"
         className="mx-auto w-full max-w-5xl px-4 pb-20 md:pb-28"
       >
-        <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-neutral-900 p-8 text-neutral-100 shadow-[var(--shadow-xl)] md:p-12 dark:bg-card dark:ring-1 dark:ring-white/10">
+        <div className="relative overflow-hidden rounded-2xl border border-neutral-700 bg-neutral-900 p-8 text-neutral-100 md:p-12 dark:border-border dark:bg-card">
           <div
             aria-hidden
-            className="pointer-events-none absolute -top-24 -end-24 size-80 rounded-full bg-primary/30 blur-3xl"
+            className="pointer-events-none absolute -top-24 -end-24 size-80 rounded-full bg-orange-500/25 blur-3xl"
           />
           <div className="relative grid gap-8 md:grid-cols-[auto_1fr] md:items-center">
             <GatelingMark size={96} className="hidden md:block" />
@@ -180,7 +180,7 @@ export default async function HomePage() {
                   href={LEGAL_ENTITY.site}
                   target="_blank"
                   rel="noopener"
-                  className="inline-flex h-10 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-brand-sm)] transition-[box-shadow,background-color] duration-150 hover:bg-primary/90 hover:shadow-[var(--shadow-brand)]"
+                  className="inline-flex h-10 items-center gap-1.5 rounded-md bg-orange-500 px-4 text-sm font-semibold text-neutral-900 transition-colors duration-150 hover:bg-orange-400"
                 >
                   {t("meetings.home.builtBy.site")}
                   <ArrowUpRightIcon

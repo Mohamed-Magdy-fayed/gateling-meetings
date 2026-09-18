@@ -33,7 +33,7 @@ export default function AuthLayout({ children }: PropsWithChildren) {
       {/* The same warm glow as the landing hero, so sign-in feels like the same place. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-40 -start-40 size-[28rem] rounded-full bg-primary/15 blur-3xl"
+        className="pointer-events-none absolute -top-40 -start-40 size-[28rem] rounded-full bg-primary/10 blur-3xl"
       />
       <div className="relative flex w-full max-w-sm flex-col items-center gap-6">
         <BrandLockup size="hero" />

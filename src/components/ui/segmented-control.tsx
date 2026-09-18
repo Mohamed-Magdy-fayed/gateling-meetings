@@ -47,7 +47,7 @@ function SegmentedControl({
               size === "sm" ? "h-8 px-3" : "h-10 px-4",
               fullWidth && "flex-1",
               active
-                ? "bg-card text-foreground shadow-sm"
+                ? "border border-border bg-card text-foreground"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >

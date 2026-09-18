@@ -40,7 +40,10 @@ function StatCard({
   return (
     <div
       data-slot="stat-card"
-      className={cn("rounded-lg border bg-card p-5 shadow-sm", className)}
+      className={cn(
+        "rounded-lg border bg-card p-5 border border-border",
+        className,
+      )}
       {...props}
     >
       <div className="mb-3.5 flex items-center justify-between gap-2">

@@ -27,8 +27,8 @@
     0 8px 24px rgba(54, 46, 38, 0.1), 0 2px 6px rgba(54, 46, 38, 0.06);
   --shadow-xl:
     0 18px 48px rgba(54, 46, 38, 0.14), 0 6px 14px rgba(54, 46, 38, 0.08);
-  --shadow-brand-sm: 0 3px 10px rgba(253, 95, 2, 0.28);
-  --shadow-brand: 0 8px 22px rgba(253, 95, 2, 0.3);
+  --shadow-brand-sm: 0 3px 10px rgba(14, 128, 120, 0.28);
+  --shadow-brand: 0 8px 22px rgba(14, 128, 120, 0.32);
 }
 
 @theme inline {
@@ -83,6 +83,16 @@
   --color-orange-700: var(--orange-700);
   --color-orange-800: var(--orange-800);
   --color-orange-900: var(--orange-900);
+  --color-teal-50: var(--teal-50);
+  --color-teal-100: var(--teal-100);
+  --color-teal-200: var(--teal-200);
+  --color-teal-300: var(--teal-300);
+  --color-teal-400: var(--teal-400);
+  --color-teal-500: var(--teal-500);
+  --color-teal-600: var(--teal-600);
+  --color-teal-700: var(--teal-700);
+  --color-teal-800: var(--teal-800);
+  --color-teal-900: var(--teal-900);
   --color-sky-50: var(--sky-50);
   --color-sky-100: var(--sky-100);
   --color-sky-200: var(--sky-200);
@@ -150,6 +160,18 @@
   --orange-800: #8f3105;
   --orange-900: #6b2708;
 
+  /* Product hue — Meetings is teal; orange stays the Gateling signature (mark, credit, band). */
+  --teal-50: #ecfbf8;
+  --teal-100: #d0f5ee;
+  --teal-200: #a3eadd;
+  --teal-300: #6bd8c7;
+  --teal-400: #35bfae;
+  --teal-500: #149e90;
+  --teal-600: #0e8078;
+  --teal-700: #0f6660;
+  --teal-800: #11524e;
+  --teal-900: #0f4340;
+
   --sky-50: #eef7ff;
   --sky-100: #d8ecff;
   --sky-200: #b3d9ff;
@@ -197,7 +219,7 @@
   --violet-600: #5840c9;
 
   --overlay: rgba(34, 28, 22, 0.5);
-  --ring-brand: color-mix(in oklch, var(--orange-500) 35%, transparent);
+  --ring-brand: color-mix(in oklch, var(--teal-600) 35%, transparent);
 
   /* ---- shadcn-equivalent semantic tokens, mapped onto the brand scale ---- */
   --radius: 0.75rem;
@@ -207,12 +229,12 @@
   --card-foreground: var(--neutral-900);
   --popover: var(--neutral-0);
   --popover-foreground: var(--neutral-900);
-  --primary: var(--orange-500);
-  --primary-foreground: var(--neutral-900);
+  --primary: var(--teal-600);
+  --primary-foreground: #ffffff;
   --secondary: var(--neutral-100);
   --secondary-foreground: var(--neutral-900);
-  --accent: var(--orange-100);
-  --accent-foreground: var(--orange-700);
+  --accent: var(--teal-100);
+  --accent-foreground: var(--teal-800);
   --muted: var(--neutral-50);
   --muted-foreground: var(--neutral-500);
   --destructive: var(--red-500);
@@ -223,24 +245,24 @@
   --info-foreground: #ffffff;
   --warning: var(--yellow-600);
   --warning-foreground: var(--neutral-900);
-  --border: var(--neutral-200);
+  --border: #ddd3c8;
   --input: var(--neutral-300);
-  --ring: var(--orange-500);
-  --chart-1: var(--orange-500);
-  --chart-2: var(--sky-500);
-  --chart-3: var(--mint-500);
-  --chart-4: var(--orange-300);
-  --chart-5: var(--sky-300);
+  --ring: var(--teal-600);
+  --chart-1: var(--teal-500);
+  --chart-2: var(--orange-500);
+  --chart-3: var(--sky-500);
+  --chart-4: var(--teal-300);
+  --chart-5: var(--orange-300);
 
   /* ---- Sidebar panel — a shade off the page background so it reads as its own surface ---- */
   --sidebar: var(--neutral-50);
   --sidebar-foreground: var(--neutral-800);
-  --sidebar-primary: var(--orange-500);
-  --sidebar-primary-foreground: var(--neutral-900);
-  --sidebar-accent: var(--orange-100);
-  --sidebar-accent-foreground: var(--orange-700);
-  --sidebar-border: var(--neutral-200);
-  --sidebar-ring: var(--orange-500);
+  --sidebar-primary: var(--teal-600);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--teal-100);
+  --sidebar-accent-foreground: var(--teal-800);
+  --sidebar-border: #ddd3c8;
+  --sidebar-ring: var(--teal-600);
 }
 
 .dark {
@@ -251,14 +273,14 @@
   --card-foreground: var(--neutral-100);
   --popover: #2a2119;
   --popover-foreground: var(--neutral-100);
-  --primary: var(--orange-400);
+  --primary: var(--teal-400);
   --primary-foreground: var(--neutral-900);
   --secondary: #33291f;
   --secondary-foreground: var(--neutral-100);
   --muted: #33291f;
   --muted-foreground: var(--neutral-400);
-  --accent: #3d2c1c;
-  --accent-foreground: var(--orange-300);
+  --accent: #1c3a36;
+  --accent-foreground: var(--teal-200);
   --destructive: var(--red-400);
   --destructive-foreground: var(--neutral-900);
   --success: var(--mint-400);
@@ -267,25 +289,25 @@
   --info-foreground: var(--neutral-900);
   --warning: var(--yellow-400);
   --warning-foreground: var(--neutral-900);
-  --border: #40342769;
+  --border: #45382d;
   --input: #4f4439;
-  --ring: var(--orange-400);
+  --ring: var(--teal-400);
   --overlay: rgba(0, 0, 0, 0.6);
-  --chart-1: var(--orange-400);
-  --chart-2: var(--sky-400);
-  --chart-3: var(--mint-400);
-  --chart-4: var(--orange-300);
-  --chart-5: var(--sky-300);
+  --chart-1: var(--teal-400);
+  --chart-2: var(--orange-400);
+  --chart-3: var(--sky-400);
+  --chart-4: var(--teal-200);
+  --chart-5: var(--orange-300);
 
   /* ---- Sidebar panel — matches the elevated card surface for depth against the darker page background ---- */
   --sidebar: #2a2119;
   --sidebar-foreground: var(--neutral-100);
-  --sidebar-primary: var(--orange-400);
+  --sidebar-primary: var(--teal-400);
   --sidebar-primary-foreground: var(--neutral-900);
-  --sidebar-accent: #3d2c1c;
-  --sidebar-accent-foreground: var(--orange-300);
-  --sidebar-border: #40342769;
-  --sidebar-ring: var(--orange-400);
+  --sidebar-accent: #1c3a36;
+  --sidebar-accent-foreground: var(--teal-200);
+  --sidebar-border: #45382d;
+  --sidebar-ring: var(--teal-400);
 }
 
 @layer base {

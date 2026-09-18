@@ -197,9 +197,9 @@ export function ControlBar({
           <AlertDialogTrigger
             render={
               <Button
-                variant="destructive"
+                variant="danger"
                 aria-label={t("meetings.room.endForAll")}
-                className="h-12 rounded-full bg-destructive px-5 text-white hover:bg-destructive/90"
+                className="h-12 px-5"
               />
             }
           >
@@ -221,7 +221,7 @@ export function ControlBar({
               <AlertDialogCancel>{t("actions.cancel")}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={onEndForAll}
-                className="bg-destructive text-white hover:bg-destructive/90"
+                className="rounded-full bg-destructive text-white hover:bg-red-600"
               >
                 {t("meetings.room.endForAll")}
               </AlertDialogAction>
@@ -233,9 +233,9 @@ export function ControlBar({
         </AlertDialog>
       ) : (
         <Button
-          variant="destructive"
+          variant="danger"
           aria-label={t("meetings.room.leave")}
-          className="h-12 rounded-full bg-destructive px-5 text-white hover:bg-destructive/90"
+          className="h-12 px-5"
           onClick={onLeave}
         >
           <PhoneOffIcon data-icon="inline-start" />

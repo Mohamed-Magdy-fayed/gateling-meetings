@@ -74,8 +74,7 @@ export function PricingTable({
               key={tier.name}
               className={cn(
                 "relative flex flex-col",
-                tier.highlighted &&
-                  "border-primary shadow-[var(--shadow-brand-sm)]",
+                tier.highlighted && "border-primary",
               )}
             >
               <CardHeader>

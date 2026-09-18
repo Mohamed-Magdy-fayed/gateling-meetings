@@ -23,7 +23,7 @@ export async function BuiltByGateling({ className }: BuiltByGatelingProps) {
       target="_blank"
       rel="noopener"
       className={cn(
-        "group/built inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/70 py-1 pe-3 ps-1.5 text-xs text-muted-foreground shadow-[var(--shadow-xs)] transition-colors hover:border-primary/40 hover:text-foreground",
+        "group/built inline-flex items-center gap-2 rounded-full border border-border bg-card py-1 pe-3 ps-1.5 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground",
         className,
       )}
     >

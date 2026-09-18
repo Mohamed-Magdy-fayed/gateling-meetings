@@ -8,10 +8,9 @@ const iconButtonVariants = cva(
   {
     variants: {
       variant: {
-        primary:
-          "bg-primary text-primary-foreground shadow-[var(--shadow-brand-sm)] hover:bg-primary/90 hover:shadow-[var(--shadow-brand)]",
+        primary: "bg-primary text-primary-foreground hover:bg-primary/90",
         secondary:
-          "border bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground",
+          "border bg-background text-foreground hover:bg-accent hover:text-accent-foreground",
         soft: "bg-accent text-accent-foreground hover:bg-accent/70",
         ghost:
           "text-muted-foreground hover:bg-accent hover:text-accent-foreground",

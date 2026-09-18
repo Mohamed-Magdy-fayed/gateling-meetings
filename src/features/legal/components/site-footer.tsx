@@ -10,32 +10,14 @@ import { getT } from "@/features/core/i18n/server";
 import { LEGAL_ENTITY } from "../content/types";
 
 const linkClass =
-  "inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground";
-
-function ExternalLink({
-  href,
-  children,
-}: {
-  href: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <a href={href} target="_blank" rel="noopener" className={linkClass}>
-      {children}
-      <ArrowUpRightIcon
-        aria-hidden
-        className="size-3 opacity-50 rtl:-scale-x-100"
-      />
-    </a>
-  );
-}
+  "inline-flex h-8 items-center gap-1 rounded-full px-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground";
 
 /**
  * Legal links and a way to reach us, on every page outside a meeting room.
  * Card-scheme and payment-provider reviews want the policies reachable from
  * navigation and contact details within two clicks of the homepage; this is
- * that. It also carries the parent-brand story: who built this and where
- * the rest of Gateling lives.
+ * that. Kept to two compact rows — an app's footer, not a marketing site's —
+ * with the parent-brand credit and the gateling.com links on the second row.
  */
 export async function SiteFooter() {
   const [{ t }, session] = await Promise.all([
@@ -45,31 +27,17 @@ export async function SiteFooter() {
   const year = new Date().getFullYear();
   const site = LEGAL_ENTITY.site;
 
-  const groups = [
-    {
-      key: "product",
-      title: t("legal.footer.groups.product"),
-      links: [
-        { href: "/", label: t("legal.footer.product.home") },
-        { href: "/pricing", label: t("billing.pricing.nav") },
-        session
-          ? { href: "/dashboard", label: t("legal.footer.product.dashboard") }
-          : { href: "/auth/sign-in", label: t("legal.footer.product.signIn") },
-      ],
-    },
-    {
-      key: "legal",
-      title: t("legal.footer.groups.legal"),
-      links: [
-        { href: "/terms", label: t("legal.footer.terms") },
-        { href: "/privacy", label: t("legal.footer.privacy") },
-        { href: "/refund-policy", label: t("legal.footer.refunds") },
-      ],
-    },
+  const productLinks = [
+    { href: "/pricing", label: t("billing.pricing.nav") },
+    session
+      ? { href: "/dashboard", label: t("legal.footer.product.dashboard") }
+      : { href: "/auth/sign-in", label: t("legal.footer.product.signIn") },
+    { href: "/terms", label: t("legal.footer.terms") },
+    { href: "/privacy", label: t("legal.footer.privacy") },
+    { href: "/refund-policy", label: t("legal.footer.refunds") },
   ] as const;
 
   const companyLinks = [
-    { href: site, label: t("legal.footer.companyLinks.site") },
     { href: `${site}/about`, label: t("legal.footer.companyLinks.about") },
     {
       href: `${site}/services`,
@@ -79,70 +47,68 @@ export async function SiteFooter() {
   ] as const;
 
   return (
-    <footer className="relative mt-auto overflow-hidden border-t border-border/70 bg-card/60">
-      {/* A faint brand glow so the footer reads as the same warm surface as the hero. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-40 -end-24 size-96 rounded-full bg-primary/10 blur-3xl"
-      />
-      <div className="relative mx-auto w-full max-w-5xl px-4 py-12">
-        <div className="grid grid-cols-2 gap-10 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
-          <div className="col-span-2 space-y-4 md:col-span-1">
-            <div className="flex items-center gap-2.5">
-              <GatelingMark size={34} />
-              <span className="font-display text-lg leading-none tracking-tight">
-                <span className="font-bold">{t("logoName")}</span>{" "}
-                <span className="text-muted-foreground">
-                  {t("brand.product")}
-                </span>
+    <footer className="mt-auto border-t-2 border-primary/70 bg-card">
+      <div className="mx-auto w-full max-w-5xl px-4">
+        {/* Row 1: the product and its own pages. */}
+        <div className="flex flex-col gap-4 py-6 md:flex-row md:items-center md:justify-between">
+          <div className="flex shrink-0 items-center gap-2.5 whitespace-nowrap">
+            <GatelingMark size={28} />
+            <span className="font-display text-base leading-none tracking-tight">
+              <span className="font-bold">{t("logoName")}</span>{" "}
+              <span className="text-muted-foreground">
+                {t("brand.product")}
               </span>
-            </div>
-            <p className="max-w-xs text-sm text-muted-foreground text-pretty">
-              {t("legal.footer.partOf")}
-            </p>
-            <BuiltByGateling />
+            </span>
+            <span className="ms-2 hidden text-sm text-muted-foreground lg:inline">
+              {t("legal.footer.tagline")}
+            </span>
           </div>
-
-          {groups.map((group) => (
-            <nav key={group.key} aria-label={group.title} className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {group.title}
-              </p>
-              <ul className="space-y-2">
-                {group.links.map((link) => (
-                  <li key={link.href}>
-                    <Link href={link.href} className={linkClass}>
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          ))}
-
           <nav
-            aria-label={t("legal.footer.groups.company")}
-            className="space-y-3"
+            aria-label={t("legal.footer.groups.product")}
+            className="-ms-2.5 flex flex-wrap items-center gap-x-1 gap-y-1 md:justify-end"
           >
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {t("legal.footer.groups.company")}
-            </p>
-            <ul className="space-y-2">
-              {companyLinks.map((link) => (
-                <li key={link.href}>
-                  <ExternalLink href={link.href}>{link.label}</ExternalLink>
-                </li>
-              ))}
-              <li>
-                <a href={`mailto:${LEGAL_ENTITY.email}`} className={linkClass}>
-                  {t("legal.footer.contact")}
-                </a>
-              </li>
-            </ul>
+            {productLinks.map((link) => (
+              <Link key={link.href} href={link.href} className={linkClass}>
+                {link.label}
+              </Link>
+            ))}
+            <a href={`mailto:${LEGAL_ENTITY.email}`} className={linkClass}>
+              {t("legal.footer.contact")}
+            </a>
           </nav>
         </div>
 
-        <div className="mt-10 flex flex-col gap-2 border-t border-border/60 pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        {/* Row 2: who built it, and the rest of Gateling. */}
+        <div className="flex flex-col gap-4 border-t border-border py-5 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap items-center gap-3">
+            <BuiltByGateling />
+            <p className="max-w-sm text-xs text-muted-foreground">
+              {t("legal.footer.partOf")}
+            </p>
+          </div>
+          <nav
+            aria-label={t("legal.footer.groups.company")}
+            className="-ms-2.5 flex shrink-0 flex-wrap items-center gap-x-1"
+          >
+            {companyLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                target="_blank"
+                rel="noopener"
+                className={linkClass}
+              >
+                {link.label}
+                <ArrowUpRightIcon
+                  aria-hidden
+                  className="size-3 opacity-50 rtl:-scale-x-100"
+                />
+              </a>
+            ))}
+          </nav>
+        </div>
+
+        <div className="flex flex-col gap-1 border-t border-border py-4 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p dir="ltr">
             © {year} {t("legal.footer.company")}. {t("legal.footer.rights")}
           </p>
