@@ -1,8 +1,11 @@
 import type { PropsWithChildren } from "react";
 import { Suspense } from "react";
 
+import { BrandLockup } from "@/components/brand/brand-lockup";
+import { BuiltByGateling } from "@/components/brand/built-by-gateling";
 import { BackLink } from "@/components/general/back-link";
 import { Card, CardContent } from "@/components/ui/card";
+import { ThemeToggle } from "@/features/core/color-theme/client";
 import { LanguageToggle } from "@/features/core/i18n/client";
 import { getT } from "@/features/core/i18n/server";
 
@@ -16,16 +19,25 @@ async function AuthNav() {
         text={t("auth.backToHome")}
         variant="link"
       />
-      <LanguageToggle />
+      <div className="flex items-center gap-1">
+        <ThemeToggle />
+        <LanguageToggle />
+      </div>
     </div>
   );
 }
 
 export default function AuthLayout({ children }: PropsWithChildren) {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center bg-muted p-6">
-      <div className="w-full max-w-sm">
-        <Card>
+    <div className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-muted p-6">
+      {/* The same warm glow as the landing hero, so sign-in feels like the same place. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-40 -start-40 size-[28rem] rounded-full bg-primary/15 blur-3xl"
+      />
+      <div className="relative flex w-full max-w-sm flex-col items-center gap-6">
+        <BrandLockup size="hero" />
+        <Card className="w-full">
           <CardContent className="space-y-4 p-6">
             <Suspense>
               <AuthNav />
@@ -33,6 +45,7 @@ export default function AuthLayout({ children }: PropsWithChildren) {
             {children}
           </CardContent>
         </Card>
+        <BuiltByGateling />
       </div>
     </div>
   );

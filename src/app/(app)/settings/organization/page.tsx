@@ -28,10 +28,10 @@ export default async function OrganizationSettingsPage() {
   if (canEdit) prefetch(trpc.organizations.invites.list.queryOptions());
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="space-y-6">
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="font-display text-xl">{current.organization.name}</h1>
+          <h2 className="font-display text-xl">{current.organization.name}</h2>
           <PlanBadge
             plan={current.organization.plan}
             planSource={current.organization.planSource}

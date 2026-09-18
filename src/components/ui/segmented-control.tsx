@@ -43,7 +43,7 @@ function SegmentedControl({
             aria-pressed={active}
             onClick={() => onValueChange(option.value)}
             className={cn(
-              "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-sm text-xs font-semibold transition-all ease-spring",
+              "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-sm text-xs font-semibold transition-[color,background-color,box-shadow] duration-150 ease-standard",
               size === "sm" ? "h-8 px-3" : "h-10 px-4",
               fullWidth && "flex-1",
               active

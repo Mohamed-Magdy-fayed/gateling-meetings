@@ -1,6 +1,7 @@
 "use client";
 
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { WebhookIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -36,7 +37,13 @@ export function WebhookDeliveries() {
   });
 
   if (data.length === 0) {
-    return <EmptyState compact title={t("integrations.admin.noDeliveries")} />;
+    return (
+      <EmptyState
+        compact
+        icon={<WebhookIcon />}
+        title={t("integrations.admin.noDeliveries")}
+      />
+    );
   }
 
   const when = new Intl.DateTimeFormat(locale, {

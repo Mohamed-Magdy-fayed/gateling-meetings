@@ -40,7 +40,16 @@ export const metadata: Metadata = {
     default: "Gateling Meetings",
     template: "%s | Gateling Meetings",
   },
-  description: "Video meetings you host yourself.",
+  description:
+    "Video meetings you host yourself. A product of Gateling Solutions (gateling.com).",
+  applicationName: "Gateling Meetings",
+  authors: [{ name: "Gateling Solutions", url: "https://gateling.com" }],
+  creator: "Gateling Solutions",
+  publisher: "Gateling Solutions",
+  openGraph: {
+    siteName: "Gateling Meetings",
+    type: "website",
+  },
 };
 
 export const viewport: Viewport = {

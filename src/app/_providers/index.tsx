@@ -20,7 +20,7 @@ export function Providers({ children, locale, nonce }: ProvidersProps) {
   return (
     <ThemeProvider
       attribute="class"
-      defaultTheme="light"
+      defaultTheme="system"
       enableSystem
       nonce={nonce}
     >

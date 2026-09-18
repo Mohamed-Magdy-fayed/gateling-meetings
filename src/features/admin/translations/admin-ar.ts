@@ -7,7 +7,6 @@ export const adminAr = {
     organizations: "المؤسسات",
     grants: "منح الخطط",
     users: "المستخدمون",
-    integrations: "التكاملات",
   },
   search: "ابحث بالاسم أو البريد الإلكتروني…",
   organizations: {

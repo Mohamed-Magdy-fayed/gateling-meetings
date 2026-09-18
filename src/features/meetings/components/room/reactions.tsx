@@ -108,7 +108,7 @@ export function ReactionPicker({
             type="button"
             aria-label={t("meetings.room.reactions")}
             className={cn(
-              "grid size-12 place-items-center rounded-full border border-white/10 bg-white/[0.06] text-white transition-all ease-spring hover:-translate-y-px hover:bg-white/[0.12] active:translate-y-0 active:scale-95 [&_svg]:size-5",
+              "grid size-12 place-items-center rounded-full border border-white/10 bg-white/[0.06] text-white transition-[background-color,transform] duration-150 ease-standard hover:bg-white/[0.12] active:scale-95 [&_svg]:size-5",
               className,
             )}
           />

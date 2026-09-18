@@ -7,7 +7,6 @@ export const adminEn = {
     organizations: "Organizations",
     grants: "Plan grants",
     users: "Users",
-    integrations: "Integrations",
   },
   search: "Search by name or email…",
   organizations: {

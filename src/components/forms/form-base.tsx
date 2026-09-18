@@ -56,13 +56,10 @@ export function FormBase({
     .filter((message): message is string => Boolean(message))
     .map((message) => ({ message: translateErrorMessage(message) }));
 
-  const labelElement = (
-    <>
-      <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
-      {description && <FieldDescription>{description}</FieldDescription>}
-    </>
+  const labelElement = <FieldLabel htmlFor={field.name}>{label}</FieldLabel>;
+  const descriptionElement = description && (
+    <FieldDescription>{description}</FieldDescription>
   );
-
   const errorElement = isInvalid && <FieldError errors={errors} />;
 
   if (controlFirst) {
@@ -71,16 +68,21 @@ export function FormBase({
         {children}
         <FieldContent>
           {labelElement}
+          {descriptionElement}
           {errorElement}
         </FieldContent>
       </Field>
     );
   }
 
+  // Label, control, then the hint: with the hint under the control, fields
+  // that share a grid row keep their inputs on one line whether or not a
+  // neighbour has a description.
   return (
     <Field data-invalid={isInvalid} data-disabled={disabled}>
       {labelElement}
       {children}
+      {descriptionElement}
       {errorElement}
     </Field>
   );

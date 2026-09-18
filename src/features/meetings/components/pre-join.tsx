@@ -315,7 +315,7 @@ function ToggleButton({
       aria-pressed={active}
       aria-label={label}
       className={cn(
-        "grid size-12 place-items-center rounded-full border backdrop-blur transition-all ease-spring hover:-translate-y-px active:translate-y-0 [&_svg]:size-5",
+        "grid size-12 place-items-center rounded-full border backdrop-blur transition-[color,background-color,border-color,transform] duration-150 ease-standard active:scale-95 [&_svg]:size-5",
         active
           ? "border-white/15 bg-white/10 text-white hover:bg-white/20"
           : "border-transparent bg-destructive text-white hover:bg-destructive/90",

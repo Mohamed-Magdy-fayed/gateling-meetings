@@ -10,6 +10,9 @@ export default function manifest(): MetadataRoute.Manifest {
     display: "standalone",
     background_color: "#fffaf6",
     theme_color: "#fd5f02",
-    icons: [{ src: "/favicon.ico", sizes: "any", type: "image/x-icon" }],
+    icons: [
+      { src: "/icon.png", sizes: "192x192", type: "image/png" },
+      { src: "/brand/gateling-mark.png", sizes: "512x512", type: "image/png" },
+    ],
   };
 }

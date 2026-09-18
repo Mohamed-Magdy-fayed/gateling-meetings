@@ -11,5 +11,24 @@ export const legalEn = {
     contact: "Contact",
     company: "Gateling Solutions",
     tagline: "Video meetings you host yourself.",
+    partOf:
+      "Gateling Meetings is a product of Gateling Solutions, the software studio behind gateling.com.",
+    groups: {
+      product: "Product",
+      company: "Company",
+      legal: "Legal",
+    },
+    product: {
+      home: "Home",
+      dashboard: "Your meetings",
+      signIn: "Sign in",
+    },
+    companyLinks: {
+      site: "gateling.com",
+      about: "About Gateling",
+      services: "Services",
+      work: "Our work",
+    },
+    rights: "All rights reserved.",
   },
 } as const;

@@ -26,6 +26,7 @@ export const meetingsEn = {
       "Camera or microphone access was blocked. Allow it in your browser and try again.",
   },
   home: {
+    eyebrow: "Video meetings by Gateling",
     tagline: "Meetings you host yourself.",
     lead: "No accounts for guests. Free to start; upgrade when you need longer meetings and more people. Start a meeting or paste a code.",
     newMeeting: "New meeting",
@@ -47,6 +48,28 @@ export const meetingsEn = {
         title: "Made for real meetings",
         body: "Waiting room, screen sharing, chat, reactions, hand-raising and breakout rooms — plus an API to create meetings from your own systems on Business.",
       },
+    },
+    howItWorks: {
+      heading: "Three steps to a meeting",
+      start: {
+        title: "Start or schedule",
+        body: "One click for a room right now, or pick a time and invite by email.",
+      },
+      share: {
+        title: "Share the code",
+        body: "Send the short code or the link. It works in any browser, on any device.",
+      },
+      meet: {
+        title: "Meet",
+        body: "Admit people from the waiting room and run the meeting from one bar of controls.",
+      },
+    },
+    builtBy: {
+      eyebrow: "Who built this",
+      heading: "Made by Gateling Solutions",
+      body: "Gateling Meetings is a product of Gateling Solutions, the software studio behind gateling.com. We design and build web and mobile software for businesses — this is the meeting tool we wanted for our own clients.",
+      site: "Visit gateling.com",
+      contact: "Talk to us",
     },
   },
   dashboard: {

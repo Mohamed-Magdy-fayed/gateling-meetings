@@ -5,7 +5,7 @@ import type * as React from "react";
 import { cn } from "@/lib/utils";
 
 const tagVariants = cva(
-  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap transition-all ease-spring select-none",
+  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap transition-[color,background-color,border-color,filter] duration-150 ease-standard select-none",
   {
     variants: {
       color: {
@@ -22,7 +22,7 @@ const tagVariants = cva(
         false: "",
       },
       interactive: {
-        true: "cursor-pointer hover:-translate-y-px",
+        true: "cursor-pointer hover:brightness-95 dark:hover:brightness-110",
         false: "",
       },
     },

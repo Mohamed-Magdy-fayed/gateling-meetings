@@ -11,6 +11,22 @@ export default {
   opposite: "عربي",
   appName: "Gateling Meetings",
   logoName: "Gateling",
+  brand: {
+    product: "Meetings",
+    company: "Gateling Solutions",
+    builtBy: "Built by",
+    byCompany: "by Gateling Solutions",
+    visitSite: "Visit gateling.com",
+  },
+  settings: {
+    title: "Settings",
+    lead: "Your organization, its plan and the systems connected to it.",
+    tabs: {
+      organization: "Organization",
+      billing: "Billing",
+      integrations: "Integrations",
+    },
+  },
   actions: {
     save: "Save",
     cancel: "Cancel",

@@ -6,6 +6,7 @@ import {
   CheckIcon,
   ChevronDownIcon,
   CreditCardIcon,
+  PlugZapIcon,
   PlusIcon,
   SettingsIcon,
 } from "lucide-react";
@@ -38,6 +39,8 @@ export type SwitcherOrganization = {
 type OrgSwitcherProps = {
   organizations: SwitcherOrganization[];
   activeId: string;
+  /** The active org may manage API integrations (owner/admin on a plan with API access, or a platform admin). */
+  showIntegrations?: boolean;
 };
 
 /**
@@ -45,7 +48,11 @@ type OrgSwitcherProps = {
  * header already knows the list), so it costs no client fetch; switching
  * writes the session and refreshes server components.
  */
-export function OrgSwitcher({ organizations, activeId }: OrgSwitcherProps) {
+export function OrgSwitcher({
+  organizations,
+  activeId,
+  showIntegrations = false,
+}: OrgSwitcherProps) {
   const { t } = useTranslation();
   const trpc = useTRPC();
   const router = useRouter();
@@ -116,6 +123,15 @@ export function OrgSwitcher({ organizations, activeId }: OrgSwitcherProps) {
             <CreditCardIcon className="size-4" />
             {t("billing.settings.title")}
           </DropdownMenuItem>
+          {showIntegrations && (
+            <DropdownMenuItem
+              render={<Link href="/settings/integrations" />}
+              nativeButton={false}
+            >
+              <PlugZapIcon className="size-4" />
+              {t("integrations.admin.title")}
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setCreating(true)}>
             <PlusIcon className="size-4" />

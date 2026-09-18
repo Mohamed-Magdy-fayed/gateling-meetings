@@ -2,7 +2,7 @@
 
 import { useSuspenseQuery } from "@tanstack/react-query";
 import type { inferRouterOutputs } from "@trpc/server";
-import { CopyIcon } from "lucide-react";
+import { CopyIcon, VideoIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { LinkButton } from "@/components/general/link-button";
@@ -39,7 +39,9 @@ export function MeetingList() {
   ].filter((section) => section.items.length > 0);
 
   if (sections.length === 0) {
-    return <EmptyState title={t("meetings.dashboard.empty")} />;
+    return (
+      <EmptyState icon={<VideoIcon />} title={t("meetings.dashboard.empty")} />
+    );
   }
 
   return (

@@ -8,6 +8,7 @@ import {
 import type { inferRouterOutputs } from "@trpc/server";
 import {
   KeyRoundIcon,
+  PlugZapIcon,
   RefreshCwIcon,
   WebhookIcon,
   XCircleIcon,
@@ -45,7 +46,13 @@ export function IntegrationsList() {
   const [issued, setIssued] = useState<IssuedCredentials | null>(null);
 
   if (data.length === 0) {
-    return <EmptyState title={t("integrations.admin.empty")} />;
+    return (
+      <EmptyState
+        icon={<PlugZapIcon />}
+        title={t("integrations.admin.empty")}
+        description={t("integrations.admin.lead")}
+      />
+    );
   }
 
   return (

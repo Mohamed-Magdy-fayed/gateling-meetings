@@ -282,7 +282,7 @@ function ControlButton({
             aria-pressed={active}
             aria-label={label}
             className={cn(
-              "relative grid size-12 place-items-center rounded-full border transition-all ease-spring hover:-translate-y-px active:translate-y-0 active:scale-95 disabled:opacity-60 [&_svg]:size-5",
+              "relative grid size-12 place-items-center rounded-full border transition-[color,background-color,border-color,transform] duration-150 ease-standard active:scale-95 disabled:opacity-60 [&_svg]:size-5",
               danger
                 ? "border-transparent bg-destructive text-white hover:bg-destructive/90"
                 : highlight

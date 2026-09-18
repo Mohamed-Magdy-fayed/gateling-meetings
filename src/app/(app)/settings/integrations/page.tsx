@@ -40,7 +40,7 @@ export default async function IntegrationsPage() {
 
   if (!current.isAdmin && !current.entitlements.apiAccess) {
     return (
-      <div className="mx-auto max-w-xl">
+      <div>
         <Card>
           <CardHeader>
             <CardTitle>{t("integrations.admin.title")}</CardTitle>
@@ -68,9 +68,9 @@ export default async function IntegrationsPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="font-display text-xl">
+          <h2 className="font-display text-xl">
             {t("integrations.admin.title")}
-          </h1>
+          </h2>
           <p className="text-sm text-muted-foreground">
             {t("integrations.admin.lead")}
           </p>
@@ -83,9 +83,9 @@ export default async function IntegrationsPage() {
           <IntegrationsList />
         </Suspense>
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             {t("integrations.admin.deliveries")}
-          </h2>
+          </h3>
           <Suspense fallback={<Skeleton className="h-24 w-full" />}>
             <WebhookDeliveries />
           </Suspense>
