@@ -15,8 +15,12 @@
  *   PAYMOB_API_KEY=… PAYMOB_CARD_INTEGRATION_ID=… BASE_URL=https://… \
  *   PAYMOB_SUBSCRIPTION_WEBHOOK_TOKEN=… npx tsx scripts/seed-paymob-plans.ts
  *
- * Run once against the test keys (webhook → the preview deployment) and
- * once against the live keys (webhook → production); the ids differ.
+ * The webhook URL is baked into each plan, so every deployment that takes
+ * checkouts needs its own set: run once per BASE_URL, with PAYMOB_PLAN_LABEL
+ * (e.g. "preview") to keep the names apart when they share a Paymob
+ * account, and once more against the live keys; the ids differ each time.
+ *
+ *   BASE_URL=https://preview.meetings.gateling.com PAYMOB_PLAN_LABEL=preview  *   npx tsx scripts/seed-paymob-plans.ts
  */
 import dotenv from "dotenv";
 
@@ -98,6 +102,7 @@ async function main() {
   const baseUrl = required("BASE_URL");
   const webhookToken = required("PAYMOB_SUBSCRIPTION_WEBHOOK_TOKEN");
   const bypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+  const label = process.env.PAYMOB_PLAN_LABEL?.trim();
 
   // Paymob posts the webhook from its side, so a plan created with the local
   // .env's localhost BASE_URL is silently dead. Point BASE_URL at the
@@ -120,7 +125,7 @@ async function main() {
 
   for (const tier of TIER_DEFINITIONS) {
     for (const interval of BILLING_INTERVALS) {
-      const name = `Gateling Meetings ${tier.name} (${interval}ly, per seat)`;
+      const name = `Gateling Meetings ${tier.name} (${interval}ly, per seat)${label ? ` [${label}]` : ""}`;
       const envName = `PAYMOB_PLAN_ID_${tier.name.toUpperCase()}_${interval.toUpperCase()}`;
       // "<name>", "<name> #2", "<name> #3", … — every earlier attempt.
       const attempts = existing.filter(
