@@ -53,7 +53,7 @@ export async function SiteHeader() {
           <LinkButton
             href="/pricing"
             variant="ghost"
-            className="hidden sm:inline-flex"
+            className="hidden md:inline-flex"
           >
             {t("billing.pricing.nav")}
           </LinkButton>

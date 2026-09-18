@@ -12,6 +12,6 @@ export function HeaderNewMeeting() {
   const pathname = usePathname();
   if (pathname === "/dashboard") return null;
   return (
-    <NewMeetingButton size="default" className="ms-1 hidden sm:inline-flex" />
+    <NewMeetingButton size="default" className="ms-1 hidden md:inline-flex" />
   );
 }
