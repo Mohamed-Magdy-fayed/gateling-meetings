@@ -45,8 +45,9 @@ export async function SiteHeader() {
         resolveEntitlements(active.organization).apiAccess));
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/75">
-      <div className="mx-auto flex h-16 w-full max-w-5xl items-center gap-3 px-4">
+    <header className="sticky top-0 z-20 px-4 pt-3">
+      {/* A floating pill, detached from the page edge: the app's own chrome rather than a site nav. */}
+      <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-3 rounded-full border border-border bg-card/85 pe-2 ps-4 shadow-md backdrop-blur supports-[backdrop-filter]:bg-card/75">
         <BrandLockup />
         <nav className="ms-auto flex items-center gap-1.5">
           <LinkButton

@@ -10,25 +10,6 @@ export const legalAr = {
     refunds: "الاسترداد والإلغاء",
     contact: "تواصل معنا",
     company: "Gateling Solutions",
-    tagline: "اجتماعات مرئية تستضيفها بنفسك.",
-    partOf:
-      "Gateling Meetings منتج من Gateling Solutions، استوديو البرمجيات وراء gateling.com.",
-    groups: {
-      product: "المنتج",
-      company: "الشركة",
-      legal: "القانونية",
-    },
-    product: {
-      home: "الرئيسية",
-      dashboard: "اجتماعاتك",
-      signIn: "تسجيل الدخول",
-    },
-    companyLinks: {
-      site: "gateling.com",
-      about: "عن Gateling",
-      services: "الخدمات",
-      work: "أعمالنا",
-    },
-    rights: "جميع الحقوق محفوظة.",
+    legal: "القانونية",
   },
 } as const;

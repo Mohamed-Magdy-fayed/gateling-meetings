@@ -31,7 +31,7 @@ export default async function HomePage() {
   const [{ t }, user] = await Promise.all([getT(), getCurrentUser()]);
 
   return (
-    <main className="relative flex flex-1 flex-col overflow-hidden">
+    <main className="relative flex flex-1 flex-col overflow-x-clip">
       {/* Atmosphere: a warm brand glow bleeding in from the top-start corner. */}
       <div
         aria-hidden
