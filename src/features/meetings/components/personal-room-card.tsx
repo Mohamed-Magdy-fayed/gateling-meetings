@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { CopyIcon, DoorOpenIcon } from "lucide-react";
+import { CopyIcon, DoorOpenIcon, Share2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -9,6 +9,7 @@ import { LinkButton } from "@/components/general/link-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTranslation } from "@/features/core/i18n/client";
+import { shareLink, useCanShare } from "@/features/meetings/lib/share-link";
 import { useTRPC } from "@/integrations/trpc/client";
 
 type PersonalRoomCardProps = { code: string | null };
@@ -21,6 +22,7 @@ export function PersonalRoomCard({ code }: PersonalRoomCardProps) {
   const { t } = useTranslation();
   const trpc = useTRPC();
   const router = useRouter();
+  const canShare = useCanShare();
 
   const create = useMutation(
     trpc.meetings.getPersonalRoom.mutationOptions({
@@ -29,9 +31,22 @@ export function PersonalRoomCard({ code }: PersonalRoomCardProps) {
     }),
   );
 
+  function roomUrl() {
+    return `${window.location.origin}/m/${code}`;
+  }
+
   async function copyLink() {
-    await navigator.clipboard.writeText(`${window.location.origin}/m/${code}`);
+    await navigator.clipboard.writeText(roomUrl());
     toast.success(t("meetings.dashboard.linkCopied"));
+  }
+
+  async function share() {
+    const result = await shareLink({
+      title: t("appName"),
+      text: t("meetings.personalRoom.shareText"),
+      url: roomUrl(),
+    });
+    if (result === "unsupported") await copyLink();
   }
 
   return (
@@ -48,13 +63,19 @@ export function PersonalRoomCard({ code }: PersonalRoomCardProps) {
             </p>
           )}
         </div>
-        <div className="flex shrink-0 gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
           {code ? (
             <>
               <Button variant="secondary" size="sm" onClick={copyLink}>
                 <CopyIcon data-icon="inline-start" />
                 {t("meetings.dashboard.copyLink")}
               </Button>
+              {canShare && (
+                <Button variant="secondary" size="sm" onClick={share}>
+                  <Share2Icon data-icon="inline-start" />
+                  {t("meetings.personalRoom.share")}
+                </Button>
+              )}
               <LinkButton href={`/m/${code}`} size="sm">
                 <DoorOpenIcon data-icon="inline-start" />
                 {t("meetings.personalRoom.open")}

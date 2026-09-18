@@ -234,6 +234,8 @@ export const meetingsEn = {
     lead: "A permanent link that's always yours. Share it once, use it forever.",
     open: "Open room",
     create: "Set up my room",
+    share: "Share",
+    shareText: "Join me in my meeting room:",
   },
   sections: {
     upcoming: "Upcoming",

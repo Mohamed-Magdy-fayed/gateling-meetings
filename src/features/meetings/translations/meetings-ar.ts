@@ -260,6 +260,8 @@ export const meetingsAr = {
     lead: "رابط دائم يخصك دائمًا. شاركه مرة واحدة واستخدمه للأبد.",
     open: "فتح الغرفة",
     create: "إعداد غرفتي",
+    share: "مشاركة",
+    shareText: "انضم إليّ في غرفة اجتماعاتي:",
   },
   sections: {
     upcoming: "القادمة",
