@@ -1,0 +1,8 @@
+# Vercel CLI uploads the working directory as-is (it ignores .gitignore).
+# Git-triggered builds never see these; keep a stray `vercel deploy` honest.
+.env
+.env.*
+!.env.example
+.git
+node_modules
+.next
