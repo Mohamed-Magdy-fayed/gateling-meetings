@@ -7,12 +7,12 @@ import {
   CheckIcon,
   ChevronDownIcon,
   CreditCardIcon,
-  KeyRoundIcon,
   LogOutIcon,
   PlugZapIcon,
   PlusIcon,
   SettingsIcon,
   ShieldIcon,
+  UserRoundIcon,
   VideoIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -184,8 +184,8 @@ export function OrgSwitcher({
             render={<Link href="/settings/account" />}
             nativeButton={false}
           >
-            <KeyRoundIcon />
-            {t("auth.passkeys.pageTitle")}
+            <UserRoundIcon />
+            {t("settings.tabs.account")}
           </DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
