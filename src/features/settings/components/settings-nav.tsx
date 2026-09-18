@@ -6,7 +6,11 @@ import { usePathname } from "next/navigation";
 import { useTranslation } from "@/features/core/i18n/client";
 import { cn } from "@/lib/utils";
 
-export type SettingsTabKey = "organization" | "billing" | "integrations";
+export type SettingsTabKey =
+  | "account"
+  | "organization"
+  | "billing"
+  | "integrations";
 
 type SettingsNavProps = {
   /** Which tabs this person may open; the layout decides from role + plan. */
@@ -14,6 +18,7 @@ type SettingsNavProps = {
 };
 
 const HREFS: Record<SettingsTabKey, string> = {
+  account: "/settings/account",
   organization: "/settings/organization",
   billing: "/settings/billing",
   integrations: "/settings/integrations",

@@ -22,7 +22,7 @@ export default async function SettingsLayout({ children }: PropsWithChildren) {
   ]);
   const canManage =
     current.isAdmin || current.role === "owner" || current.role === "admin";
-  const tabs: SettingsTabKey[] = ["organization", "billing"];
+  const tabs: SettingsTabKey[] = ["account", "organization", "billing"];
   if (canManage) tabs.push("integrations");
 
   return (

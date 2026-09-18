@@ -181,7 +181,7 @@ export function OrgSwitcher({
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            render={<Link href="/auth/passkeys" />}
+            render={<Link href="/settings/account" />}
             nativeButton={false}
           >
             <KeyRoundIcon />

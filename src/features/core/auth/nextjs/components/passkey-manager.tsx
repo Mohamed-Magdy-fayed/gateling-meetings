@@ -1,12 +1,33 @@
 "use client";
 
 import { startRegistration } from "@simplewebauthn/browser";
-import { FingerprintIcon } from "lucide-react";
+import { FingerprintIcon, KeyRoundIcon, Trash2Icon } from "lucide-react";
 import { startTransition, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingSwap } from "@/components/ui/loading-swap";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   beginPasskeyRegistrationAction,
   completePasskeyRegistrationAction,
@@ -23,9 +44,10 @@ function formatPasskeyTimestamp(iso: string) {
   return new Date(iso).toLocaleString("en-US", { timeZone: "UTC" });
 }
 
+/** The passkeys card on the account page: the list, add, and remove. */
 export function PasskeyManager() {
   const { t } = useTranslation();
-  const [passkeys, setPasskeys] = useState<PasskeyListItem[]>([]);
+  const [passkeys, setPasskeys] = useState<PasskeyListItem[] | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -83,11 +105,9 @@ export function PasskeyManager() {
     }
   }
 
+  // A passkey may be the account's only sign-in method — the caller confirms
+  // in a dialog before this runs.
   async function handleDelete(id: string) {
-    // A passkey may be the account's only sign-in method — confirm before
-    // an irreversible removal instead of firing immediately on click.
-    if (!window.confirm(t("auth.passkeys.delete.confirm"))) return;
-
     setBusyId(id);
 
     try {
@@ -117,55 +137,104 @@ export function PasskeyManager() {
   }, []);
 
   return (
-    <div className="space-y-4">
-      <ul className="space-y-3">
-        {passkeys.length === 0 && (
-          <li className="rounded border border-dashed px-3 py-4 text-muted-foreground text-sm">
-            {t("auth.passkeys.list.empty")}
-          </li>
-        )}
-        {passkeys.map((item) => (
-          <li
-            className="flex flex-wrap items-center justify-between gap-3 rounded border px-3 py-2"
-            key={item.id}
-          >
-            <div className="space-y-1">
-              <p className="font-medium">
-                {item.label ?? t("auth.passkeys.list.defaultLabel")}
-              </p>
-              <p className="text-muted-foreground text-xs">
-                {t("auth.passkeys.list.created")}{" "}
-                {formatPasskeyTimestamp(item.createdAt)}
-              </p>
-              {item.lastUsedAt && (
-                <p className="text-muted-foreground text-xs">
-                  {t("auth.passkeys.list.lastUsed")}{" "}
-                  {formatPasskeyTimestamp(item.lastUsedAt)}
-                </p>
-              )}
-            </div>
-            <Button
-              disabled={busyId === item.id}
-              onClick={() => handleDelete(item.id)}
-              variant="outline"
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-display text-base">
+          {t("auth.passkeys.pageTitle")}
+        </CardTitle>
+        <CardDescription className="text-sm">
+          {t("auth.passkeys.pageDescription")}
+        </CardDescription>
+        <CardAction>
+          <Button disabled={isRegistering} onClick={handleRegister}>
+            <LoadingSwap
+              isLoading={isRegistering}
+              loadingText={t("auth.passkeys.registering")}
             >
-              {busyId === item.id
-                ? t("auth.passkeys.deleting")
-                : t("auth.passkeys.delete.label")}
-            </Button>
-          </li>
-        ))}
-      </ul>
-
-      <Button disabled={isRegistering} onClick={handleRegister}>
-        <LoadingSwap
-          isLoading={isRegistering}
-          loadingText={t("auth.passkeys.registering")}
-        >
-          <FingerprintIcon />
-          {t("auth.passkeys.add")}
-        </LoadingSwap>
-      </Button>
-    </div>
+              <FingerprintIcon data-icon="inline-start" />
+              {t("auth.passkeys.add")}
+            </LoadingSwap>
+          </Button>
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        {passkeys === null ? (
+          <Skeleton className="h-16 w-full" />
+        ) : passkeys.length === 0 ? (
+          <EmptyState
+            compact
+            icon={<FingerprintIcon />}
+            title={t("auth.passkeys.list.empty")}
+            description={t("auth.passkeys.list.emptyLead")}
+          />
+        ) : (
+          <ul className="divide-y divide-border">
+            {passkeys.map((item) => (
+              <li
+                key={item.id}
+                className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
+              >
+                <span className="grid size-9 shrink-0 place-items-center rounded-md bg-accent text-accent-foreground">
+                  <KeyRoundIcon className="size-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    {item.label ?? t("auth.passkeys.list.defaultLabel")}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("auth.passkeys.list.created")}{" "}
+                    {formatPasskeyTimestamp(item.createdAt)}
+                    {item.lastUsedAt && (
+                      <>
+                        {" · "}
+                        {t("auth.passkeys.list.lastUsed")}{" "}
+                        {formatPasskeyTimestamp(item.lastUsedAt)}
+                      </>
+                    )}
+                  </p>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger
+                    render={
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        disabled={busyId === item.id}
+                      />
+                    }
+                  >
+                    <Trash2Icon data-icon="inline-start" />
+                    {busyId === item.id
+                      ? t("auth.passkeys.deleting")
+                      : t("auth.passkeys.delete.label")}
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        {t("auth.passkeys.delete.label")}
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {t("auth.passkeys.delete.confirm")}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>
+                        {t("actions.cancel")}
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDelete(item.id)}
+                        className="rounded-full bg-destructive text-white hover:bg-red-600"
+                      >
+                        {t("auth.passkeys.delete.label")}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   );
 }

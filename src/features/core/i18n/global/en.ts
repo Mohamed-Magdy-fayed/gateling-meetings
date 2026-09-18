@@ -20,8 +20,15 @@ export default {
   },
   settings: {
     title: "Settings",
-    lead: "Your organization, its plan and the systems connected to it.",
+    lead: "Your account, your organization, its plan and the systems connected to it.",
+    account: {
+      title: "Account",
+      lead: "Who you are signed in as, and how you sign in.",
+      verified: "Email verified",
+      unverified: "Email not verified",
+    },
     tabs: {
+      account: "Account",
       organization: "Organization",
       billing: "Billing",
       integrations: "Integrations",
@@ -221,6 +228,8 @@ export default {
       },
       list: {
         empty: "No passkeys yet.",
+        emptyLead:
+          "Add one to sign in with your fingerprint, face or device PIN instead of a password.",
         defaultLabel: "Passkey",
         created: "Added",
         lastUsed: "Last used",

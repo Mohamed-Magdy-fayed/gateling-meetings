@@ -76,7 +76,7 @@ async function VerifyEmailBody({
           // Post-verify optional passkey prompt (phase-02.md step 7) —
           // skippable, straight to the dashboard either way.
           <div className="flex flex-col gap-2 sm:flex-row">
-            <LinkButton href="/auth/passkeys" className="flex-1">
+            <LinkButton href="/settings/account" className="flex-1">
               <KeyRoundIcon />
               {t("auth.emailVerification.passkeyPrompt.setUp")}
             </LinkButton>
