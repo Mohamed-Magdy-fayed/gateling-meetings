@@ -84,7 +84,7 @@ export function OrgSwitcher({
           render={
             <Button
               variant="outline"
-              className="max-w-52 gap-2 ps-2.5"
+              className="size-9 shrink-0 justify-center gap-2 px-0 sm:size-auto sm:h-9 sm:max-w-52 sm:ps-2.5 sm:pe-3"
               aria-label={t("organizations.switcher.label")}
             />
           }
@@ -92,8 +92,11 @@ export function OrgSwitcher({
           <span className="grid size-6 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground">
             <Building2Icon className="size-3.5" />
           </span>
-          <span className="truncate">{active?.name}</span>
-          <ChevronDownIcon data-icon="inline-end" className="opacity-60" />
+          <span className="hidden truncate sm:inline">{active?.name}</span>
+          <ChevronDownIcon
+            data-icon="inline-end"
+            className="hidden opacity-60 sm:inline"
+          />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-72">
           <DropdownMenuGroup>

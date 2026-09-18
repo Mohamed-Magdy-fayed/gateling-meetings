@@ -49,7 +49,10 @@ export function DeviceSelect({
 
   return (
     <Select value={selected} onValueChange={(next) => next && onChange(next)}>
-      <SelectTrigger aria-label={ariaLabel} className={cn("w-full", className)}>
+      <SelectTrigger
+        aria-label={ariaLabel}
+        className={cn("w-full max-w-full", className)}
+      >
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

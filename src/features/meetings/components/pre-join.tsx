@@ -134,7 +134,7 @@ export function PreJoin({
   }
 
   return (
-    <main className="mx-auto grid min-h-svh w-full max-w-6xl items-center gap-8 px-4 py-8 md:grid-cols-[3fr_2fr] md:gap-12">
+    <main className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-8 *:min-w-0 md:min-h-svh md:grid-cols-[3fr_2fr] md:items-center md:gap-12">
       {/* Preview */}
       <section className="space-y-3">
         <div className="relative aspect-video overflow-hidden rounded-2xl bg-neutral-900 shadow-[var(--shadow-xl)] ring-1 ring-black/10">
@@ -179,7 +179,7 @@ export function PreJoin({
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 *:min-w-0 sm:grid-cols-2">
           <DeviceSelect
             kind="audioinput"
             value={userChoices.audioDeviceId}
