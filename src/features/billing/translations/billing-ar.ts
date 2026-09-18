@@ -129,14 +129,14 @@ export const billingAr = {
   },
   tiers: {
     pro: {
-      participants: "حتى 50 مشاركًا",
+      participants: "حتى 10 مشاركين",
       duration: "اجتماعات حتى 24 ساعة",
       scheduling: "اجتماعات مجدولة غير محدودة",
       breakouts: "غرف فرعية",
       seats: "تسعير لكل مقعد لفريقك",
     },
     business: {
-      participants: "حتى 200 مشارك",
+      participants: "حتى 50 مشاركًا",
       duration: "اجتماعات حتى 24 ساعة",
       scheduling: "اجتماعات مجدولة غير محدودة",
       breakouts: "غرف فرعية",

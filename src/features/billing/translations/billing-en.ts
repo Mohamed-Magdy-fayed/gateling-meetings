@@ -126,14 +126,14 @@ export const billingEn = {
   },
   tiers: {
     pro: {
-      participants: "Up to 50 participants",
+      participants: "Up to 10 participants",
       duration: "Meetings up to 24 hours",
       scheduling: "Unlimited scheduled meetings",
       breakouts: "Breakout rooms",
       seats: "Per-seat pricing for your team",
     },
     business: {
-      participants: "Up to 200 participants",
+      participants: "Up to 50 participants",
       duration: "Meetings up to 24 hours",
       scheduling: "Unlimited scheduled meetings",
       breakouts: "Breakout rooms",

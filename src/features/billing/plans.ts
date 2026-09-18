@@ -34,7 +34,7 @@ export const PLAN_ENTITLEMENTS: Record<PlanId, Entitlements> = {
     seatsBillable: false,
   },
   pro: {
-    maxParticipants: 50,
+    maxParticipants: 10,
     maxMeetingMinutes: 24 * 60,
     maxUpcomingScheduled: null,
     breakouts: true,
@@ -43,7 +43,7 @@ export const PLAN_ENTITLEMENTS: Record<PlanId, Entitlements> = {
     seatsBillable: true,
   },
   business: {
-    maxParticipants: 200,
+    maxParticipants: 50,
     maxMeetingMinutes: 24 * 60,
     maxUpcomingScheduled: null,
     breakouts: true,
