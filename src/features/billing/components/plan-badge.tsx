@@ -8,6 +8,7 @@ const PLAN_VARIANT = {
   free: "secondary",
   pro: "info",
   business: "success",
+  unlimited: "default",
 } as const;
 
 type PlanBadgeProps = {

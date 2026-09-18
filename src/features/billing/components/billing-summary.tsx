@@ -68,7 +68,14 @@ export function BillingSummary({
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { data } = useSuspenseQuery(trpc.billing.summary.queryOptions());
-  const { organization, entitlements, seatsUsed, subscription, card } = data;
+  const {
+    organization,
+    entitlements,
+    seatsUsed,
+    monthlyUsage,
+    subscription,
+    card,
+  } = data;
   const [seats, setSeats] = useState(Math.max(organization.seatLimit, 1));
   const [interval, setInterval] = useState<BillingInterval>("month");
 
@@ -197,6 +204,18 @@ export function BillingSummary({
               }
             />
             <Row
+              label={t("billing.settings.monthlyUsage")}
+              value={
+                entitlements.maxMonthlyParticipantMinutes == null ||
+                !monthlyUsage
+                  ? t("billing.settings.unlimited")
+                  : t("billing.settings.monthlyUsageValue", {
+                      used: monthlyUsage.participantMinutes,
+                      max: entitlements.maxMonthlyParticipantMinutes,
+                    })
+              }
+            />
+            <Row
               label={t("billing.settings.seats")}
               value={
                 entitlements.unlimited
@@ -213,6 +232,13 @@ export function BillingSummary({
               value={<YesNo value={entitlements.apiAccess} />}
             />
           </dl>
+          {monthlyUsage && (
+            <p className="text-xs text-muted-foreground">
+              {t("billing.settings.monthlyUsageHint", {
+                when: monthlyUsage.resetsAt,
+              })}
+            </p>
+          )}
           <div className="flex flex-wrap gap-2 pt-2">
             <LinkButton href="/pricing" variant="outline">
               {t("billing.settings.comparePlans")}

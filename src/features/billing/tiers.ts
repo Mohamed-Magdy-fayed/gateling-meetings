@@ -50,6 +50,7 @@ export const TIER_DEFINITIONS: readonly TierDefinition[] = [
       "billing.tiers.pro.duration",
       "billing.tiers.pro.scheduling",
       "billing.tiers.pro.breakouts",
+      "billing.tiers.pro.usage",
       "billing.tiers.pro.seats",
     ],
     // Launch pricing: EGP 149 / seat / month, EGP 1,490 / seat / year.
@@ -65,6 +66,7 @@ export const TIER_DEFINITIONS: readonly TierDefinition[] = [
       "billing.tiers.business.scheduling",
       "billing.tiers.business.breakouts",
       "billing.tiers.business.api",
+      "billing.tiers.business.usage",
       "billing.tiers.business.seats",
     ],
     // Launch pricing: EGP 299 / seat / month, EGP 2,990 / seat / year.

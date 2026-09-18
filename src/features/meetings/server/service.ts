@@ -11,7 +11,10 @@ import {
   meetingSettingsSchema,
 } from "@/drizzle/schema";
 import { assertEntitlement, type Entitlements } from "@/features/billing/plans";
-import { countUpcomingScheduled } from "@/features/billing/server/usage";
+import {
+  assertMonthlyAllowance,
+  countUpcomingScheduled,
+} from "@/features/billing/server/usage";
 import {
   generateSalt,
   hashPassword,
@@ -104,11 +107,23 @@ type CreateInstantInput = MeetingOwner & {
   settings?: Partial<MeetingSettings>;
 };
 
-/** "New meeting" — live immediately; the host goes straight into the room. */
-export function createInstantMeeting(
+/**
+ * "New meeting" — live immediately; the host goes straight into the room.
+ * The monthly allowance is checked here as well as at the join door so an
+ * exhausted account hears it on the dashboard, not in an empty lobby.
+ */
+export async function createInstantMeeting(
   ctx: MeetingServiceContext,
-  { hostId, organizationId, title, origin, settings }: CreateInstantInput,
+  {
+    hostId,
+    organizationId,
+    entitlements,
+    title,
+    origin,
+    settings,
+  }: CreateInstantInput,
 ) {
+  await assertMonthlyAllowance(ctx.db, ctx.t, organizationId, entitlements);
   return insertWithFreshCode(ctx.db, {
     title: title ?? ctx.t("meetings.instantTitle"),
     status: "live",

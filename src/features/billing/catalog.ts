@@ -1,6 +1,7 @@
 import type { PlanId } from "@/drizzle/schema";
 
-export type PaidPlanId = Exclude<PlanId, "free">;
+/** The plans with a price: `free` costs nothing and `unlimited` is comp-only. */
+export type PaidPlanId = Extract<PlanId, "pro" | "business">;
 export type BillingInterval = "month" | "year";
 
 /**

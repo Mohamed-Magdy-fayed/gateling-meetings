@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { planValues } from "@/drizzle/schema";
+import { type PlanId, planValues } from "@/drizzle/schema";
 import { translationKey } from "@/features/core/i18n/global";
 
 export const searchSchema = z.object({
@@ -21,14 +21,27 @@ export const seatLimitSchema = z
  */
 export const adminPlanSourceSchema = z.enum(["free", "manual", "trial"]);
 
-export const setPlanSchema = z.object({
-  id: z.uuid(),
-  plan: z.enum(planValues),
-  planSource: adminPlanSourceSchema,
-  seatLimit: seatLimitSchema,
-  planExpiresAt: z.date().nullable(),
-  planNote: z.string().trim().max(2000).nullable(),
-});
+/**
+ * `unlimited` is comp-only: with a `free` source a stray billing event could
+ * overwrite it, and a trial that lifts every cap is not a trial of anything.
+ */
+export const unlimitedRequiresManual = {
+  check: (v: { plan: PlanId; planSource: string }) =>
+    v.plan !== "unlimited" || v.planSource === "manual",
+  message: translationKey("admin.validation.unlimitedSource"),
+  path: ["planSource"],
+};
+
+export const setPlanSchema = z
+  .object({
+    id: z.uuid(),
+    plan: z.enum(planValues),
+    planSource: adminPlanSourceSchema,
+    seatLimit: seatLimitSchema,
+    planExpiresAt: z.date().nullable(),
+    planNote: z.string().trim().max(2000).nullable(),
+  })
+  .refine(unlimitedRequiresManual.check, unlimitedRequiresManual);
 
 export const planGrantSchema = z.object({
   email: z

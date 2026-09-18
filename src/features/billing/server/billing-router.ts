@@ -35,6 +35,7 @@ import {
   canManageSubscription,
   hasLiveSubscription,
 } from "./subscription-state";
+import { monthlyParticipantMinutes } from "./usage";
 
 const MAX_SEATS = 500;
 
@@ -191,6 +192,11 @@ export const billingRouter = createTRPCRouter({
       },
       entitlements: ctx.entitlements,
       seatsUsed: await seatsUsed(ctx),
+      /** Only metered when the plan has a monthly allowance to meter against. */
+      monthlyUsage:
+        ctx.entitlements.maxMonthlyParticipantMinutes == null
+          ? null
+          : await monthlyParticipantMinutes(ctx.db, org.id),
       subscription: org.billingSubscriptionId
         ? {
             status: org.billingSubscriptionStatus,

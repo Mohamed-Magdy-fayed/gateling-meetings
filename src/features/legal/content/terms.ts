@@ -32,9 +32,10 @@ export const termsDocuments: LegalDocuments = {
       {
         heading: "3. Organizations, plans and seats",
         paragraphs: [
-          "Every account has a personal organization; you may also create team organizations and invite members. A plan (Free, Pro or Business) applies to an organization and sets its limits — for example the number of participants per meeting, meeting duration, upcoming scheduled meetings, breakout rooms and API access. The current limits of each plan are listed on our pricing page and enforced by the Service.",
+          "Every account has a personal organization; you may also create team organizations and invite members. A plan (Free, Pro or Business) applies to an organization and sets its limits — for example the number of participants per meeting, meeting duration, upcoming scheduled meetings, breakout rooms, API access and, on the Free plan, a monthly usage allowance. The current limits of each plan are listed on our pricing page and enforced by the Service.",
+          "The Free plan includes a monthly usage allowance measured in participant-minutes: one person connected to one of your organization’s meetings for one minute, the host included, as recorded by our join and leave log. The allowance resets on the first day of each calendar month (UTC) and unused minutes do not carry over. Once it is used up, nobody — including the host — can join or start a meeting owned by that organization until the reset, or until it upgrades; a meeting already in progress is not interrupted by the allowance. Paid plans currently have no monthly allowance.",
           "Paid plans are priced per seat. A seat is consumed by each member of the organization and each pending invitation. Owners and admins may add seats at any time and reduce them to no fewer than the current number of members.",
-          "We may grant a plan to an organization by hand — for example for a pilot, a partner or a trial — with or without an expiry date. Such a grant is not a purchase, carries no payment obligation, may be changed or withdrawn by us, and is not overwritten by a later paid subscription unless we say so.",
+          "We may grant a plan to an organization by hand — for example for a pilot, a partner or a trial — with or without an expiry date, including an Unlimited plan with none of the limits above. Such a grant is not a purchase, carries no payment obligation, may be changed or withdrawn by us, and is not overwritten by a later paid subscription unless we say so.",
         ],
       },
       {
@@ -78,7 +79,8 @@ export const termsDocuments: LegalDocuments = {
       {
         heading: "8. Availability and changes",
         paragraphs: [
-          "We aim to keep the Service available at all times but do not promise uninterrupted or error-free operation. We may change, add or remove features, and we may impose or change limits on the Free plan. We will not materially reduce what a paid plan includes during a period you have already paid for without offering a prorated refund.",
+          "We aim to keep the Service available at all times but do not promise uninterrupted or error-free operation. We may change, add or remove features, and we may impose or change limits on the Free plan — including its monthly usage allowance — at any time and without notice. We will not materially reduce what a paid plan includes during a period you have already paid for without offering a prorated refund.",
+          "Paid plans are meant for ordinary meeting use by the organization that bought them. Because media traffic is our main cost, we may apply a fair-use limit to a paid organization whose usage is far outside what its seats would normally generate — for example by contacting you to agree a suitable plan, or by introducing a usage allowance for paid plans with at least 30 days’ notice under section 14.",
         ],
       },
       {
@@ -151,9 +153,10 @@ export const termsDocuments: LegalDocuments = {
       {
         heading: "3. المؤسسات والخطط والمقاعد",
         paragraphs: [
-          "لكل حساب مؤسسة شخصية؛ ويمكنك أيضًا إنشاء مؤسسات فريق ودعوة أعضاء. تُطبَّق الخطة (مجاني، Pro أو Business) على المؤسسة وتحدد حدودها — مثل عدد المشاركين في الاجتماع، ومدة الاجتماع، وعدد الاجتماعات المجدولة القادمة، والغرف الفرعية، والوصول إلى الـ API. الحدود الحالية لكل خطة مذكورة في صفحة الأسعار وتفرضها الخدمة.",
+          "لكل حساب مؤسسة شخصية؛ ويمكنك أيضًا إنشاء مؤسسات فريق ودعوة أعضاء. تُطبَّق الخطة (مجاني، Pro أو Business) على المؤسسة وتحدد حدودها — مثل عدد المشاركين في الاجتماع، ومدة الاجتماع، وعدد الاجتماعات المجدولة القادمة، والغرف الفرعية، والوصول إلى الـ API، وفي الخطة المجانية حصة استخدام شهرية. الحدود الحالية لكل خطة مذكورة في صفحة الأسعار وتفرضها الخدمة.",
+          "تشمل الخطة المجانية حصة استخدام شهرية تُقاس بدقائق-المشارك: شخص واحد متصل بأحد اجتماعات مؤسستك لمدة دقيقة واحدة، بما في ذلك المضيف، كما يسجّله سجل الانضمام والمغادرة لدينا. تتجدد الحصة في اليوم الأول من كل شهر ميلادي (بالتوقيت العالمي UTC) ولا تُرحَّل الدقائق غير المستخدمة. عند استنفادها، لا يمكن لأحد — بما في ذلك المضيف — الانضمام إلى اجتماع تملكه تلك المؤسسة أو بدء اجتماع جديد حتى التجديد أو الترقية؛ ولا يُقطع اجتماع جارٍ بالفعل بسبب الحصة. الخطط المدفوعة ليس لها حاليًا حصة شهرية.",
           "تُسعَّر الخطط المدفوعة لكل مقعد. يشغل كل عضو في المؤسسة وكل دعوة معلّقة مقعدًا. يمكن للمالكين والمشرفين إضافة مقاعد في أي وقت وتقليلها بما لا يقل عن عدد الأعضاء الحاليين.",
-          "قد نمنح خطة لمؤسسة يدويًا — مثلًا لتجربة أو شريك أو فترة تجريبية — بتاريخ انتهاء أو بدونه. لا يُعد هذا المنح شراءً، ولا يترتب عليه أي التزام بالدفع، ويجوز لنا تغييره أو سحبه، ولا يُستبدل باشتراك مدفوع لاحق ما لم نقرر ذلك.",
+          "قد نمنح خطة لمؤسسة يدويًا — مثلًا لتجربة أو شريك أو فترة تجريبية — بتاريخ انتهاء أو بدونه، بما في ذلك خطة غير محدودة بلا أي من الحدود المذكورة أعلاه. لا يُعد هذا المنح شراءً، ولا يترتب عليه أي التزام بالدفع، ويجوز لنا تغييره أو سحبه، ولا يُستبدل باشتراك مدفوع لاحق ما لم نقرر ذلك.",
         ],
       },
       {
@@ -197,7 +200,8 @@ export const termsDocuments: LegalDocuments = {
       {
         heading: "8. التوافر والتغييرات",
         paragraphs: [
-          "نسعى لإبقاء الخدمة متاحة على الدوام لكننا لا نعد بتشغيل دون انقطاع أو خالٍ من الأخطاء. يجوز لنا تغيير الميزات أو إضافتها أو إزالتها، وفرض حدود على الخطة المجانية أو تغييرها. لن نقلّص جوهريًا ما تشمله خطة مدفوعة خلال فترة دفعتها بالفعل دون عرض استرداد تناسبي.",
+          "نسعى لإبقاء الخدمة متاحة على الدوام لكننا لا نعد بتشغيل دون انقطاع أو خالٍ من الأخطاء. يجوز لنا تغيير الميزات أو إضافتها أو إزالتها، وفرض حدود على الخطة المجانية أو تغييرها — بما في ذلك حصة الاستخدام الشهرية — في أي وقت ودون إشعار. لن نقلّص جوهريًا ما تشمله خطة مدفوعة خلال فترة دفعتها بالفعل دون عرض استرداد تناسبي.",
+          "الخطط المدفوعة مخصصة للاستخدام الاعتيادي للاجتماعات من قِبل المؤسسة التي اشترتها. ولأن حركة الوسائط هي تكلفتنا الرئيسية، يجوز لنا تطبيق حد استخدام عادل على مؤسسة مدفوعة يتجاوز استخدامها كثيرًا ما تولّده مقاعدها عادةً — مثلًا بالتواصل معك للاتفاق على خطة مناسبة، أو بإدخال حصة استخدام للخطط المدفوعة بإشعار لا يقل عن 30 يومًا وفق القسم 14.",
         ],
       },
       {

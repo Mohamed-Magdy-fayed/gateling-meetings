@@ -9,7 +9,10 @@ import {
   entitlementsForMeeting,
   type MeetingWithOwner,
 } from "@/features/billing/server/entitlements";
-import { countActiveParticipants } from "@/features/billing/server/usage";
+import {
+  assertMonthlyAllowance,
+  countActiveParticipants,
+} from "@/features/billing/server/usage";
 import { comparePasswords } from "@/features/core/auth/core/passwordHasher";
 import {
   getLiveKitConfig,
@@ -209,13 +212,23 @@ export const joinRouter = createTRPCRouter({
       }
 
       const identity = userId ? hostIdentity(userId) : guestIdentity();
+      const entitlements = entitlementsForMeeting(meeting);
+
+      // The monthly allowance applies to the host too: a room nobody can
+      // be let into is the point of the cap, not an exception to it.
+      await assertMonthlyAllowance(
+        ctx.db,
+        ctx.t,
+        meeting.organizationId,
+        entitlements,
+      );
 
       if (role === "host") {
         return admit(meeting, identity, input.displayName, role);
       }
       // Checked before the waiting room too: no point queueing someone the
       // host cannot admit.
-      await assertRoomHasSpace(ctx, meeting, entitlementsForMeeting(meeting));
+      await assertRoomHasSpace(ctx, meeting, entitlements);
 
       if (invited || !meeting.settings.waitingRoom) {
         return admit(meeting, identity, input.displayName, role);
@@ -277,12 +290,15 @@ export const joinRouter = createTRPCRouter({
       if (request.meeting.status === "ended") {
         return { status: "ended" as const };
       }
-      // The room may have filled while they waited.
-      await assertRoomHasSpace(
-        ctx,
-        request.meeting,
-        entitlementsForMeeting(request.meeting),
+      // The room may have filled, or the month run out, while they waited.
+      const entitlements = entitlementsForMeeting(request.meeting);
+      await assertMonthlyAllowance(
+        ctx.db,
+        ctx.t,
+        request.meeting.organizationId,
+        entitlements,
       );
+      await assertRoomHasSpace(ctx, request.meeting, entitlements);
       return admit(
         request.meeting,
         request.identity,

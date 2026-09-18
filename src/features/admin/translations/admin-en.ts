@@ -37,7 +37,7 @@ export const adminEn = {
   },
   setPlan: {
     title: "Plan",
-    lead: "Overrides whatever the organization is on. Billing webhooks never touch a granted or trial plan.",
+    lead: "Overrides whatever the organization is on. Billing webhooks never touch a granted or trial plan. Unlimited lifts every cap — participants, length, scheduling, monthly usage, seats, API — exactly like an admin account.",
     plan: "Plan",
     source: "How they got it",
     sources: {
@@ -88,5 +88,6 @@ export const adminEn = {
   },
   validation: {
     seats: "Seats must be between 1 and 10,000.",
+    unlimitedSource: "The Unlimited plan can only be granted by hand.",
   },
 } as const;

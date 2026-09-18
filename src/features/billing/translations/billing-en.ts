@@ -5,6 +5,10 @@ export const billingEn = {
     free: { name: "Free", tagline: "For trying it out." },
     pro: { name: "Pro", tagline: "For people who host regularly." },
     business: { name: "Business", tagline: "For teams and integrations." },
+    unlimited: {
+      name: "Unlimited",
+      tagline: "No limits at all — granted by hand, never sold.",
+    },
   },
   sources: {
     free: "Free",
@@ -32,6 +36,8 @@ export const billingEn = {
     breakouts: "Breakout rooms are not included in this plan.",
     apiAccess: "API access is not included in this plan.",
     seats: "All seats in this organization are taken.",
+    monthlyMinutes:
+      "This organization has used its monthly allowance of {max:number} participant-minutes. It resets on the first of next month — or upgrade for unlimited usage.",
   },
   room: {
     endingSoon: "This meeting will end in 5 minutes (plan limit).",
@@ -49,6 +55,10 @@ export const billingEn = {
     seats: "Seats",
     api: "API access",
     unlimited: "Unlimited",
+    monthlyUsage: "Usage this month",
+    monthlyUsageValue: "{used:number} / {max:number} participant-minutes",
+    monthlyUsageHint:
+      "A participant-minute is one person in a room for one minute, host included. Resets {when:date}.",
     minutes: dt("{count:plural}", {
       plural: { count: { one: "{?} minute", other: "{?} minutes" } },
     }),
@@ -130,6 +140,7 @@ export const billingEn = {
       duration: "Meetings up to 24 hours",
       scheduling: "Unlimited scheduled meetings",
       breakouts: "Breakout rooms",
+      usage: "No monthly usage allowance",
       seats: "Per-seat pricing for your team",
     },
     business: {
@@ -138,6 +149,7 @@ export const billingEn = {
       scheduling: "Unlimited scheduled meetings",
       breakouts: "Breakout rooms",
       api: "API access, webhooks and SSO join links",
+      usage: "No monthly usage allowance",
       seats: "Per-seat pricing for your team",
     },
   },
@@ -157,7 +169,7 @@ export const billingEn = {
     currencyNote:
       "Prices are in Egyptian pounds and charged by card through Paymob. Seats are billed together; changes apply from the next billing date.",
     freeNote:
-      "The Free plan (5 participants, 40-minute meetings) needs no card — just sign up.",
+      "The Free plan needs no card — just sign up. It allows 5 participants, 40-minute meetings, and 600 participant-minutes a month (about ten 30-minute calls with one other person). Paid plans have no monthly allowance.",
     contact: "Talk to us",
     contactLead:
       "Need custom limits or an invoice? We can set your organization up by hand.",

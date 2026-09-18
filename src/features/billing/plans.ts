@@ -16,6 +16,14 @@ export type Entitlements = {
   maxMeetingMinutes: number | null;
   /** Cap on scheduled meetings that have not started yet. */
   maxUpcomingScheduled: number | null;
+  /**
+   * Cap on participant-minutes (people × minutes in a room, host included)
+   * across the org per calendar month (UTC). This is what the media bill
+   * scales with, so it is the one cap that keeps a free account from
+   * costing more than a paid one. Checked at the join door; a meeting
+   * already running is never cut off by it.
+   */
+  maxMonthlyParticipantMinutes: number | null;
   breakouts: boolean;
   apiAccess: boolean;
   /** Seats bundled with the plan; `seatsBillable` plans add more per seat. */
@@ -23,11 +31,29 @@ export type Entitlements = {
   seatsBillable: boolean;
 };
 
+/**
+ * For `ADMIN_EMAILS` accounts, platform-owned integrations and orgs on the
+ * comp-only `unlimited` plan.
+ */
+export const UNLIMITED_ENTITLEMENTS: Entitlements = {
+  maxParticipants: Number.MAX_SAFE_INTEGER,
+  maxMeetingMinutes: null,
+  maxUpcomingScheduled: null,
+  maxMonthlyParticipantMinutes: null,
+  breakouts: true,
+  apiAccess: true,
+  seatsIncluded: Number.MAX_SAFE_INTEGER,
+  seatsBillable: false,
+};
+
 export const PLAN_ENTITLEMENTS: Record<PlanId, Entitlements> = {
   free: {
     maxParticipants: 5,
     maxMeetingMinutes: 40,
     maxUpcomingScheduled: 3,
+    // ~ten 30-minute calls with one other person a month. Above this a
+    // free account costs more in media egress than a Pro seat brings in.
+    maxMonthlyParticipantMinutes: 600,
     breakouts: false,
     apiAccess: false,
     seatsIncluded: 1,
@@ -37,6 +63,7 @@ export const PLAN_ENTITLEMENTS: Record<PlanId, Entitlements> = {
     maxParticipants: 10,
     maxMeetingMinutes: 24 * 60,
     maxUpcomingScheduled: null,
+    maxMonthlyParticipantMinutes: null,
     breakouts: true,
     apiAccess: false,
     seatsIncluded: 1,
@@ -46,22 +73,13 @@ export const PLAN_ENTITLEMENTS: Record<PlanId, Entitlements> = {
     maxParticipants: 50,
     maxMeetingMinutes: 24 * 60,
     maxUpcomingScheduled: null,
+    maxMonthlyParticipantMinutes: null,
     breakouts: true,
     apiAccess: true,
     seatsIncluded: 1,
     seatsBillable: true,
   },
-};
-
-/** For `ADMIN_EMAILS` accounts and platform-owned integrations. */
-export const UNLIMITED_ENTITLEMENTS: Entitlements = {
-  maxParticipants: Number.MAX_SAFE_INTEGER,
-  maxMeetingMinutes: null,
-  maxUpcomingScheduled: null,
-  breakouts: true,
-  apiAccess: true,
-  seatsIncluded: Number.MAX_SAFE_INTEGER,
-  seatsBillable: false,
+  unlimited: UNLIMITED_ENTITLEMENTS,
 };
 
 export type PlanFacts = Pick<
@@ -107,14 +125,19 @@ export function resolveEntitlements(
 
   const effectivePlan: PlanId = expired ? "free" : org.plan;
   const base = PLAN_ENTITLEMENTS[effectivePlan];
+  const unlimited = effectivePlan === "unlimited";
   return {
     ...base,
     plan: org.plan,
     effectivePlan,
     planSource: org.planSource,
     expired,
-    seatLimit: expired ? base.seatsIncluded : Math.max(org.seatLimit, 1),
-    unlimited: false,
+    seatLimit: unlimited
+      ? Number.MAX_SAFE_INTEGER
+      : expired
+        ? base.seatsIncluded
+        : Math.max(org.seatLimit, 1),
+    unlimited,
   };
 }
 
@@ -123,6 +146,7 @@ export type LimitKey =
   | "maxParticipants"
   | "maxMeetingMinutes"
   | "maxUpcomingScheduled"
+  | "maxMonthlyParticipantMinutes"
   | "seats";
 
 /**
@@ -202,7 +226,30 @@ export function assertEntitlement(
         cause: new EntitlementError(key, max),
       });
     }
+    case "maxMonthlyParticipantMinutes": {
+      const max = entitlements.maxMonthlyParticipantMinutes;
+      // `value` is what the month has used so far; refuse once it is spent.
+      if (max == null || (value ?? 0) < max) return;
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: t("billing.limits.monthlyMinutes", { max }),
+        cause: new EntitlementError(key, max),
+      });
+    }
   }
+}
+
+/** The UTC calendar month `now` falls in — the window a monthly cap counts. */
+export function monthWindow(now: Date = new Date()): {
+  start: Date;
+  end: Date;
+} {
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth();
+  return {
+    start: new Date(Date.UTC(year, month, 1)),
+    end: new Date(Date.UTC(year, month + 1, 1)),
+  };
 }
 
 /** When a room that went live at `startedAt` must end, or `null` if never. */

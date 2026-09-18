@@ -7,6 +7,8 @@ import {
   OrganizationMembershipsTable,
   OrganizationsTable,
   organizationRoleValues,
+  type PlanId,
+  type PlanSource,
   UsersTable,
   UserTokensTable,
 } from "@/drizzle/schema";
@@ -42,8 +44,8 @@ const summary = (org: {
   id: string;
   name: string;
   personalOwnerId: string | null;
-  plan: "free" | "pro" | "business";
-  planSource: "free" | "subscription" | "manual" | "trial";
+  plan: PlanId;
+  planSource: PlanSource;
   planExpiresAt: Date | null;
   seatLimit: number;
 }) => ({

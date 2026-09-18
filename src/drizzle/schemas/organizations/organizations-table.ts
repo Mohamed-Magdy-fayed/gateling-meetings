@@ -23,7 +23,12 @@ import {
 } from "@/drizzle/schemas/helpers";
 import { OrganizationMembershipsTable } from "./organization-memberships-table";
 
-export const planValues = ["free", "pro", "business"] as const;
+/**
+ * `unlimited` is never sold: it is the operator's own comp tier — no caps at
+ * all, like an `ADMIN_EMAILS` account — set only from the admin panel or a
+ * plan grant, always with a `manual` source so billing never touches it.
+ */
+export const planValues = ["free", "pro", "business", "unlimited"] as const;
 export type PlanId = (typeof planValues)[number];
 export const planEnum = pgEnum("plan", planValues);
 

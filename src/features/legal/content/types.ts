@@ -28,4 +28,4 @@ export const LEGAL_ENTITY = {
   productUrl: "https://meetings.gateling.com",
 } as const;
 
-export const LEGAL_EFFECTIVE_DATE = "2026-09-14";
+export const LEGAL_EFFECTIVE_DATE = "2026-09-18";

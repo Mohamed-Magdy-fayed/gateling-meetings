@@ -30,7 +30,7 @@ export const privacyDocuments: LegalDocuments = {
             label: "Meeting data:",
             bullets: [
               "meeting titles, scheduled times, durations, invitee email addresses and meeting codes;",
-              "for each participant, including guests without an account: the display name they enter, when they joined and left, whether they were admitted from the waiting room, and breakout-room assignments;",
+              "for each participant, including guests without an account: the display name they enter, when they joined and left (which is also how we measure an organization’s usage against its plan allowance), whether they were admitted from the waiting room, and breakout-room assignments;",
               "audio, video, screen shares, chat messages and reactions are relayed between participants in real time through our media provider and are not recorded or stored by us. If a host or participant records with their own tools, that recording is theirs and outside this policy.",
             ],
           },
@@ -144,7 +144,7 @@ export const privacyDocuments: LegalDocuments = {
             label: "بيانات الاجتماعات:",
             bullets: [
               "عناوين الاجتماعات، والأوقات المجدولة، والمدد، وعناوين بريد المدعوين، ورموز الاجتماعات؛",
-              "لكل مشارك، بما في ذلك الضيوف دون حساب: الاسم الذي يدخله، ووقت الانضمام والمغادرة، وما إذا سُمح له بالدخول من غرفة الانتظار، وتوزيع الغرف الفرعية؛",
+              "لكل مشارك، بما في ذلك الضيوف دون حساب: الاسم الذي يدخله، ووقت الانضمام والمغادرة (وهو أيضًا ما نقيس به استخدام المؤسسة مقابل حصة خطتها)، وما إذا سُمح له بالدخول من غرفة الانتظار، وتوزيع الغرف الفرعية؛",
               "يُنقل الصوت والفيديو ومشاركة الشاشة ورسائل الدردشة والتفاعلات بين المشاركين في الوقت الفعلي عبر مزود الوسائط لدينا ولا نسجّلها أو نخزّنها. إذا سجّل مضيف أو مشارك بأدواته الخاصة، فذلك التسجيل ملكه وخارج نطاق هذه السياسة.",
             ],
           },

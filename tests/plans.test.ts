@@ -1,11 +1,12 @@
 import { TRPCError } from "@trpc/server";
 import { describe, expect, it } from "vitest";
-
+import { planValues } from "@/drizzle/schema";
 import {
   assertEntitlement,
   EntitlementError,
   entitlementErrorData,
   meetingEndsAt,
+  monthWindow,
   PLAN_ENTITLEMENTS,
   type PlanFacts,
   resolveEntitlements,
@@ -30,7 +31,7 @@ function org(overrides: Partial<PlanFacts> = {}): PlanFacts {
 
 describe("PLAN_ENTITLEMENTS", () => {
   it("defines every key for every plan, and paid plans strictly beat free", () => {
-    for (const plan of ["free", "pro", "business"] as const) {
+    for (const plan of planValues) {
       const e = PLAN_ENTITLEMENTS[plan];
       expect(e.maxParticipants).toBeGreaterThan(0);
       expect(typeof e.breakouts).toBe("boolean");
@@ -41,6 +42,15 @@ describe("PLAN_ENTITLEMENTS", () => {
     );
     expect(PLAN_ENTITLEMENTS.business.apiAccess).toBe(true);
     expect(PLAN_ENTITLEMENTS.free.apiAccess).toBe(false);
+  });
+
+  it("meters only the free plan monthly; paid and unlimited have no allowance", () => {
+    expect(PLAN_ENTITLEMENTS.free.maxMonthlyParticipantMinutes).toBeGreaterThan(
+      0,
+    );
+    expect(PLAN_ENTITLEMENTS.pro.maxMonthlyParticipantMinutes).toBeNull();
+    expect(PLAN_ENTITLEMENTS.business.maxMonthlyParticipantMinutes).toBeNull();
+    expect(PLAN_ENTITLEMENTS.unlimited).toBe(UNLIMITED_ENTITLEMENTS);
   });
 });
 
@@ -105,6 +115,35 @@ describe("resolveEntitlements", () => {
     expect(resolved.apiAccess).toBe(true);
     expect(resolved.maxParticipants).toBe(
       UNLIMITED_ENTITLEMENTS.maxParticipants,
+    );
+  });
+
+  it("treats the comp-only unlimited plan exactly like an admin account", () => {
+    const resolved = resolveEntitlements(
+      org({ plan: "unlimited", planSource: "manual", seatLimit: 1 }),
+      { now: NOW },
+    );
+    expect(resolved.unlimited).toBe(true);
+    expect(resolved.effectivePlan).toBe("unlimited");
+    expect(resolved.maxMonthlyParticipantMinutes).toBeNull();
+    expect(resolved.maxMeetingMinutes).toBeNull();
+    expect(resolved.apiAccess).toBe(true);
+    expect(resolved.seatLimit).toBe(Number.MAX_SAFE_INTEGER);
+  });
+
+  it("drops an expired unlimited grant to free like any other grant", () => {
+    const resolved = resolveEntitlements(
+      org({
+        plan: "unlimited",
+        planSource: "manual",
+        planExpiresAt: new Date(NOW.getTime() - 1),
+      }),
+      { now: NOW },
+    );
+    expect(resolved.unlimited).toBe(false);
+    expect(resolved.effectivePlan).toBe("free");
+    expect(resolved.maxMonthlyParticipantMinutes).toBe(
+      PLAN_ENTITLEMENTS.free.maxMonthlyParticipantMinutes,
     );
   });
 
@@ -181,6 +220,30 @@ describe("assertEntitlement", () => {
     ).toBe("PRECONDITION_FAILED");
   });
 
+  it("refuses a join once the month's participant-minutes are spent", () => {
+    const max = free.maxMonthlyParticipantMinutes ?? 0;
+    expect(() =>
+      assertEntitlement(t, free, "maxMonthlyParticipantMinutes", max - 1),
+    ).not.toThrow();
+    const error = thrown(() =>
+      assertEntitlement(t, free, "maxMonthlyParticipantMinutes", max),
+    );
+    expect(error.code).toBe("PRECONDITION_FAILED");
+    expect(error.message).toContain(String(max));
+    expect(entitlementErrorData(error.cause)).toEqual({
+      key: "maxMonthlyParticipantMinutes",
+      max,
+    });
+    expect(() =>
+      assertEntitlement(
+        t,
+        PLAN_ENTITLEMENTS.pro,
+        "maxMonthlyParticipantMinutes",
+        1e9,
+      ),
+    ).not.toThrow();
+  });
+
   it("entitlementErrorData ignores unrelated causes", () => {
     expect(entitlementErrorData(new Error("x"))).toBeNull();
     expect(entitlementErrorData(undefined)).toBeNull();
@@ -196,5 +259,19 @@ describe("meetingEndsAt", () => {
 
   it("is null when the plan has no cap", () => {
     expect(meetingEndsAt(NOW, UNLIMITED_ENTITLEMENTS)).toBeNull();
+  });
+});
+
+describe("monthWindow", () => {
+  it("spans the UTC calendar month, end exclusive", () => {
+    const { start, end } = monthWindow(NOW);
+    expect(start.toISOString()).toBe("2026-09-01T00:00:00.000Z");
+    expect(end.toISOString()).toBe("2026-10-01T00:00:00.000Z");
+  });
+
+  it("rolls over the year in December", () => {
+    const { start, end } = monthWindow(new Date("2026-12-31T23:59:59Z"));
+    expect(start.toISOString()).toBe("2026-12-01T00:00:00.000Z");
+    expect(end.toISOString()).toBe("2027-01-01T00:00:00.000Z");
   });
 });

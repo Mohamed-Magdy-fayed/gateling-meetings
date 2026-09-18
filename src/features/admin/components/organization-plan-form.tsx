@@ -19,18 +19,21 @@ import { type PlanId, planValues } from "@/drizzle/schema";
 import {
   adminPlanSourceSchema,
   seatLimitSchema,
+  unlimitedRequiresManual,
 } from "@/features/admin/server/schemas";
 import { useTranslation } from "@/features/core/i18n/client";
 import { useTRPC } from "@/integrations/trpc/client";
 import { fromLocalDateTime, toLocalDateTime } from "./local-date-time";
 
-const formSchema = z.object({
-  plan: z.enum(planValues),
-  planSource: adminPlanSourceSchema,
-  seatLimit: seatLimitSchema,
-  planExpiresAt: z.string(),
-  planNote: z.string().max(2000),
-});
+const formSchema = z
+  .object({
+    plan: z.enum(planValues),
+    planSource: adminPlanSourceSchema,
+    seatLimit: seatLimitSchema,
+    planExpiresAt: z.string(),
+    planNote: z.string().max(2000),
+  })
+  .refine(unlimitedRequiresManual.check, unlimitedRequiresManual);
 
 type FormValues = z.infer<typeof formSchema>;
 
