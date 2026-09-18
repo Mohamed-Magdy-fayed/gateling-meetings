@@ -20,7 +20,7 @@ export type LegalDocuments = Record<"en" | "ar", LegalDocument>;
 
 /** The seller named in every document; Paymob only processes the payments. */
 export const LEGAL_ENTITY = {
-  name: "Gateling Solutions",
+  name: "Gateling",
   country: "Egypt",
   email: "info@gateling.com",
   site: "https://gateling.com",
