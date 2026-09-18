@@ -7,7 +7,6 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group";
-import { Separator } from "@/components/ui/separator";
 import { FormBase, type FormFieldProps } from "./form-base";
 import { useFieldContext } from "./hooks";
 
@@ -36,7 +35,6 @@ export function FormEmailField({
           type="email"
           value={field.state.value ?? ""}
         />
-        <Separator orientation="vertical" />
         <InputGroupAddon align="inline-end">
           <MailIcon />
         </InputGroupAddon>
