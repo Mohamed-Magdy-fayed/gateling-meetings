@@ -211,7 +211,7 @@ export async function beginPasskeyAuthenticationAction(
   if (!user || user.biometricCredentials.length === 0) {
     return {
       isError: true,
-      message: t("auth.passkeys.auth.error.userNotFound"),
+      message: t("auth.passkeys.auth.error.noPasskey"),
     };
   }
 

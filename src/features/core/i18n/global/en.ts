@@ -242,6 +242,8 @@ export default {
           cancelled: "Passkey sign-in was cancelled.",
           generic: "Could not sign in with that passkey.",
           userNotFound: "No account found for that email.",
+          noPasskey:
+            "No passkey is set up for that email. Sign in with your password first, then add one from Passkeys.",
           noCredentials: "This account has no passkeys yet.",
           invalidChallenge: "This sign-in attempt expired. Please try again.",
           credentialMismatch: "That passkey isn't registered to this account.",
