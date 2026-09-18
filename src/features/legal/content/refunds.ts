@@ -35,7 +35,7 @@ export const refundsDocuments: LegalDocuments = {
       {
         heading: "4. Seats",
         paragraphs: [
-          "Adding seats is charged immediately for the remainder of the current period, prorated, and is not refundable separately from the subscription. Reducing seats takes effect at the next renewal; the lower price applies from then on and no refund is issued for the current period.",
+          "Added seats are available immediately and the new seat total is charged from your next renewal — nothing is charged mid-period, so there is nothing to refund separately from the subscription. Reducing seats also takes effect at the next renewal; the lower price applies from then on and no refund is issued for the current period.",
         ],
       },
       {
@@ -98,7 +98,7 @@ export const refundsDocuments: LegalDocuments = {
       {
         heading: "4. المقاعد",
         paragraphs: [
-          "تُحتسب إضافة المقاعد فورًا لما تبقى من الفترة الحالية بشكل تناسبي، ولا تُسترد بشكل منفصل عن الاشتراك. يسري تقليل المقاعد عند التجديد التالي؛ ويُطبَّق السعر الأقل من ذلك الحين ولا يُصدر استرداد عن الفترة الحالية.",
+          "تصبح المقاعد المضافة متاحة فورًا ويُخصم إجمالي المقاعد الجديد بدءًا من التجديد التالي — لا يُخصم أي مبلغ في منتصف الفترة، وبالتالي لا يوجد ما يُسترد بشكل منفصل عن الاشتراك. يسري تقليل المقاعد عند التجديد التالي؛ ويُطبَّق السعر الأقل من ذلك الحين ولا يُصدر استرداد عن الفترة الحالية.",
         ],
       },
       {

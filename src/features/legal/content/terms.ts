@@ -12,7 +12,7 @@ export const termsDocuments: LegalDocuments = {
     effectiveDate: LEGAL_EFFECTIVE_DATE,
     intro: [
       `These Terms of Service ("Terms") govern your use of ${E.product}, the video-meeting service available at ${E.productUrl} (the "Service"), operated by ${E.name}, ${E.country} ("${E.name}", "we", "us"). By creating an account, hosting or joining a meeting, or otherwise using the Service, you agree to these Terms. If you use the Service on behalf of an organization, you confirm you are authorized to bind that organization, and "you" includes it.`,
-      `Paid plans are sold by . Payments are processed on our behalf by Paymob (Paymob Solutions S.A.E., Egypt, "Paymob"), a licensed payment service provider: Paymob takes your card details on its own hosted page, keeps a secure token of your card for renewals, and never shares the card number with us. Prices are in Egyptian pounds (EGP). Refunds are issued by us through Paymob under our Refund and Cancellation Policy.`,
+      `Paid plans are sold by ${E.name}, ${E.country}. Payments are processed on our behalf by Paymob (Paymob Solutions S.A.E., Egypt, "Paymob"), a licensed payment service provider: Paymob takes your card details on its own hosted page, keeps a secure token of your card for renewals, and never shares the card number with us. Prices are in Egyptian pounds (EGP). Refunds are issued by us through Paymob under our Refund and Cancellation Policy.`,
     ],
     sections: [
       {
@@ -40,7 +40,7 @@ export const termsDocuments: LegalDocuments = {
       {
         heading: "4. Fees, billing and renewals",
         paragraphs: [
-          "Prices are shown on our pricing page and at checkout in Egyptian pounds and include Egyptian value-added tax where it applies. Subscriptions renew automatically at the end of each billing period (every 30 days for monthly plans, every 365 days for yearly plans) by charging the card saved with Paymob, at the then-current price, until cancelled.",
+          "Prices are shown on our pricing page and at checkout in Egyptian pounds and include Egyptian value-added tax where it applies. Subscriptions renew automatically at the end of each billing period (every 30 days for monthly plans, every 360 days for yearly plans) by charging the card saved with Paymob, at the then-current price, until cancelled.",
           "Adding seats makes them available immediately; the new seat total is charged from your next renewal — there is no prorated charge mid-period. Reducing seats also takes effect at the next renewal. Cancelling stops all future charges at once; the organization keeps its plan until the end of the period already paid for. Refunds are governed by our Refund and Cancellation Policy.",
           "If a renewal payment fails, Paymob retries it over the following days and you are notified. If it is not settled within seven days of the period end, the organization returns to the Free plan and its limits apply immediately. Your data is not deleted; you can resubscribe at any time.",
           "We may change prices. Changes take effect at your next renewal after we give at least 30 days' notice by email or in the Service.",
@@ -121,7 +121,7 @@ export const termsDocuments: LegalDocuments = {
       {
         heading: "15. Contact",
         paragraphs: [
-          `,  —  — . Questions about a charge, receipt or refund go to the same address; Paymob only processes the payment and cannot change your plan.`,
+          `${E.name}, ${E.country} — ${E.email} — ${E.site}. Questions about a charge, receipt or refund go to the same address; Paymob only processes the payment and cannot change your plan.`,
         ],
       },
     ],
@@ -131,7 +131,7 @@ export const termsDocuments: LegalDocuments = {
     effectiveDate: LEGAL_EFFECTIVE_DATE,
     intro: [
       `تحكم شروط الخدمة هذه ("الشروط") استخدامك لـ ${E.product}، خدمة الاجتماعات المرئية المتاحة على ${E.productUrl} ("الخدمة")، والتي تشغّلها ${E.name}، ${E.country} ("${E.name}"، "نحن"). بإنشاء حساب أو استضافة اجتماع أو الانضمام إليه أو استخدام الخدمة بأي شكل آخر، فإنك توافق على هذه الشروط. إذا كنت تستخدم الخدمة نيابةً عن مؤسسة، فإنك تؤكد أنك مخوَّل بإلزامها، وتشمل كلمة "أنت" تلك المؤسسة.`,
-      `تُباع الخطط المدفوعة من . تُعالَج المدفوعات نيابةً عنا عبر Paymob (شركة Paymob Solutions S.A.E.، مصر، "Paymob")، مزوّد خدمات دفع مرخَّص: تستقبل Paymob بيانات بطاقتك على صفحتها المستضافة، وتحتفظ برمز آمن للبطاقة لأغراض التجديد، ولا تشاركنا رقم البطاقة أبدًا. الأسعار بالجنيه المصري. نُصدر عمليات الاسترداد بأنفسنا عبر Paymob وفق سياسة الاسترداد والإلغاء الخاصة بنا.`,
+      `تُباع الخطط المدفوعة من ${E.name}، ${E.country}. تُعالَج المدفوعات نيابةً عنا عبر Paymob (شركة Paymob Solutions S.A.E.، مصر، "Paymob")، مزوّد خدمات دفع مرخَّص: تستقبل Paymob بيانات بطاقتك على صفحتها المستضافة، وتحتفظ برمز آمن للبطاقة لأغراض التجديد، ولا تشاركنا رقم البطاقة أبدًا. الأسعار بالجنيه المصري. نُصدر عمليات الاسترداد بأنفسنا عبر Paymob وفق سياسة الاسترداد والإلغاء الخاصة بنا.`,
     ],
     sections: [
       {
@@ -159,7 +159,7 @@ export const termsDocuments: LegalDocuments = {
       {
         heading: "4. الرسوم والفوترة والتجديد",
         paragraphs: [
-          "تُعرض الأسعار في صفحة الأسعار وعند الدفع بالجنيه المصري، وتشمل ضريبة القيمة المضافة المصرية حيثما تنطبق. تتجدد الاشتراكات تلقائيًا في نهاية كل فترة فوترة (كل 30 يومًا للخطط الشهرية وكل 365 يومًا للخطط السنوية) بالخصم من البطاقة المحفوظة لدى Paymob بالسعر الساري حينها، حتى يتم الإلغاء.",
+          "تُعرض الأسعار في صفحة الأسعار وعند الدفع بالجنيه المصري، وتشمل ضريبة القيمة المضافة المصرية حيثما تنطبق. تتجدد الاشتراكات تلقائيًا في نهاية كل فترة فوترة (كل 30 يومًا للخطط الشهرية وكل 360 يومًا للخطط السنوية) بالخصم من البطاقة المحفوظة لدى Paymob بالسعر الساري حينها، حتى يتم الإلغاء.",
           "تصبح المقاعد المضافة متاحة فورًا؛ ويُخصم إجمالي المقاعد الجديد بدءًا من التجديد التالي — لا يوجد خصم تناسبي في منتصف الفترة. يسري تقليل المقاعد أيضًا عند التجديد التالي. يوقف الإلغاء جميع الخصومات المستقبلية فورًا؛ وتحتفظ المؤسسة بخطتها حتى نهاية الفترة المدفوعة بالفعل. يخضع الاسترداد لسياسة الاسترداد والإلغاء الخاصة بنا.",
           "إذا فشل خصم التجديد، تعيد Paymob المحاولة خلال الأيام التالية ويتم إخطارك. إذا لم يُسدَّد خلال سبعة أيام من نهاية الفترة، تعود المؤسسة إلى الخطة المجانية وتُطبَّق حدودها فورًا. لا تُحذف بياناتك؛ ويمكنك إعادة الاشتراك في أي وقت.",
           "يجوز لنا تغيير الأسعار. تسري التغييرات عند التجديد التالي بعد إشعار لا يقل عن 30 يومًا بالبريد الإلكتروني أو داخل الخدمة.",
@@ -240,7 +240,7 @@ export const termsDocuments: LegalDocuments = {
       {
         heading: "15. التواصل",
         paragraphs: [
-          `،  —  — . تُرسل الاستفسارات المتعلقة بعملية دفع أو إيصال أو استرداد إلى العنوان نفسه؛ فـ Paymob تعالج الدفع فقط ولا يمكنها تغيير خطتك.`,
+          `${E.name}، ${E.country} — ${E.email} — ${E.site}. تُرسل الاستفسارات المتعلقة بعملية دفع أو إيصال أو استرداد إلى العنوان نفسه؛ فـ Paymob تعالج الدفع فقط ولا يمكنها تغيير خطتك.`,
         ],
       },
     ],
