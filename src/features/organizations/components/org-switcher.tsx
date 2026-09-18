@@ -84,19 +84,19 @@ export function OrgSwitcher({
           render={
             <Button
               variant="outline"
-              className="size-9 shrink-0 justify-center gap-2 px-0 md:size-auto md:h-9 md:max-w-52 md:ps-2.5 md:pe-3"
+              className="size-9 shrink-0 justify-center px-0 max-md:border-transparent max-md:bg-accent max-md:text-accent-foreground max-md:hover:bg-accent/80 md:size-auto md:h-9 md:max-w-52 md:gap-2 md:ps-2.5 md:pe-3"
               aria-label={t("organizations.switcher.label")}
             />
           }
         >
-          <span className="grid size-6 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground">
-            <Building2Icon className="size-3.5" />
+          {/* On phones the button is the accent disc itself; from md the disc shrinks and the org name joins it. */}
+          <span className="grid size-9 shrink-0 place-items-center rounded-full md:size-6 md:bg-accent md:text-accent-foreground">
+            <Building2Icon className="size-4 md:size-3.5" />
           </span>
           <span className="hidden truncate md:inline">{active?.name}</span>
-          <ChevronDownIcon
-            data-icon="inline-end"
-            className="hidden opacity-60 md:inline"
-          />
+          <span className="hidden md:inline-flex">
+            <ChevronDownIcon className="size-4 opacity-60" />
+          </span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-72">
           <DropdownMenuGroup>
