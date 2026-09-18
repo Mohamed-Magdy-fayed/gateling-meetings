@@ -7,6 +7,7 @@ import {
   CheckIcon,
   ChevronDownIcon,
   CreditCardIcon,
+  KeyRoundIcon,
   LogOutIcon,
   PlugZapIcon,
   PlusIcon,
@@ -179,6 +180,13 @@ export function OrgSwitcher({
             )}
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
+          <DropdownMenuItem
+            render={<Link href="/auth/passkeys" />}
+            nativeButton={false}
+          >
+            <KeyRoundIcon />
+            {t("auth.passkeys.pageTitle")}
+          </DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
             disabled={isSigningOut}
