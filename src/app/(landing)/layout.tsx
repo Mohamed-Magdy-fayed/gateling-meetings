@@ -1,14 +1,7 @@
 import type { PropsWithChildren } from "react";
 
-import { SiteFooter } from "@/features/legal/components/site-footer";
-import { SiteHeader } from "@/features/meetings/components/site-header";
+import { SiteShell } from "@/features/meetings/components/site-shell";
 
 export default function LandingLayout({ children }: PropsWithChildren) {
-  return (
-    <>
-      <SiteHeader />
-      {children}
-      <SiteFooter />
-    </>
-  );
+  return <SiteShell>{children}</SiteShell>;
 }

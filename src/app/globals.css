@@ -221,6 +221,19 @@
   --overlay: rgba(34, 28, 22, 0.5);
   --ring-brand: color-mix(in oklch, var(--teal-600) 35%, transparent);
 
+  /* ---- Phone bottom bar (mobile-nav.tsx) ----
+     The pill is 4rem tall and floats 0.75rem above the safe area. Anything
+     that must stay reachable at the bottom of a page pads by this much, so
+     the bar and the padding can never disagree about the bar's height. */
+  --mobile-nav-gap: 0.75rem;
+  --mobile-nav-height: 4rem;
+  --mobile-nav-inset: calc(
+    var(--mobile-nav-height) +
+    var(--mobile-nav-gap) +
+    0.5rem +
+    env(safe-area-inset-bottom, 0px)
+  );
+
   /* ---- shadcn-equivalent semantic tokens, mapped onto the brand scale ---- */
   --radius: 0.75rem;
   --background: var(--neutral-25);

@@ -1,19 +1,10 @@
-import { cookies } from "next/headers";
-
 import { BrandLockup } from "@/components/brand/brand-lockup";
 import { LinkButton } from "@/components/general/link-button";
-import { db } from "@/drizzle";
-import { resolveEntitlements } from "@/features/billing/plans";
-import { isAdminEmail } from "@/features/core/auth/core/admin";
-import { getUserSession } from "@/features/core/auth/core/session";
 import { ThemeToggle } from "@/features/core/color-theme/client";
 import { LanguageToggle } from "@/features/core/i18n/client";
 import { getT } from "@/features/core/i18n/server";
 import { OrgSwitcher } from "@/features/organizations/components/org-switcher";
-import {
-  listUserOrganizations,
-  loadActiveOrganization,
-} from "@/features/organizations/server/service";
+import { loadAccountMenu } from "@/features/organizations/server/account-menu";
 
 import { HeaderNewMeeting } from "./header-new-meeting";
 
@@ -21,28 +12,12 @@ import { HeaderNewMeeting } from "./header-new-meeting";
  * Shared top bar for the landing page and the host dashboard. Built like a
  * meetings app, not a marketing site: the lockup, one primary action (start
  * a meeting), and a single account menu that holds navigation, org
- * switching, settings and sign-out.
+ * switching, settings and sign-out. On phones the account menu and the
+ * primary action live in the bottom bar instead, so the header keeps only
+ * the lockup and the two global toggles.
  */
 export async function SiteHeader() {
-  const [{ t }, session] = await Promise.all([
-    getT(),
-    getUserSession(await cookies()),
-  ]);
-  const user = session?.user ?? null;
-  const isAdmin = isAdminEmail(user?.email);
-  // Org owners/admins on a plan with API access get the integrations entry
-  // in the account menu; platform admins always do.
-  const [active, memberships] = session
-    ? await Promise.all([
-        loadActiveOrganization(db, session.user.id, session.orgId ?? null),
-        listUserOrganizations(db, session.user.id),
-      ])
-    : [null, []];
-  const canManageIntegrations =
-    active != null &&
-    (isAdmin ||
-      (["owner", "admin"].includes(active.membership.role) &&
-        resolveEntitlements(active.organization).apiAccess));
+  const [{ t }, menu] = await Promise.all([getT(), loadAccountMenu()]);
 
   return (
     <header className="sticky top-0 z-20 px-4 pt-3">
@@ -59,22 +34,12 @@ export async function SiteHeader() {
           </LinkButton>
           <ThemeToggle />
           <LanguageToggle variant="ghost" />
-          {user && active ? (
+          {menu ? (
             <>
               <HeaderNewMeeting />
-              <OrgSwitcher
-                activeId={active.organization.id}
-                showIntegrations={canManageIntegrations}
-                isAdmin={isAdmin}
-                organizations={memberships.map(
-                  ({ organization, membership }) => ({
-                    id: organization.id,
-                    name: organization.name,
-                    isPersonal: organization.personalOwnerId != null,
-                    role: membership.role,
-                  }),
-                )}
-              />
+              <div className="hidden md:block">
+                <OrgSwitcher {...menu} />
+              </div>
             </>
           ) : (
             <LinkButton href="/auth/sign-in" className="ms-1">

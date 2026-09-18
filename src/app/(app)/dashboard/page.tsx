@@ -30,7 +30,8 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+      {/* On phones the bottom bar already carries these three; the row would only repeat it. */}
+      <div className="hidden gap-4 md:flex md:flex-row md:items-center">
         <NewMeetingButton className="h-10" />
         <LinkButton
           href="/schedule"

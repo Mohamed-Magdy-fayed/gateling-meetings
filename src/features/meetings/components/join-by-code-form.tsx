@@ -2,7 +2,7 @@
 
 import { ArrowRightIcon, KeyboardIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, type RefObject, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,8 +14,14 @@ import { useTranslation } from "@/features/core/i18n/client";
 import { normalizeMeetingCode } from "@/features/meetings/lib/meeting-code";
 import { cn } from "@/lib/utils";
 
+type JoinByCodeFormProps = {
+  className?: string;
+  /** Lets a host (the phone "Join" sheet) move focus into the field on open. */
+  inputRef?: RefObject<HTMLInputElement | null>;
+};
+
 /** "Enter a code or link" — accepts anything `normalizeMeetingCode` understands. */
-export function JoinByCodeForm({ className }: { className?: string }) {
+export function JoinByCodeForm({ className, inputRef }: JoinByCodeFormProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const [value, setValue] = useState("");
@@ -41,6 +47,7 @@ export function JoinByCodeForm({ className }: { className?: string }) {
           <KeyboardIcon />
         </InputGroupAddon>
         <InputGroupInput
+          ref={inputRef}
           value={value}
           onChange={(event) => {
             setValue(event.target.value);

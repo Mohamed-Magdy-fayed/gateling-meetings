@@ -9,32 +9,36 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/features/core/i18n/client";
 import { useTRPC } from "@/integrations/trpc/client";
 
-type NewMeetingButtonProps = {
-  size?: "default" | "lg";
-  className?: string;
-};
-
 /** Creates an instant meeting and drops the host straight into the room. */
-export function NewMeetingButton({
-  size = "lg",
-  className,
-}: NewMeetingButtonProps) {
-  const { t } = useTranslation();
+export function useCreateInstantMeeting() {
   const trpc = useTRPC();
   const router = useRouter();
-
   const { mutate, isPending } = useMutation(
     trpc.meetings.createInstant.mutationOptions({
       onSuccess: ({ code }) => router.push(`/m/${code}`),
       onError: (error) => toast.error(error.message),
     }),
   );
+  return { create: () => mutate({}), isPending };
+}
+
+type NewMeetingButtonProps = {
+  size?: "default" | "lg";
+  className?: string;
+};
+
+export function NewMeetingButton({
+  size = "lg",
+  className,
+}: NewMeetingButtonProps) {
+  const { t } = useTranslation();
+  const { create, isPending } = useCreateInstantMeeting();
 
   return (
     <Button
       size={size}
       className={className}
-      onClick={() => mutate({})}
+      onClick={create}
       disabled={isPending}
     >
       <VideoIcon data-icon="inline-start" />

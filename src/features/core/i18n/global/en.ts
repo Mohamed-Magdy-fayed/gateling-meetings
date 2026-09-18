@@ -34,6 +34,18 @@ export default {
       integrations: "Integrations",
     },
   },
+  nav: {
+    label: "Main navigation",
+    home: "Home",
+    schedule: "Schedule",
+    newMeeting: "New meeting",
+    join: "Join",
+    more: "More",
+    joinSheet: {
+      title: "Join a meeting",
+      lead: "Paste the code or link you were sent.",
+    },
+  },
   actions: {
     save: "Save",
     cancel: "Cancel",

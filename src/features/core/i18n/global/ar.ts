@@ -34,6 +34,18 @@ export default {
       integrations: "التكاملات",
     },
   },
+  nav: {
+    label: "التنقل الرئيسي",
+    home: "الرئيسية",
+    schedule: "جدولة",
+    newMeeting: "اجتماع جديد",
+    join: "انضمام",
+    more: "المزيد",
+    joinSheet: {
+      title: "الانضمام إلى اجتماع",
+      lead: "الصق الرمز أو الرابط الذي وصلك.",
+    },
+  },
   actions: {
     save: "حفظ",
     cancel: "إلغاء",

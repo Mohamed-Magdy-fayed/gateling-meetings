@@ -80,6 +80,21 @@ function SheetContent({
   );
 }
 
+/** The short bar at the top of a bottom sheet that says "this slides". Decorative only. */
+function SheetGrabber({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="sheet-grabber"
+      aria-hidden
+      className={cn(
+        "mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-border",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
 function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -141,6 +156,7 @@ export {
   SheetContent,
   SheetDescription,
   SheetFooter,
+  SheetGrabber,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
