@@ -200,7 +200,10 @@ export function OrganizationSettings({
             </div>
             {canEdit && !isPersonal && (
               <InviteDialog
-                seatsFull={!data.unlimited && seatsUsed >= data.seatLimit}
+                seatsFull={
+                  !data.seatsEnforced.unlimited &&
+                  seatsUsed >= data.seatsEnforced.seatLimit
+                }
                 onInvited={invalidate}
               />
             )}

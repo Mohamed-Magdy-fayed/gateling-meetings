@@ -118,6 +118,21 @@ describe("resolveEntitlements", () => {
     );
   });
 
+  it("keeps the org's own plan visible under an admin bypass", () => {
+    // The billing page shows the org's plan (resolved without isAdmin) next
+    // to a note that the viewer bypasses it — the bypass must not rewrite
+    // the plan itself.
+    const bypass = resolveEntitlements(org({ plan: "free" }), {
+      isAdmin: true,
+      now: NOW,
+    });
+    expect(bypass.plan).toBe("free");
+    expect(bypass.effectivePlan).toBe("free");
+    const shown = resolveEntitlements(org({ plan: "free" }), { now: NOW });
+    expect(shown.unlimited).toBe(false);
+    expect(shown.maxParticipants).toBe(PLAN_ENTITLEMENTS.free.maxParticipants);
+  });
+
   it("treats the comp-only unlimited plan exactly like an admin account", () => {
     const resolved = resolveEntitlements(
       org({ plan: "unlimited", planSource: "manual", seatLimit: 1 }),

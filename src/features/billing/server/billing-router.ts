@@ -19,6 +19,7 @@ import {
   orgProcedure,
 } from "@/integrations/trpc/init";
 import { catalogIdToPlanAndInterval } from "../catalog";
+import { resolveEntitlements } from "../plans";
 import {
   BILLING_CURRENCY,
   subscriptionAmountCents,
@@ -180,8 +181,15 @@ export const billingRouter = createTRPCRouter({
     const canEdit =
       ctx.isAdmin || ["owner", "admin"].includes(ctx.membership.role);
     const card = await findBillingCard(ctx.db, org.id);
+    // What the org's plan actually grants — the page shows this, because a
+    // platform admin's own bypass (ctx.entitlements) would otherwise show
+    // "Unlimited" next to a Free badge and make the plan look wrong.
+    const orgEntitlements = resolveEntitlements(org);
     return {
       canEdit,
+      orgEntitlements,
+      /** The viewer is a platform admin: the caps above apply to everyone but them. */
+      adminBypass: ctx.isAdmin && !orgEntitlements.unlimited,
       organization: {
         id: org.id,
         name: org.name,
@@ -194,7 +202,7 @@ export const billingRouter = createTRPCRouter({
       seatsUsed: await seatsUsed(ctx),
       /** Only metered when the plan has a monthly allowance to meter against. */
       monthlyUsage:
-        ctx.entitlements.maxMonthlyParticipantMinutes == null
+        orgEntitlements.maxMonthlyParticipantMinutes == null
           ? null
           : await monthlyParticipantMinutes(ctx.db, org.id),
       subscription: org.billingSubscriptionId

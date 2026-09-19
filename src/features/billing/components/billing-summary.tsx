@@ -70,7 +70,8 @@ export function BillingSummary({
   const { data } = useSuspenseQuery(trpc.billing.summary.queryOptions());
   const {
     organization,
-    entitlements,
+    orgEntitlements: entitlements,
+    adminBypass,
     seatsUsed,
     monthlyUsage,
     subscription,
@@ -134,6 +135,13 @@ export function BillingSummary({
       {data.billingTestMode && (
         <Alert>
           <AlertDescription>{t("billing.settings.testMode")}</AlertDescription>
+        </Alert>
+      )}
+      {adminBypass && (
+        <Alert>
+          <AlertDescription>
+            {t("billing.settings.adminBypass")}
+          </AlertDescription>
         </Alert>
       )}
       <Card>

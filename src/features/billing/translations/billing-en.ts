@@ -81,6 +81,8 @@ export const billingEn = {
       "Your payment went through and your plan is active. Seat changes and cancellation become available once our payment provider confirms the subscription — usually within a few minutes.",
     testMode:
       "Payments are running in test mode while our merchant account is being verified. Checkout uses the payment provider's test environment — no real card is charged.",
+    adminBypass:
+      "You're a platform admin, so these limits don't apply to you. They apply to everyone else in this organization.",
     invoices: "Charges",
     chargedOn: "{when:date}",
     paid: "Paid",

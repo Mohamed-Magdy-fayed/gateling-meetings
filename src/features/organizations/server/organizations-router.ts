@@ -12,7 +12,10 @@ import {
   UsersTable,
   UserTokensTable,
 } from "@/drizzle/schema";
-import { EntitlementError } from "@/features/billing/plans";
+import {
+  EntitlementError,
+  resolveEntitlements,
+} from "@/features/billing/plans";
 import { normalizeEmail } from "@/features/core/auth/core/helpers";
 import { setSessionOrganization } from "@/features/core/auth/core/session";
 import { translationKey } from "@/features/core/i18n/global";
@@ -221,6 +224,7 @@ export const organizationsRouter = createTRPCRouter({
         orderBy: [OrganizationMembershipsTable.createdAt],
         with: { user: { columns: { id: true, email: true, name: true } } },
       });
+      const shown = resolveEntitlements(ctx.organization);
       return {
         members: rows.map((row) => ({
           id: row.id,
@@ -229,8 +233,14 @@ export const organizationsRouter = createTRPCRouter({
           joinedAt: row.createdAt,
           isYou: row.userId === ctx.session.user.id,
         })),
-        seatLimit: ctx.entitlements.seatLimit,
-        unlimited: ctx.entitlements.unlimited,
+        // The caption shows what the org's plan grants; the invite gate
+        // follows the enforced entitlements (a platform admin bypasses caps).
+        seatLimit: shown.seatLimit,
+        unlimited: shown.unlimited,
+        seatsEnforced: {
+          seatLimit: ctx.entitlements.seatLimit,
+          unlimited: ctx.entitlements.unlimited,
+        },
       };
     }),
 
