@@ -16,6 +16,7 @@ export const companionAr = {
     list_my_meetings: "تم البحث في اجتماعاتك",
     create_instant_meeting: "تم بدء اجتماع",
     schedule_meeting: "تمت جدولة اجتماع",
+    schedule_meeting_series: "تمت جدولة سلسلة اجتماعات",
     get_meeting_link: "تم جلب الرابط",
     get_personal_room_link: "تم جلب رابط غرفتك",
     end_meeting: "تم إنهاء اجتماع",

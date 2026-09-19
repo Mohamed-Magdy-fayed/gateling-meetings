@@ -29,7 +29,8 @@ export const runtime = "nodejs";
 /** Spend controls that are not about *who* but about *how much per turn*. */
 const MAX_MESSAGE_CHARS = 1000;
 const MAX_HISTORY = 8;
-const MAX_OUTPUT_TOKENS = 400;
+// Enough for a series reply: up to twelve links, one per line, plus a sentence.
+const MAX_OUTPUT_TOKENS = 700;
 const MAX_TOOL_ROUNDS = 3;
 
 const messageSchema = z.looseObject({

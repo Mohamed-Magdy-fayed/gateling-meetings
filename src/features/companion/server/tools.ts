@@ -2,6 +2,7 @@ import "server-only";
 
 import { toolDefinition } from "@tanstack/ai";
 import { TRPCError } from "@trpc/server";
+import type { z } from "zod";
 
 import type { Database } from "@/drizzle";
 import type { Entitlements } from "@/features/billing/plans";
@@ -105,37 +106,69 @@ export function companionTools(actor: CompanionActor) {
     }),
   );
 
+  type ScheduleShared = Omit<
+    z.infer<typeof companionSchemas.scheduleMeeting>,
+    "wallClock"
+  >;
+
+  /** One scheduled meeting at `wallClock`; the service enforces the caps. */
+  async function scheduleOne(shared: ScheduleShared, wallClock: string) {
+    const scheduledAt = wallClockToInstant(wallClock, shared.timezone);
+    const invitees = shared.invitees ?? [];
+    const meeting = await createScheduledMeeting(
+      { db, t },
+      {
+        ...owner,
+        input: {
+          title: shared.title,
+          scheduledAt,
+          durationMinutes: shared.durationMinutes ?? DEFAULT_DURATION_MINUTES,
+          timezone: shared.timezone,
+          waitingRoom: true,
+          invitees,
+        },
+      },
+    );
+    return {
+      code: meeting.code,
+      title: shared.title,
+      wallClock,
+      scheduledAt: scheduledAt.toISOString(),
+      timezone: shared.timezone,
+      invited: invitees.length,
+      link: link(meeting.code),
+    };
+  }
+
   const schedule = toolDefinition({
     name: "schedule_meeting",
     description:
-      "Schedules a meeting for a later date and time, optionally inviting people by email, and returns its link.",
+      "Schedules one meeting for a later date and time, optionally inviting people by email, and returns its link.",
     inputSchema: companionSchemas.scheduleMeeting,
-  }).server((input) =>
+  }).server(({ wallClock, ...shared }) =>
+    guard(() => scheduleOne(shared, wallClock)),
+  );
+
+  const scheduleSeries = toolDefinition({
+    name: "schedule_meeting_series",
+    description:
+      "Schedules the same meeting at several dates and times (a weekly stand-up, the next four Sundays) as separate meetings, each with its own link. Occurrences that cannot be scheduled are reported with the reason instead of failing the rest.",
+    inputSchema: companionSchemas.scheduleMeetingSeries,
+  }).server(({ wallClocks, ...shared }) =>
     guard(async () => {
-      const scheduledAt = wallClockToInstant(input.wallClock, input.timezone);
-      const invitees = input.invitees ?? [];
-      const meeting = await createScheduledMeeting(
-        { db, t },
-        {
-          ...owner,
-          input: {
-            title: input.title,
-            scheduledAt,
-            durationMinutes: input.durationMinutes ?? DEFAULT_DURATION_MINUTES,
-            timezone: input.timezone,
-            waitingRoom: true,
-            invitees,
-          },
-        },
-      );
-      return {
-        code: meeting.code,
-        title: input.title,
-        scheduledAt: scheduledAt.toISOString(),
-        timezone: input.timezone,
-        invited: invitees.length,
-        link: link(meeting.code),
-      };
+      const scheduled: Awaited<ReturnType<typeof scheduleOne>>[] = [];
+      const notScheduled: { wallClock: string; error: string }[] = [];
+      // One at a time so each insert sees the ones before it when the
+      // plan's upcoming-meetings cap is checked.
+      for (const wallClock of wallClocks) {
+        const result = await guard(() => scheduleOne(shared, wallClock));
+        if ("error" in result) {
+          notScheduled.push({ wallClock, error: result.error });
+        } else {
+          scheduled.push(result);
+        }
+      }
+      return { scheduled, notScheduled };
     }),
   );
 
@@ -199,6 +232,7 @@ export function companionTools(actor: CompanionActor) {
     listMyMeetings,
     createInstant,
     schedule,
+    scheduleSeries,
     getLink,
     personalRoom,
     end,

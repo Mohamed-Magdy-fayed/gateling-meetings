@@ -38,6 +38,7 @@ type ToolName =
   | "list_my_meetings"
   | "create_instant_meeting"
   | "schedule_meeting"
+  | "schedule_meeting_series"
   | "get_meeting_link"
   | "get_personal_room_link"
   | "end_meeting"
@@ -47,6 +48,7 @@ const TOOL_NAMES: ToolName[] = [
   "list_my_meetings",
   "create_instant_meeting",
   "schedule_meeting",
+  "schedule_meeting_series",
   "get_meeting_link",
   "get_personal_room_link",
   "end_meeting",
@@ -157,7 +159,7 @@ export function CompanionSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full gap-0 p-0 sm:max-w-md"
+        className="gap-0 p-0 data-[side=right]:w-full data-[side=right]:sm:max-w-md"
         aria-describedby={undefined}
       >
         <SheetHeader className="flex-row items-center gap-3 border-b border-border p-4">
@@ -295,13 +297,13 @@ function MessageBubble({ message }: { message: Message }) {
             <div
               key={key}
               className={cn(
-                "max-w-[85%] whitespace-pre-wrap break-words rounded-lg px-3 py-2 leading-relaxed",
+                "min-w-0 max-w-[85%] whitespace-pre-wrap wrap-anywhere rounded-lg px-3 py-2 leading-relaxed",
                 isUser
                   ? "bg-accent text-accent-foreground"
                   : "border border-border bg-card",
               )}
             >
-              {part.content}
+              {renderWithLinks(part.content)}
             </div>
           );
         }
@@ -334,45 +336,88 @@ function ToolLine({
   output: unknown;
   label: string;
 }) {
-  const link = linkFrom(output);
+  const links = linksFrom(output);
   return (
     <p
       className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"
       data-tool={name}
     >
       <span>{label}</span>
-      {link && (
+      {links.map((link) => (
         <a
+          key={link}
           href={link}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 font-mono text-foreground transition-colors hover:bg-muted"
+          className="inline-flex max-w-full items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 font-mono text-foreground transition-colors hover:bg-muted"
         >
-          {link.replace(/^https?:\/\//, "")}
-          <ExternalLinkIcon className="size-3" />
+          <span className="truncate">{link.replace(/^https?:\/\//, "")}</span>
+          <ExternalLinkIcon className="size-3 shrink-0" />
         </a>
-      )}
+      ))}
     </p>
   );
+}
+
+const URL_PATTERN = /(https?:\/\/[^\s<>"']+)/g;
+const TRAILING_PUNCTUATION = /[.,;:!?)\]]+$/;
+
+/**
+ * The model writes links as plain text; make them tappable. Trailing
+ * punctuation ("...here: http://x.") stays outside the anchor. Runs of
+ * blank lines collapse to one so a bubble never carries dead space.
+ */
+function renderWithLinks(content: string) {
+  const text = content.trim().replace(/\n{3,}/g, "\n\n");
+  return text.split(URL_PATTERN).map((chunk, index) => {
+    if (index % 2 === 0) return chunk;
+    const trailing = chunk.match(TRAILING_PUNCTUATION)?.[0] ?? "";
+    const href = chunk.slice(0, chunk.length - trailing.length);
+    return (
+      // biome-ignore lint/suspicious/noArrayIndexKey: chunks are positional within one part
+      <span key={index}>
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="break-all font-medium text-primary underline underline-offset-2"
+        >
+          {href}
+        </a>
+        {trailing}
+      </span>
+    );
+  });
 }
 
 function isToolName(name: string): name is ToolName {
   return (TOOL_NAMES as string[]).includes(name);
 }
 
-/** Tool outputs arrive as an object or a JSON string; either may carry `link`. */
-function linkFrom(output: unknown): string | null {
+/**
+ * Tool outputs arrive as an object or a JSON string. A single meeting
+ * carries `link`; a series carries `scheduled[].link`, one per occurrence.
+ */
+function linksFrom(output: unknown): string[] {
   let value = output;
   if (typeof value === "string") {
     try {
       value = JSON.parse(value);
     } catch {
-      return null;
+      return [];
     }
   }
-  if (value && typeof value === "object" && "link" in value) {
-    const link = (value as { link?: unknown }).link;
-    return typeof link === "string" && /^https?:\/\//.test(link) ? link : null;
-  }
-  return null;
+  if (!value || typeof value !== "object") return [];
+  const { link, scheduled } = value as { link?: unknown; scheduled?: unknown };
+  const candidates = Array.isArray(scheduled)
+    ? scheduled.map((row: unknown) =>
+        row && typeof row === "object"
+          ? (row as { link?: unknown }).link
+          : null,
+      )
+    : [link];
+  return candidates.filter(
+    (candidate): candidate is string =>
+      typeof candidate === "string" && /^https?:\/\//.test(candidate),
+  );
 }

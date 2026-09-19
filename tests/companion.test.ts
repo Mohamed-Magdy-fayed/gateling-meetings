@@ -37,6 +37,20 @@ describe("companion prompt", () => {
     expect(prompt).toMatch(/Only help with meetings/);
   });
 
+  it("spells the coming week out so weekday arithmetic is not guessed", () => {
+    // 21:30Z on Saturday the 19th is already Sunday 00:30 in Cairo, so the
+    // week ahead starts on Monday the 21st.
+    expect(prompt).toContain(
+      "The coming week there: Mon 2026-09-21, Tue 2026-09-22, Wed 2026-09-23, Thu 2026-09-24, Fri 2026-09-25, Sat 2026-09-26, Sun 2026-09-27.",
+    );
+  });
+
+  it("turns repeats into a series and refuses to shrink a request silently", () => {
+    expect(prompt).toContain("call schedule_meeting_series once");
+    expect(prompt).toContain("at most 12");
+    expect(prompt).toContain("Never quietly do a smaller part of the request");
+  });
+
   it("spells unlimited caps out instead of printing MAX_SAFE_INTEGER", () => {
     const unlimited = buildSystemPrompt({
       now: NOW,
@@ -90,6 +104,38 @@ describe("companion tool inputs", () => {
       companionSchemas.scheduleMeeting.safeParse({
         ...base,
         invitees: ["not-an-email"],
+      }).success,
+    ).toBe(false);
+  });
+
+  it("takes a series of wall-clock times, two to twelve of them", () => {
+    const base = { title: "Sunday sync", timezone: "Africa/Cairo" };
+    const sundays = Array.from(
+      { length: 4 },
+      (_, i) => `2026-09-${String(20 + i * 7).padStart(2, "0")}T11:00`,
+    );
+    expect(
+      companionSchemas.scheduleMeetingSeries.parse({
+        ...base,
+        wallClocks: sundays,
+      }).wallClocks,
+    ).toEqual(sundays);
+    expect(
+      companionSchemas.scheduleMeetingSeries.safeParse({
+        ...base,
+        wallClocks: sundays.slice(0, 1),
+      }).success,
+    ).toBe(false);
+    expect(
+      companionSchemas.scheduleMeetingSeries.safeParse({
+        ...base,
+        wallClocks: Array.from({ length: 13 }, () => "2026-09-20T11:00"),
+      }).success,
+    ).toBe(false);
+    expect(
+      companionSchemas.scheduleMeetingSeries.safeParse({
+        ...base,
+        wallClocks: ["2026-09-20T11:00", "2026-09-27T11:00:00Z"],
       }).success,
     ).toBe(false);
   });

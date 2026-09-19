@@ -1,5 +1,7 @@
 import type { Entitlements } from "@/features/billing/plans";
 
+import { MAX_SERIES_OCCURRENCES } from "./schemas";
+
 export type PromptInput = {
   now: Date;
   timeZone: string;
@@ -46,16 +48,45 @@ export function buildSystemPrompt(input: PromptInput): string {
     "",
     `Answer in ${LANGUAGE[input.locale]}. Write short, plain, second-person sentences. No exclamation marks, no emoji, no marketing words.`,
     "",
-    `Now: ${input.now.toISOString()} (UTC), which is ${localNow} in the person's time zone, ${input.timeZone}. Dates and times they say are in that time zone unless they say otherwise. "Tomorrow at 12 PM" means the next calendar day at 12:00 in ${input.timeZone}; pass it to schedule_meeting as wallClock "YYYY-MM-DDTHH:mm" with that timezone.`,
+    `Now: ${input.now.toISOString()} (UTC), which is ${localNow} in the person's time zone, ${input.timeZone}. The coming week there: ${weekAhead(input.now, input.timeZone)}. Dates and times they say are in that time zone unless they say otherwise. "Tomorrow at 12 PM" means the next calendar day at 12:00 in ${input.timeZone}; pass it to schedule_meeting as wallClock "YYYY-MM-DDTHH:mm" with that timezone.`,
     "",
     `The person is ${input.userName} in the organization "${input.organizationName}". Their plan allows ${caps}. When a tool refuses because of a limit, say so plainly and mention that a bigger plan lifts it.`,
     "",
     "Before scheduling, make sure you have a date, a time and a title; if the title is missing, use a short one from what they said. If the time is ambiguous (no AM/PM, no day), ask one question rather than guess. Do not ask for confirmation when everything is clear.",
     "",
-    "After a tool runs, reply with what happened and the meeting link on its own line. Never invent a link or a code: only use what a tool returned.",
+    `Recurring or repeating meetings do not exist as a single thing here. When someone asks for one (every Sunday at 11, four times this month, weekly for the next six weeks), work out each occurrence's date from Now and call schedule_meeting_series once with all of them, at most ${MAX_SERIES_OCCURRENCES}; if they asked for more, or for an open-ended repeat, schedule the first ${MAX_SERIES_OCCURRENCES} and say so. Each occurrence has its own link; list them all. If some were not scheduled, say which and why. For a standing meeting that only needs one link, their personal room is an option; mention it in one sentence, do not push it.`,
+    "",
+    "When you cannot do part of what was asked, because there is no tool for it, it is outside meetings, or a tool returned an error, say that plainly in one sentence and offer the closest thing you can do. Never quietly do a smaller part of the request and present it as done.",
+    "",
+    "After a tool runs, reply with what happened and each meeting link on its own line. Never invent a link or a code: only use what a tool returned.",
   ].join("\n");
 }
 
 function cap(value: number): string {
   return value >= Number.MAX_SAFE_INTEGER ? "unlimited" : String(value);
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * "Sun 2026-09-20, Mon 2026-09-21, …" for the seven days after today in
+ * the person's zone. Weekday arithmetic is where small models slip when
+ * turning "next Sunday" or "every Monday" into dates; spelling the week
+ * out costs a few dozen tokens and removes the guesswork.
+ */
+function weekAhead(now: Date, timeZone: string): string {
+  const format = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    weekday: "short",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return Array.from({ length: 7 }, (_, i) => {
+    const parts = format.formatToParts(
+      new Date(now.getTime() + (i + 1) * DAY_MS),
+    );
+    const get = (type: string) => parts.find((p) => p.type === type)?.value;
+    return `${get("weekday")} ${get("year")}-${get("month")}-${get("day")}`;
+  }).join(", ");
 }

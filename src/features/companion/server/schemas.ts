@@ -23,7 +23,23 @@ const timezoneSchema = scheduledMeetingSchema.shape.timezone.describe(
 );
 
 const MAX_INVITEES = 50;
+/** A "recurring" request becomes this many separate meetings at most. */
+export const MAX_SERIES_OCCURRENCES = 12;
 export const DEFAULT_DURATION_MINUTES = 60;
+
+/** What a scheduled meeting and every occurrence of a series share. */
+const scheduleFields = {
+  title: meetingTitleSchema,
+  timezone: timezoneSchema,
+  durationMinutes: scheduledMeetingSchema.shape.durationMinutes
+    .optional()
+    .describe("Length in minutes; 60 when not said."),
+  invitees: z
+    .array(z.email())
+    .max(MAX_INVITEES)
+    .optional()
+    .describe("Email addresses to invite. They get an email with the link."),
+};
 
 /** Tool inputs, exported so they can be unit-tested without a database. */
 export const companionSchemas = {
@@ -32,17 +48,18 @@ export const companionSchemas = {
     title: meetingTitleSchema.optional().describe("Optional title."),
   }),
   scheduleMeeting: z.object({
-    title: meetingTitleSchema,
+    ...scheduleFields,
     wallClock: wallClockSchema,
-    timezone: timezoneSchema,
-    durationMinutes: scheduledMeetingSchema.shape.durationMinutes
-      .optional()
-      .describe("Length in minutes; 60 when not said."),
-    invitees: z
-      .array(z.email())
-      .max(MAX_INVITEES)
-      .optional()
-      .describe("Email addresses to invite. They get an email with the link."),
+  }),
+  scheduleMeetingSeries: z.object({
+    ...scheduleFields,
+    wallClocks: z
+      .array(wallClockSchema)
+      .min(2)
+      .max(MAX_SERIES_OCCURRENCES)
+      .describe(
+        `The local start time of every occurrence, in order, at most ${MAX_SERIES_OCCURRENCES}. Each becomes its own meeting with its own link.`,
+      ),
   }),
   meetingByCode: z.object({ code: meetingCodeSchema }),
   none: z.object({}),

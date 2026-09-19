@@ -16,6 +16,7 @@ export const companionEn = {
     list_my_meetings: "Looked up your meetings",
     create_instant_meeting: "Started a meeting",
     schedule_meeting: "Scheduled a meeting",
+    schedule_meeting_series: "Scheduled a series of meetings",
     get_meeting_link: "Fetched a link",
     get_personal_room_link: "Fetched your room link",
     end_meeting: "Ended a meeting",

@@ -56,3 +56,43 @@ test("the companion schedules a meeting and hands back the link", async ({
     }),
   ).toBeVisible();
 });
+
+/**
+ * "Every Sunday" is not one meeting here, so the companion has to fan it
+ * out: one series call, four separate meetings, four links, and no quiet
+ * "I scheduled the first one".
+ */
+test("the companion turns a recurring request into a series of meetings", async ({
+  newPage,
+}) => {
+  test.setTimeout(180_000);
+  const host = await newPage();
+  await signIn(host);
+  await host.goto("/dashboard");
+
+  const open = host.getByRole("button", { name: /open the companion/i });
+  test.skip(!(await open.isVisible().catch(() => false)), "no GEMINI_API_KEY");
+  await open.click();
+
+  const stamp = Date.now().toString(36);
+  const box = host.getByRole("textbox", { name: /start a meeting/i });
+  await box.fill(
+    `Schedule a meeting called Series ${stamp} every Sunday at 11 AM for the next 4 weeks`,
+  );
+  await box.press("Enter");
+
+  const toolLine = host.locator('[data-tool="schedule_meeting_series"]');
+  await expect(toolLine).toBeVisible({ timeout: 90_000 });
+  await expect(toolLine.getByRole("link")).toHaveCount(4, {
+    timeout: 60_000,
+  });
+
+  // Four real meetings on the dashboard, all scheduled.
+  await host.keyboard.press("Escape");
+  await host.reload();
+  await expect(
+    host.locator("li", { hasText: `Series ${stamp}` }).filter({
+      hasText: /Scheduled/,
+    }),
+  ).toHaveCount(4);
+});
