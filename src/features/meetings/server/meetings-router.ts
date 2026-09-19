@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 
 import { MeetingsTable } from "@/drizzle/schema";
@@ -12,7 +12,7 @@ import {
   publicProcedure,
   type TRPCContext,
 } from "@/integrations/trpc/init";
-import { findMeetingByCode } from "./queries";
+import { findMeetingByCode, listHostedMeetings } from "./queries";
 import {
   createInstantMeetingSchema,
   meetingCodeSchema,
@@ -25,7 +25,7 @@ import {
   createScheduledMeeting,
   deleteMeeting,
   endMeeting,
-  insertWithFreshCode,
+  ensurePersonalRoom,
   updateMeeting,
   updateMeetingSettings,
 } from "./service";
@@ -33,20 +33,6 @@ import {
 type HostContext = Pick<TRPCContext, "db" | "t"> & {
   session: NonNullable<TRPCContext["session"]>;
 };
-
-const hostColumns = {
-  id: true,
-  code: true,
-  title: true,
-  status: true,
-  scheduledAt: true,
-  durationMinutes: true,
-  timezone: true,
-  startedAt: true,
-  endedAt: true,
-  isPersonalRoom: true,
-  settings: true,
-} as const;
 
 export const meetingsRouter = createTRPCRouter({
   /**
@@ -81,29 +67,13 @@ export const meetingsRouter = createTRPCRouter({
    * lazily the first time it is asked for, in whichever org is active then;
    * it is looked up by host afterwards, so switching orgs keeps the link.
    */
-  getPersonalRoom: orgProcedure.mutation(async ({ ctx }) => {
-    const existing = await ctx.db.query.MeetingsTable.findFirst({
-      where: and(
-        eq(MeetingsTable.hostId, ctx.session.user.id),
-        eq(MeetingsTable.isPersonalRoom, true),
-        isNull(MeetingsTable.deletedAt),
-      ),
-      columns: { code: true, title: true },
-    });
-    if (existing) return existing;
-
-    const created = await insertWithFreshCode(ctx.db, {
-      title: ctx.t("meetings.personalRoomTitle", {
-        name: ctx.session.user.name ?? "",
-      }),
-      status: "live",
-      isPersonalRoom: true,
+  getPersonalRoom: orgProcedure.mutation(({ ctx }) =>
+    ensurePersonalRoom(ctx, {
       hostId: ctx.session.user.id,
+      hostName: ctx.session.user.name ?? "",
       organizationId: ctx.organization.id,
-      createdBy: ctx.session.user.id,
-    });
-    return { code: created.code, title: null };
-  }),
+    }),
+  ),
 
   update: protectedProcedure
     .input(updateMeetingSchema)
@@ -191,35 +161,9 @@ export const meetingsRouter = createTRPCRouter({
    * Host-only, scoped to the active org. Upcoming first (soonest at the
    * top), then recent (newest at the top).
    */
-  listMine: orgProcedure.query(async ({ ctx }) => {
-    const where = and(
-      eq(MeetingsTable.hostId, ctx.session.user.id),
-      eq(MeetingsTable.organizationId, ctx.organization.id),
-      isNull(MeetingsTable.deletedAt),
-      eq(MeetingsTable.isPersonalRoom, false),
-    );
-    const [upcoming, recent] = await Promise.all([
-      ctx.db.query.MeetingsTable.findMany({
-        where: and(where, eq(MeetingsTable.status, "scheduled")),
-        orderBy: [asc(MeetingsTable.scheduledAt)],
-        limit: 50,
-        columns: hostColumns,
-      }),
-      ctx.db.query.MeetingsTable.findMany({
-        where: and(where, eq(MeetingsTable.status, "live")),
-        orderBy: [desc(MeetingsTable.startedAt)],
-        limit: 20,
-        columns: hostColumns,
-      }),
-    ]);
-    const ended = await ctx.db.query.MeetingsTable.findMany({
-      where: and(where, eq(MeetingsTable.status, "ended")),
-      orderBy: [desc(MeetingsTable.endedAt)],
-      limit: 20,
-      columns: hostColumns,
-    });
-    return { upcoming, live: recent, ended };
-  }),
+  listMine: orgProcedure.query(({ ctx }) =>
+    listHostedMeetings(ctx.db, ctx.session.user.id, ctx.organization.id),
+  ),
 
   updateSettings: protectedProcedure
     .input(updateMeetingSettingsSchema)

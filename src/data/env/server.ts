@@ -42,6 +42,13 @@ export const env = createEnv({
     JWT_SECRET_KEY: z.string().min(32).optional(),
     ADMIN_EMAILS: z.string().min(1).optional(),
 
+    // The in-app AI companion. Unset means the companion is hidden — the
+    // app runs fine without it. The model must be one the Gemini adapter
+    // knows; the monthly cap is an org-wide kill switch on messages.
+    GEMINI_API_KEY: z.string().min(1).optional(),
+    COMPANION_MODEL: z.string().min(1).optional(),
+    COMPANION_MONTHLY_CAP: z.coerce.number().int().positive().optional(),
+
     // Billing. Which provider adapter is live; unset means "no billing" —
     // the pricing page shows the plans and no checkout, and the webhook
     // routes answer 503. A production deploy must have the full set for
@@ -163,6 +170,15 @@ if (isDeployed && (!env.JWT_SECRET_KEY || !env.ADMIN_EMAILS)) {
     "JWT_SECRET_KEY and ADMIN_EMAILS are required in production.",
   );
 }
+
+/** The companion is on only when a key is configured. */
+export const companionConfig = env.GEMINI_API_KEY
+  ? {
+      apiKey: env.GEMINI_API_KEY,
+      model: env.COMPANION_MODEL ?? "gemini-3.5-flash-lite",
+      monthlyCap: env.COMPANION_MONTHLY_CAP ?? 5000,
+    }
+  : null;
 
 // Local/dev-only fallbacks — never reached on a deployment, see the checks above.
 export const baseUrl = env.BASE_URL ?? "http://localhost:3000";

@@ -52,6 +52,17 @@ export const passkeyAuthRatelimit = new Ratelimit({
  * IP + meeting code: a room full of colleagues behind one office NAT still
  * gets 30 attempts per 10 minutes, which is far more than a real join needs.
  */
+/**
+ * The AI companion's burst budget per signed-in user. The daily allowance
+ * by plan lives in the companion's own counter; this only stops a script
+ * from draining that allowance in seconds.
+ */
+export const companionRatelimit = new Ratelimit({
+  redis: redisClient,
+  limiter: Ratelimit.slidingWindow(10, "1 m"),
+  prefix: "ratelimit:companion",
+});
+
 export const meetingJoinRatelimit = new Ratelimit({
   redis: redisClient,
   limiter: Ratelimit.slidingWindow(30, "10 m"),

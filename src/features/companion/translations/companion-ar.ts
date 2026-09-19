@@ -1,0 +1,34 @@
+export const companionAr = {
+  title: "المساعد",
+  lead: "اطلب اجتماعًا بكلمات بسيطة. يبدأه أو يجدوله ويدعو الناس ويعطيك الرابط.",
+  open: "افتح المساعد",
+  placeholder: "ابدأ اجتماعًا، جدول واحدًا، احصل على رابط…",
+  send: "إرسال",
+  stop: "إيقاف",
+  clear: "مسح",
+  thinking: "جارٍ العمل…",
+  suggestions: {
+    now: "ابدأ اجتماعًا الآن",
+    tomorrow: "جدول اجتماعًا غدًا الساعة 12 ظهرًا مع زميل",
+    room: "أعطني رابط غرفتي الشخصية",
+  },
+  toolRan: {
+    list_my_meetings: "تم البحث في اجتماعاتك",
+    create_instant_meeting: "تم بدء اجتماع",
+    schedule_meeting: "تمت جدولة اجتماع",
+    get_meeting_link: "تم جلب الرابط",
+    get_personal_room_link: "تم جلب رابط غرفتك",
+    end_meeting: "تم إنهاء اجتماع",
+    cancel_meeting: "تم إلغاء اجتماع",
+  },
+  openLink: "فتح",
+  usage: "{used:number} من {limit:number} رسالة اليوم",
+  errors: {
+    tooLong: "اجعلها أقل من 1000 حرف وحاول مرة أخرى.",
+    slowDown: "رسائل كثيرة دفعة واحدة. انتظر دقيقة.",
+    dailyLimit:
+      "استخدمت رسائل المساعد لهذا اليوم ({limit:number}). المزيد في {when:date}.",
+    paused: "المساعد متوقف مؤقتًا. حاول لاحقًا.",
+    failed: "لم يتم ذلك. حاول مرة أخرى.",
+  },
+} as const;

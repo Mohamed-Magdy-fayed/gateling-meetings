@@ -1,5 +1,6 @@
 import { adminEn } from "@/features/admin/translations/admin-en";
 import { billingEn } from "@/features/billing/translations/billing-en";
+import { companionEn } from "@/features/companion/translations/companion-en";
 import { integrationsEn } from "@/features/integrations/translations/integrations-en";
 import { legalEn } from "@/features/legal/translations/legal-en";
 import { meetingsEn } from "@/features/meetings/translations/meetings-en";
@@ -277,6 +278,7 @@ export default {
   },
   meetings: meetingsEn,
   integrations: integrationsEn,
+  companion: companionEn,
   billing: billingEn,
   organizations: organizationsEn,
   admin: adminEn,

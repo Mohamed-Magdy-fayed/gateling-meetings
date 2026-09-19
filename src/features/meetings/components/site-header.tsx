@@ -1,5 +1,6 @@
 import { BrandLockup } from "@/components/brand/brand-lockup";
 import { LinkButton } from "@/components/general/link-button";
+import { CompanionButton } from "@/features/companion/components/companion-button";
 import { ThemeToggle } from "@/features/core/color-theme/client";
 import { LanguageToggle } from "@/features/core/i18n/client";
 import { getT } from "@/features/core/i18n/server";
@@ -36,6 +37,7 @@ export async function SiteHeader() {
           <LanguageToggle variant="ghost" />
           {menu ? (
             <>
+              {menu.companionEnabled && <CompanionButton />}
               <HeaderNewMeeting />
               <div className="hidden md:block">
                 <OrgSwitcher {...menu} />

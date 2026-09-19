@@ -1,5 +1,6 @@
 import { adminAr } from "@/features/admin/translations/admin-ar";
 import { billingAr } from "@/features/billing/translations/billing-ar";
+import { companionAr } from "@/features/companion/translations/companion-ar";
 import { integrationsAr } from "@/features/integrations/translations/integrations-ar";
 import { legalAr } from "@/features/legal/translations/legal-ar";
 import { meetingsAr } from "@/features/meetings/translations/meetings-ar";
@@ -277,6 +278,7 @@ export default {
   },
   meetings: meetingsAr,
   integrations: integrationsAr,
+  companion: companionAr,
   billing: billingAr,
   organizations: organizationsAr,
   admin: adminAr,

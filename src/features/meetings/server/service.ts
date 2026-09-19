@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { DatabaseOrTransaction } from "@/drizzle";
@@ -135,6 +135,36 @@ export async function createInstantMeeting(
     integrationId: origin?.integrationId,
     externalRef: origin?.externalRef ?? null,
   });
+}
+
+/**
+ * The host's permanent room — one per account, same link forever. Created
+ * lazily the first time it is asked for, in whichever org is active then;
+ * it is looked up by host afterwards, so switching orgs keeps the link.
+ */
+export async function ensurePersonalRoom(
+  ctx: MeetingServiceContext,
+  input: { hostId: string; hostName: string; organizationId: string },
+): Promise<{ code: string; title: string | null }> {
+  const existing = await ctx.db.query.MeetingsTable.findFirst({
+    where: and(
+      eq(MeetingsTable.hostId, input.hostId),
+      eq(MeetingsTable.isPersonalRoom, true),
+      isNull(MeetingsTable.deletedAt),
+    ),
+    columns: { code: true, title: true },
+  });
+  if (existing) return existing;
+
+  const created = await insertWithFreshCode(ctx.db, {
+    title: ctx.t("meetings.personalRoomTitle", { name: input.hostName }),
+    status: "live",
+    isPersonalRoom: true,
+    hostId: input.hostId,
+    organizationId: input.organizationId,
+    createdBy: input.hostId,
+  });
+  return { code: created.code, title: null };
 }
 
 export type ScheduledMeetingInput = z.infer<typeof scheduledMeetingSchema>;

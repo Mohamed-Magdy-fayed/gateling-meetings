@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { cache } from "react";
 
+import { companionConfig } from "@/data/env/server";
 import { db } from "@/drizzle";
 import { resolveEntitlements } from "@/features/billing/plans";
 import { isAdminEmail } from "@/features/core/auth/core/admin";
@@ -22,6 +23,8 @@ export type AccountMenuData = {
   showIntegrations: boolean;
   /** Platform admin: gets the /admin entry. */
   isAdmin: boolean;
+  /** The AI companion is configured (a model key is set). */
+  companionEnabled: boolean;
 };
 
 /**
@@ -51,6 +54,7 @@ export const loadAccountMenu = cache(
     return {
       activeId: active.organization.id,
       isAdmin,
+      companionEnabled: companionConfig != null,
       showIntegrations,
       organizations: memberships.map(({ organization, membership }) => ({
         id: organization.id,

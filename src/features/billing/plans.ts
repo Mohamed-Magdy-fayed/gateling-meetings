@@ -26,6 +26,8 @@ export type Entitlements = {
   maxMonthlyParticipantMinutes: number | null;
   breakouts: boolean;
   apiAccess: boolean;
+  /** Messages a person may send the AI companion per day. */
+  companionMessagesPerDay: number;
   /** Seats bundled with the plan; `seatsBillable` plans add more per seat. */
   seatsIncluded: number;
   seatsBillable: boolean;
@@ -42,6 +44,7 @@ export const UNLIMITED_ENTITLEMENTS: Entitlements = {
   maxMonthlyParticipantMinutes: null,
   breakouts: true,
   apiAccess: true,
+  companionMessagesPerDay: 300,
   seatsIncluded: Number.MAX_SAFE_INTEGER,
   seatsBillable: false,
 };
@@ -56,6 +59,8 @@ export const PLAN_ENTITLEMENTS: Record<PlanId, Entitlements> = {
     maxMonthlyParticipantMinutes: 600,
     breakouts: false,
     apiAccess: false,
+    // Enough to try it, not enough to use it as a general chat bot.
+    companionMessagesPerDay: 10,
     seatsIncluded: 1,
     seatsBillable: false,
   },
@@ -66,6 +71,7 @@ export const PLAN_ENTITLEMENTS: Record<PlanId, Entitlements> = {
     maxMonthlyParticipantMinutes: null,
     breakouts: true,
     apiAccess: false,
+    companionMessagesPerDay: 100,
     seatsIncluded: 1,
     seatsBillable: true,
   },
@@ -76,6 +82,7 @@ export const PLAN_ENTITLEMENTS: Record<PlanId, Entitlements> = {
     maxMonthlyParticipantMinutes: null,
     breakouts: true,
     apiAccess: true,
+    companionMessagesPerDay: 100,
     seatsIncluded: 1,
     seatsBillable: true,
   },
