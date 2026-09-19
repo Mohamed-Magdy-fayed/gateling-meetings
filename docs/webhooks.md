@@ -53,7 +53,7 @@ Every event's `data.meeting` is:
 | Event | When | Extra `data` fields |
 |---|---|---|
 | `meeting.started` | The LiveKit room came up — the first person (normally the host) connected. | `at` |
-| `meeting.ended` | The host or the API ended the meeting, the room closed on its own, or the owning organization's plan hit its meeting-length cap. | `endedBy`: `"host"`, `"integration"`, `"room"` or `"system"` |
+| `meeting.ended` | The host or the API ended the meeting, the room closed on its own, the owning organization's plan hit its meeting-length cap, or the app ended a room nobody had been in for 30 minutes. | `endedBy`: `"host"`, `"integration"`, `"room"` or `"system"` (plan cap or idle sweep) |
 | `participant.joined` | Someone connected to the room. | `participant: { identity, name, role }`, `at` |
 | `participant.left` | Someone disconnected. | `participant: { identity, name, role }`, `at` |
 
