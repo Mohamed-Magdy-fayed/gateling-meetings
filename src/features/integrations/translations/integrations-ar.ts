@@ -41,6 +41,7 @@ export const integrationsAr = {
     webhookSecret: "سر الويب هوك",
     copy: "نسخ",
     copied: "تم النسخ.",
+    copyWebhookUrl: "نسخ رابط الويب هوك",
     done: "تم",
     rotateKey: "تدوير المفتاح",
     rotateConfirm:

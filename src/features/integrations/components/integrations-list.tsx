@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 import type { inferRouterOutputs } from "@trpc/server";
 import {
+  CopyIcon,
   KeyRoundIcon,
   PlugZapIcon,
   RefreshCwIcon,
@@ -80,11 +81,17 @@ function IntegrationCard({
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const isRevoked = integration.revokedAt != null;
+  const webhookUrl = integration.webhookUrl;
 
   const invalidate = () =>
     queryClient.invalidateQueries({
       queryKey: trpc.integrations.list.queryKey(),
     });
+
+  const copyWebhookUrl = async (url: string) => {
+    await navigator.clipboard.writeText(url);
+    toast.success(t("integrations.admin.copied"));
+  };
 
   const rotate = useMutation(
     trpc.integrations.rotateKey.mutationOptions({
@@ -133,9 +140,23 @@ function IntegrationCard({
               {t("integrations.admin.keyPrefix")} gm_live_
               {integration.apiKeyPrefix}…
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1">
-              <WebhookIcon className="size-3" />
-              {integration.webhookUrl ?? t("integrations.admin.noWebhook")}
+            <span className="inline-flex min-w-0 items-center gap-1 rounded-full bg-muted ps-2 pe-1 py-0.5">
+              <WebhookIcon className="size-3 shrink-0" />
+              <span className="truncate">
+                {integration.webhookUrl ?? t("integrations.admin.noWebhook")}
+              </span>
+              {webhookUrl && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  className="size-5 shrink-0 rounded-full"
+                  aria-label={t("integrations.admin.copyWebhookUrl")}
+                  onClick={() => copyWebhookUrl(webhookUrl)}
+                >
+                  <CopyIcon />
+                </Button>
+              )}
             </span>
             <span className="inline-flex items-center rounded-full bg-muted px-2 py-1">
               {integration.lastUsedAt

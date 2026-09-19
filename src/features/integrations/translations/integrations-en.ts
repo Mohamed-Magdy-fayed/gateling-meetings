@@ -43,6 +43,7 @@ export const integrationsEn = {
     webhookSecret: "Webhook secret",
     copy: "Copy",
     copied: "Copied.",
+    copyWebhookUrl: "Copy webhook URL",
     done: "Done",
     rotateKey: "Rotate key",
     rotateConfirm:
