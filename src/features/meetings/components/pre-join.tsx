@@ -5,15 +5,24 @@ import {
   usePreviewDevice,
 } from "@livekit/components-react";
 import type { LocalAudioTrack, LocalVideoTrack } from "livekit-client";
-import { MicIcon, MicOffIcon, VideoIcon, VideoOffIcon } from "lucide-react";
+import {
+  CopyIcon,
+  MicIcon,
+  MicOffIcon,
+  Share2Icon,
+  VideoIcon,
+  VideoOffIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslation } from "@/features/core/i18n/client";
+import { shareLink, useCanShare } from "@/features/meetings/lib/share-link";
 import { cn } from "@/lib/utils";
 import { DeviceSelect } from "./device-select";
 import type { MeetingSummary, Viewer } from "./meeting-client";
@@ -221,6 +230,7 @@ export function PreJoin({
               </>
             )}
           </p>
+          <MeetingLinkRow code={meeting.code} />
         </div>
 
         <div className="space-y-4">
@@ -323,5 +333,53 @@ function ToggleButton({
     >
       {active ? onIcon : offIcon}
     </button>
+  );
+}
+
+/**
+ * The meeting link, right where people wait to go in — so a host (or a guest
+ * pulling someone else in) can send it without leaving the lobby.
+ */
+function MeetingLinkRow({ code }: { code: string }) {
+  const { t } = useTranslation();
+  const canShare = useCanShare();
+  const path = `/m/${code}`;
+  const url = () => `${window.location.origin}${path}`;
+
+  async function copyLink() {
+    await navigator.clipboard.writeText(url());
+    toast.success(t("meetings.prejoin.linkCopied"));
+  }
+
+  async function share() {
+    const result = await shareLink({
+      title: t("appName"),
+      text: t("meetings.prejoin.shareText"),
+      url: url(),
+    });
+    if (result === "unsupported") await copyLink();
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 pt-2">
+      <span
+        className="inline-flex min-w-0 max-w-full items-center rounded-full border border-border bg-muted px-3 py-1 font-mono text-xs text-muted-foreground"
+        title={t("meetings.prejoin.link")}
+      >
+        <span className="truncate" dir="ltr">
+          {path}
+        </span>
+      </span>
+      <Button type="button" variant="outline" size="sm" onClick={copyLink}>
+        <CopyIcon data-icon="inline-start" />
+        {t("meetings.prejoin.copyLink")}
+      </Button>
+      {canShare && (
+        <Button type="button" variant="outline" size="sm" onClick={share}>
+          <Share2Icon data-icon="inline-start" />
+          {t("meetings.prejoin.share")}
+        </Button>
+      )}
+    </div>
   );
 }

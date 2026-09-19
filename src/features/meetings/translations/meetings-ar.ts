@@ -78,9 +78,45 @@ export const meetingsAr = {
     open: "فتح",
     copyLink: "نسخ الرابط",
     linkCopied: "تم نسخ الرابط.",
+    end: "إنهاء الاجتماع",
+    endConfirmTitle: "إنهاء هذا الاجتماع؟",
+    endConfirmLead: "سيُفصل كل من في الغرفة ويتوقف الرابط عن العمل.",
+    ended: "تم إنهاء الاجتماع.",
+    endAll: dt("{count:plural}", {
+      plural: {
+        count: {
+          zero: "إنهاء الكل ({?})",
+          one: "إنهاء الكل ({?})",
+          two: "إنهاء الكل ({?})",
+          few: "إنهاء الكل ({?})",
+          many: "إنهاء الكل ({?})",
+          other: "إنهاء الكل ({?})",
+        },
+      },
+    }),
+    endAllConfirmTitle: "إنهاء كل الاجتماعات المباشرة؟",
+    endAllConfirmLead:
+      "سيُفصل كل من في كل غرفة وتتوقف الروابط عن العمل. غرفتك الشخصية تبقى مفتوحة.",
+    endedAll: dt("{count:plural}", {
+      plural: {
+        count: {
+          zero: "لم يُنهَ أي اجتماع.",
+          one: "تم إنهاء اجتماع واحد.",
+          two: "تم إنهاء اجتماعين.",
+          few: "تم إنهاء {?} اجتماعات.",
+          many: "تم إنهاء {?} اجتماعًا.",
+          other: "تم إنهاء {?} اجتماع.",
+        },
+      },
+    }),
   },
   prejoin: {
     readyToJoin: "جاهز للانضمام؟",
+    link: "رابط الاجتماع",
+    copyLink: "نسخ الرابط",
+    linkCopied: "تم نسخ الرابط.",
+    share: "مشاركة",
+    shareText: "انضم إلى اجتماعي على Gateling Meetings",
     hostedBy: "يستضيفه {name}",
     yourName: "اسمك",
     namePlaceholder: "بماذا نناديك؟",

@@ -240,6 +240,27 @@ export const meetingsRouter = createTRPCRouter({
       const meeting = await requireHostedMeeting(ctx, input.code);
       return endMeeting(ctx, meeting, ctx.session.user.id);
     }),
+
+  /**
+   * Ends every live meeting the caller hosts in the active org — the
+   * dashboard's "End all". The personal room is a permanent link, so it is
+   * left alone. Sequential on purpose: each end deletes a LiveKit room.
+   */
+  endAll: orgProcedure.mutation(async ({ ctx }) => {
+    const live = await ctx.db.query.MeetingsTable.findMany({
+      where: and(
+        eq(MeetingsTable.hostId, ctx.session.user.id),
+        eq(MeetingsTable.organizationId, ctx.organization.id),
+        eq(MeetingsTable.status, "live"),
+        eq(MeetingsTable.isPersonalRoom, false),
+        isNull(MeetingsTable.deletedAt),
+      ),
+    });
+    for (const meeting of live) {
+      await endMeeting(ctx, meeting, ctx.session.user.id);
+    }
+    return { ended: live.length };
+  }),
 });
 
 /** Loads a meeting and proves the caller hosts it — every host-only mutation starts here. */

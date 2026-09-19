@@ -79,9 +79,30 @@ export const meetingsEn = {
     open: "Open",
     copyLink: "Copy link",
     linkCopied: "Link copied.",
+    end: "End meeting",
+    endConfirmTitle: "End this meeting?",
+    endConfirmLead:
+      "Everyone in the room is disconnected and the link stops working.",
+    ended: "Meeting ended.",
+    endAll: dt("{count:plural}", {
+      plural: { count: { one: "End all ({?})", other: "End all ({?})" } },
+    }),
+    endAllConfirmTitle: "End every live meeting?",
+    endAllConfirmLead:
+      "Everyone in each room is disconnected and the links stop working. Your personal room stays open.",
+    endedAll: dt("{count:plural}", {
+      plural: {
+        count: { one: "{?} meeting ended.", other: "{?} meetings ended." },
+      },
+    }),
   },
   prejoin: {
     readyToJoin: "Ready to join?",
+    link: "Meeting link",
+    copyLink: "Copy link",
+    linkCopied: "Link copied.",
+    share: "Share",
+    shareText: "Join my meeting on Gateling Meetings",
     hostedBy: "Hosted by {name}",
     yourName: "Your name",
     namePlaceholder: "How should we call you?",
