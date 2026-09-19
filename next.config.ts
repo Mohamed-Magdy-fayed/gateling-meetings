@@ -30,6 +30,12 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // The developer docs are read from `docs/` at request time (MCP tools,
+  // resources and the in-app docs page); make sure the deploy carries them.
+  outputFileTracingIncludes: {
+    "/api/mcp": ["./docs/*.md"],
+    "/settings/integrations/docs": ["./docs/*.md"],
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

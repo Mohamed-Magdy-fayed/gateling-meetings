@@ -1,19 +1,12 @@
 import {
+  createIntegrationMeeting,
   listIntegrationMeetings,
   toApiMeeting,
 } from "@/features/integrations/server/api-meetings";
 import {
-  type CreateMeetingBody,
   createMeetingBodySchema,
   listMeetingsQuerySchema,
 } from "@/features/integrations/server/api-schemas";
-import { ensureLinkedUser } from "@/features/integrations/server/linked-users";
-import { findMeetingByCode } from "@/features/meetings/server/queries";
-import {
-  createInstantMeeting,
-  createScheduledMeeting,
-} from "@/features/meetings/server/service";
-import { ensurePersonalOrganization } from "@/features/organizations/server/service";
 import {
   type ApiContext,
   parseJson,
@@ -86,59 +79,10 @@ export const POST = withIntegration(async (request, ctx) => {
   }
 });
 
-async function create(
-  request: Request,
-  { integration, organization, entitlements, db, t }: ApiContext,
-) {
+async function create(request: Request, ctx: ApiContext) {
   const body = await parseJson(request, createMeetingBodySchema);
-  const host = await ensureLinkedUser(db, integration, body.host);
-  const origin = {
-    integrationId: integration.id,
-    externalRef: body.externalRef,
-  };
-  // The meeting runs under the org that owns the key, so the org's plan
-  // caps it. A platform integration has no org and is uncapped; its
-  // meetings live in the linked host's personal org. Quota refusals are
-  // >= 400 and never cached by the idempotency store, so a retry after an
-  // upgrade is not replayed as a failure.
-  const owner = {
-    hostId: host.id,
-    organizationId:
-      organization?.id ?? (await ensurePersonalOrganization(db, host)).id,
-    entitlements,
-  };
-
-  const created = body.scheduledAt
-    ? await createScheduledMeeting(
-        { db, t },
-        {
-          ...owner,
-          origin,
-          settings: body.settings,
-          input: scheduledInput(body, body.scheduledAt),
-        },
-      )
-    : await createInstantMeeting(
-        { db, t },
-        { ...owner, title: body.title, origin, settings: body.settings },
-      );
-
-  const meeting = await findMeetingByCode(db, created.code);
-  if (!meeting) throw new ApiError(500, "internal_error", "Internal error.");
+  // Quota refusals are >= 400 and never cached by the idempotency store,
+  // so a retry after an upgrade is not replayed as a failure.
+  const meeting = await createIntegrationMeeting(ctx, body);
   return jsonResponse({ meeting: toApiMeeting(meeting) }, { status: 201 });
-}
-
-const DEFAULT_DURATION_MINUTES = 60;
-const DEFAULT_TIMEZONE = "UTC";
-
-function scheduledInput(body: CreateMeetingBody, scheduledAt: Date) {
-  return {
-    title: body.title,
-    scheduledAt,
-    durationMinutes: body.durationMinutes ?? DEFAULT_DURATION_MINUTES,
-    timezone: body.timezone ?? DEFAULT_TIMEZONE,
-    passcode: body.passcode,
-    waitingRoom: body.settings?.waitingRoom ?? true,
-    invitees: body.invitees ?? [],
-  };
 }

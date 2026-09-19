@@ -11,8 +11,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { baseUrl } from "@/data/env/server";
 import { getCurrentUser } from "@/features/core/auth/nextjs/currentUser";
 import { getT } from "@/features/core/i18n/server";
+import { AgentConnectCard } from "@/features/integrations/components/agent-connect-card";
 import { CreateIntegrationDialog } from "@/features/integrations/components/create-integration-dialog";
 import { IntegrationsList } from "@/features/integrations/components/integrations-list";
 import { WebhookDeliveries } from "@/features/integrations/components/webhook-deliveries";
@@ -75,13 +77,19 @@ export default async function IntegrationsPage() {
             {t("integrations.admin.lead")}
           </p>
         </div>
-        <CreateIntegrationDialog isPlatformAdmin={current.isAdmin} />
+        <div className="flex flex-wrap gap-2">
+          <LinkButton href="/settings/integrations/docs" variant="outline">
+            {t("integrations.admin.readDocs")}
+          </LinkButton>
+          <CreateIntegrationDialog isPlatformAdmin={current.isAdmin} />
+        </div>
       </div>
 
       <HydrateClient>
         <Suspense fallback={<Skeleton className="h-40 w-full" />}>
           <IntegrationsList />
         </Suspense>
+        <AgentConnectCard mcpUrl={`${baseUrl}/api/mcp`} />
         <section className="space-y-3">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             {t("integrations.admin.deliveries")}

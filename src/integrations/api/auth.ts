@@ -63,42 +63,46 @@ export function withIntegration<P = Record<string, never>>(
   return async (request: Request, route: RouteContext<P>) => {
     const { t } = await getT();
     try {
-      // Two budgets: per IP before the key is checked (so failed attempts
-      // are bounded), per integration after (so a leaked key is bounded).
-      if (
-        await isRateLimited(integrationApiAuthRatelimit, await getRequestIp())
-      ) {
-        throw new ApiError(429, "rate_limited", "Too many requests.");
-      }
-      const { organization, ...integration } = await authenticate(request);
-      if (await isRateLimited(integrationApiRatelimit, integration.id)) {
-        throw new ApiError(429, "rate_limited", "Too many requests.");
-      }
-      // A lapsed plan switches the key off without revoking it: the key
-      // works again the moment the org is back on a plan with API access.
-      const entitlements = organization
-        ? entitlementsForOrganization(organization)
-        : UNLIMITED_ENTITLEMENTS;
-      if (!entitlements.apiAccess) {
-        throw new ApiError(
-          403,
-          "forbidden",
-          "API access is not included in this organization's plan.",
-        );
-      }
+      const actor = await resolveIntegrationRequest(request, t);
       const params = await route.params;
-      return await handler(request, {
-        integration,
-        organization,
-        entitlements,
-        params,
-        db,
-        t,
-      });
+      return await handler(request, { ...actor, params });
     } catch (error) {
       return errorResponse(toApiError(error, t));
     }
   };
+}
+
+/**
+ * The whole front door, minus the route: rate limits, the key, the plan.
+ * Throws `ApiError` (401/403/429) — `withIntegration` turns that into the
+ * JSON envelope; the MCP endpoint does the same on its own.
+ */
+export async function resolveIntegrationRequest(
+  request: Request,
+  t: TFunction<typeof mainTranslations>,
+): Promise<Omit<ApiContext, "params">> {
+  // Two budgets: per IP before the key is checked (so failed attempts
+  // are bounded), per integration after (so a leaked key is bounded).
+  if (await isRateLimited(integrationApiAuthRatelimit, await getRequestIp())) {
+    throw new ApiError(429, "rate_limited", "Too many requests.");
+  }
+  const { organization, ...integration } = await authenticate(request);
+  if (await isRateLimited(integrationApiRatelimit, integration.id)) {
+    throw new ApiError(429, "rate_limited", "Too many requests.");
+  }
+  // A lapsed plan switches the key off without revoking it: the key
+  // works again the moment the org is back on a plan with API access.
+  const entitlements = organization
+    ? entitlementsForOrganization(organization)
+    : UNLIMITED_ENTITLEMENTS;
+  if (!entitlements.apiAccess) {
+    throw new ApiError(
+      403,
+      "forbidden",
+      "API access is not included in this organization's plan.",
+    );
+  }
+  return { integration, organization, entitlements, db, t };
 }
 
 async function authenticate(request: Request): Promise<
@@ -149,7 +153,7 @@ async function authenticate(request: Request): Promise<
   return integration;
 }
 
-function toApiError(
+export function toApiError(
   error: unknown,
   t: TFunction<typeof mainTranslations>,
 ): ApiError {

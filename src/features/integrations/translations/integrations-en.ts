@@ -12,6 +12,11 @@ export const integrationsEn = {
   room: {
     backTo: "Back to {name}",
   },
+  docs: {
+    title: "Developer docs",
+    lead: "The REST API, webhooks and the MCP server, for the systems and agents you connect.",
+    backToKeys: "Back to integrations",
+  },
   admin: {
     title: "Integrations",
     lead: "Other systems that create meetings and send their users here through the API.",
@@ -44,6 +49,16 @@ export const integrationsEn = {
     copy: "Copy",
     copied: "Copied.",
     copyWebhookUrl: "Copy webhook URL",
+    readDocs: "Read the docs",
+    mcp: {
+      title: "Connect an AI agent",
+      lead: "Claude Code, Cursor or your own agent can create meetings and mint join links over MCP with an integration key.",
+      copyUrl: "Copy MCP URL",
+      copyCommand: "Copy command",
+      keyHint:
+        "Replace gm_live_… with an active key from above. The agent can do everything the key can, so keep it out of shared config.",
+      readDocs: "Read the docs",
+    },
     done: "Done",
     rotateKey: "Rotate key",
     rotateConfirm:

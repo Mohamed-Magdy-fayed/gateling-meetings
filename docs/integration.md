@@ -16,6 +16,9 @@ your server ──302 → that url───────────────�
 meetings ────POST <your webhook> ──────────────▶ meeting.started / participant.joined / … / meeting.ended
 ```
 
+An AI agent holding the same key can do all of this over MCP — see
+[mcp.md](mcp.md).
+
 ## 1. Create the integration (once)
 
 API access is part of the **Business** plan. An owner or admin of an
