@@ -34,12 +34,20 @@ export type StageLayout = "grid" | "speaker";
 export function Stage({ layout }: { layout: StageLayout }) {
   const layoutContext = useCreateLayoutContext();
 
-  const tracks = useTracks(
+  const allTracks = useTracks(
     [
       { source: Track.Source.Camera, withPlaceholder: true },
       { source: Track.Source.ScreenShare, withPlaceholder: false },
     ],
     { updateOnlyOn: [RoomEvent.ActiveSpeakersChanged], onlySubscribed: false },
+  );
+  // The sharer's own screen is kept off their stage: it would only mirror
+  // what they already see (an infinite tunnel when it is the browser) and
+  // take the room away from the people they are presenting to. Everyone
+  // else still gets it pinned; the sharer gets a banner (SharingBanner).
+  const tracks = allTracks.filter(
+    (track) =>
+      !(track.source === Track.Source.ScreenShare && track.participant.isLocal),
   );
 
   const screenShareTrack = tracks

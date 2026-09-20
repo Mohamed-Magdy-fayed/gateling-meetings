@@ -149,6 +149,12 @@ export const meetingsAr = {
     host: "المضيف",
     sharingScreen: "{name} يشارك شاشته",
     youAreSharing: "أنت تشارك شاشتك",
+    popOut: "إظهار الحاضرين في نافذة عائمة",
+    popIn: "إغلاق النافذة العائمة",
+    popOutHint:
+      "استمر في رؤية الجميع في نافذة صغيرة تبقى في المقدمة أثناء المشاركة.",
+    popOutEmpty: "لا يوجد أحد غيرك بعد.",
+    popOutUnavailable: "لا يوجد ما يُعرض بعد — لم يشغّل أحد كاميرته.",
     chatPlaceholder: "أرسل رسالة…",
     chatEmpty: "لا رسائل بعد. قل مرحبًا!",
     send: "إرسال",

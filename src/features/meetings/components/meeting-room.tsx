@@ -55,6 +55,7 @@ import { HostIdentityProvider } from "./room/host-identity";
 import { HostSettings } from "./room/host-settings";
 import { ParticipantsPanel } from "./room/participants-panel";
 import { ReactionsOverlay, useReactions } from "./room/reactions";
+import { SharingBanner } from "./room/sharing-banner";
 import { Stage, type StageLayout } from "./room/stage";
 import { useKeepAlive } from "./room/use-keep-alive";
 import { useWaitingQueue } from "./room/waiting-queue";
@@ -354,6 +355,7 @@ function RoomShell({
 
       <BreakoutBanner code={meeting.code} session={session} />
       <DurationBanner code={meeting.code} isHost={isHost} />
+      <SharingBanner />
 
       {/* Mobile browsers block autoplay after the tab was backgrounded;
           playback then needs a tap. */}

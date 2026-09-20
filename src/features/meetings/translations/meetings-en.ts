@@ -136,6 +136,12 @@ export const meetingsEn = {
     host: "Host",
     sharingScreen: "{name} is sharing their screen",
     youAreSharing: "You are sharing your screen",
+    popOut: "Pop out people",
+    popIn: "Close floating window",
+    popOutHint:
+      "Keep seeing everyone in a small window that stays on top while you share.",
+    popOutEmpty: "Nobody else is here yet.",
+    popOutUnavailable: "Nothing to show yet — nobody has their camera on.",
     chatPlaceholder: "Send a message…",
     chatEmpty: "No messages yet. Say hi!",
     send: "Send",

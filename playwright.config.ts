@@ -27,6 +27,8 @@ export default defineConfig({
       args: [
         "--use-fake-device-for-media-stream",
         "--use-fake-ui-for-media-stream",
+        // Screen share without a picker: capture the (virtual) screen.
+        "--auto-select-desktop-capture-source=Entire screen",
       ],
     },
   },

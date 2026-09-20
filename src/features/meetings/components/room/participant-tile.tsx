@@ -31,18 +31,28 @@ import { useHandRaised } from "./use-hand-raise";
  * `FocusLayout`, which hand the track reference down through context — so
  * the component takes no props and reads `useTrackRefContext()`.
  */
-export function ParticipantTile({ className }: { className?: string }) {
+export function ParticipantTile({ className, pinnable = true }: TileOptions) {
   const trackRef = useTrackRefContext();
-  return <ParticipantTileInner trackRef={trackRef} className={className} />;
+  return (
+    <ParticipantTileInner
+      trackRef={trackRef}
+      className={className}
+      pinnable={pinnable}
+    />
+  );
 }
+
+type TileOptions = {
+  className?: string;
+  /** Off where there is no stage to pin to (the floating window). */
+  pinnable?: boolean;
+};
 
 function ParticipantTileInner({
   trackRef,
   className,
-}: {
-  trackRef: TrackReferenceOrPlaceholder;
-  className?: string;
-}) {
+  pinnable,
+}: TileOptions & { trackRef: TrackReferenceOrPlaceholder }) {
   const { t } = useTranslation();
   const participant = trackRef.participant;
   const isLocal = participant.isLocal;
@@ -138,22 +148,26 @@ function ParticipantTileInner({
       )}
 
       {/* Pin — appears on hover / focus, always visible while pinned */}
-      <button
-        type="button"
-        {...pinProps}
-        className={cn(
-          "absolute top-2 end-2 grid size-8 place-items-center rounded-md bg-black/40 text-white opacity-0 backdrop-blur transition-opacity group-hover/tile:opacity-100 focus-visible:opacity-100",
-          inFocus && "opacity-100",
-        )}
-        aria-label={inFocus ? t("meetings.room.unpin") : t("meetings.room.pin")}
-        title={inFocus ? t("meetings.room.unpin") : t("meetings.room.pin")}
-      >
-        {inFocus ? (
-          <PinOffIcon className="size-4" />
-        ) : (
-          <PinIcon className="size-4" />
-        )}
-      </button>
+      {pinnable && (
+        <button
+          type="button"
+          {...pinProps}
+          className={cn(
+            "absolute top-2 end-2 grid size-8 place-items-center rounded-md bg-black/40 text-white opacity-0 backdrop-blur transition-opacity group-hover/tile:opacity-100 focus-visible:opacity-100",
+            inFocus && "opacity-100",
+          )}
+          aria-label={
+            inFocus ? t("meetings.room.unpin") : t("meetings.room.pin")
+          }
+          title={inFocus ? t("meetings.room.unpin") : t("meetings.room.pin")}
+        >
+          {inFocus ? (
+            <PinOffIcon className="size-4" />
+          ) : (
+            <PinIcon className="size-4" />
+          )}
+        </button>
+      )}
     </div>
   );
 }

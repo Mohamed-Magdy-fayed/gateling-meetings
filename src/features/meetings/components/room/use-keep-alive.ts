@@ -4,30 +4,13 @@ import { useRoomContext } from "@livekit/components-react";
 import { RoomEvent, Track } from "livekit-client";
 import { useEffect } from "react";
 
+import { setMediaSessionAction as setAction } from "./media-session";
+
 type KeepAliveOptions = {
   title: string;
   appName: string;
   onLeave: () => void;
 };
-
-// The call actions are in the spec and shipped in Chromium, but not yet in
-// TypeScript's `MediaSessionAction` union.
-type CallAction =
-  | MediaSessionAction
-  | "togglemicrophone"
-  | "togglecamera"
-  | "hangup";
-
-function setAction(action: CallAction, handler: (() => void) | null) {
-  try {
-    navigator.mediaSession.setActionHandler(
-      action as MediaSessionAction,
-      handler,
-    );
-  } catch {
-    // Browser doesn't know this action — nothing to register.
-  }
-}
 
 /**
  * Keeps a phone call-shaped while the room is open.
