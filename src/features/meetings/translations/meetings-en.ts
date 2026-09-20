@@ -22,8 +22,6 @@ export const meetingsEn = {
     notConfigured: "Video isn't configured on this server yet.",
     connection:
       "Couldn't connect to the meeting. Check your connection and try again.",
-    mediaDenied:
-      "Camera or microphone access was blocked. Allow it in your browser and try again.",
   },
   home: {
     eyebrow: "Video meetings by Gateling",
@@ -167,6 +165,94 @@ export const meetingsEn = {
     reactions: "Send a reaction",
     poorConnection: "Poor connection",
     mutedByHost: "The host muted you.",
+  },
+  media: {
+    check: "Check audio & video",
+    checkLead:
+      "What your browser reports about your microphone and camera, so you can see where sound stops.",
+    microphone: "Microphone",
+    camera: "Camera",
+    speaker: "Speaker",
+    systemDefault: "System default",
+    permission: {
+      label: "Browser permission",
+      granted: "Allowed",
+      denied: "Blocked",
+      prompt: "Not asked yet",
+      unsupported: "Not reported by this browser",
+      unknown: "Checking…",
+    },
+    status: {
+      label: "Status",
+      live: "Picking up sound",
+      silent: "No sound detected",
+      hardwareMuted: "Muted by your system or headset",
+      ended: "Disconnected",
+      unknown: "Listening…",
+      off: "Off",
+      pending: "Starting…",
+      cameraOn: "Showing video",
+    },
+    level: "Microphone level",
+    speakToTest: "Say something — the bars should move.",
+    noSound:
+      "We can't hear anything from {device}. Try speaking, or pick another microphone.",
+    hardwareMuted:
+      "Your microphone is muted outside the browser. Check the mute button on your headset, or your system's sound settings.",
+    disconnected: "Your {device} was disconnected.",
+    speakingWhileMuted: "You're muted — trying to say something?",
+    unmute: "Unmute",
+    retry: "Retry",
+    switchMic: "Switch microphone",
+    switchCamera: "Switch camera",
+    switchSpeaker: "Switch speaker",
+    failure: {
+      denied: {
+        microphone: "Microphone access is blocked for this site.",
+        camera: "Camera access is blocked for this site.",
+      },
+      notFound: {
+        microphone: "No microphone found. Plug one in, or pick another device.",
+        camera: "No camera found. Plug one in, or pick another device.",
+      },
+      inUse: {
+        microphone:
+          "Your microphone is busy in another app or tab. Close it there and retry.",
+        camera:
+          "Your camera is busy in another app or tab. Close it there and retry.",
+      },
+      constraints: {
+        microphone:
+          "This microphone can't be started with the current settings. Try another one.",
+        camera:
+          "This camera can't be started with the current settings. Try another one.",
+      },
+      other: {
+        microphone: "Couldn't start your microphone.",
+        camera: "Couldn't start your camera.",
+      },
+    },
+    hint: {
+      chromium:
+        "Click the padlock (or camera) icon at the start of the address bar, allow the microphone and camera, then retry.",
+      firefox:
+        "Click the permissions icon at the start of the address bar, remove the block on the camera and microphone, then retry.",
+      safari:
+        "Open Safari's menu → Settings for This Website, set Camera and Microphone to Allow, then retry.",
+      ios: "Open Settings → Safari (or your browser) → Camera and Microphone, choose Allow, then reload this page.",
+      other:
+        "Allow the camera and microphone for this site in your browser's settings, then retry.",
+      system:
+        "Allowed in the browser but still silent? Your operating system may be blocking the browser itself — check the microphone privacy settings in Windows or macOS.",
+    },
+    banner: {
+      silent:
+        "Your microphone isn't picking up any sound — others can't hear you.",
+      hardwareMuted:
+        "Your microphone is muted by your system or headset — others can't hear you.",
+      ended: "Your microphone was disconnected — others can't hear you.",
+      dismiss: "Dismiss",
+    },
   },
   waiting: {
     title: "Waiting for the host to let you in",

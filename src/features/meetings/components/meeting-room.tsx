@@ -17,11 +17,13 @@ import {
   ConnectionState,
   DisconnectReason,
   Room,
+  RoomEvent,
   VideoPresets,
 } from "livekit-client";
 import {
   CopyIcon,
   LayoutGridIcon,
+  Settings2Icon,
   UserSquareIcon,
   Volume2Icon,
   XIcon,
@@ -37,6 +39,10 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useTranslation } from "@/features/core/i18n/client";
+import {
+  classifyMediaError,
+  isMediaError,
+} from "@/features/meetings/lib/media";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTRPC } from "@/integrations/trpc/client";
 import { cn } from "@/lib/utils";
@@ -53,8 +59,10 @@ import { ControlBar, type SidePanel } from "./room/control-bar";
 import { DurationBanner } from "./room/duration-banner";
 import { HostIdentityProvider } from "./room/host-identity";
 import { HostSettings } from "./room/host-settings";
+import { MicHealthBanner } from "./room/mic-health-banner";
 import { ParticipantsPanel } from "./room/participants-panel";
 import { ReactionsOverlay, useReactions } from "./room/reactions";
+import { RoomMediaCheck } from "./room/room-media-check";
 import { SharingBanner } from "./room/sharing-banner";
 import { Stage, type StageLayout } from "./room/stage";
 import { useKeepAlive } from "./room/use-keep-alive";
@@ -93,6 +101,7 @@ export function MeetingRoom({
   choices,
   onLeave,
 }: MeetingRoomProps) {
+  const { t } = useTranslation();
   const [room] = useState(
     () =>
       new Room({
@@ -158,8 +167,25 @@ export function MeetingRoom({
     },
     [onLeave],
   );
+  // A device that won't open is reported twice by LiveKit — as a
+  // MediaDevicesError (with the device kind and the raw browser error) and
+  // again through the rejected publish promise in onError. The first gets
+  // the specific, translated message; the second is dropped so the raw
+  // "NotReadableError: Could not start audio source" never reaches a toast.
+  useEffect(() => {
+    const onDeviceError = (error: Error, kind?: MediaDeviceKind) => {
+      const failure = classifyMediaError(error);
+      const device = kind === "videoinput" ? "camera" : "microphone";
+      toast.error(t(`meetings.media.failure.${failure}.${device}`));
+    };
+    room.on(RoomEvent.MediaDevicesError, onDeviceError);
+    return () => {
+      room.off(RoomEvent.MediaDevicesError, onDeviceError);
+    };
+  }, [room, t]);
   const handleError = useCallback((error: Error) => {
     console.error("[livekit]", error);
+    if (isMediaError(error)) return;
     toast.error(error.message);
   }, []);
   // Also reached from the OS "hang up" control (see useKeepAlive).
@@ -248,6 +274,7 @@ function RoomShell({
 
   const [panel, setPanel] = useState<SidePanel>(null);
   const [layout, setLayout] = useState<StageLayout>("grid");
+  const [isCheckOpen, setIsCheckOpen] = useState(false);
   const [seenChatCount, setSeenChatCount] = useState(0);
   const unreadChat = panel === "chat" ? 0 : chatMessages.length - seenChatCount;
 
@@ -350,12 +377,23 @@ function RoomShell({
               count: participants.length,
             })}
           </span>
+          <button
+            type="button"
+            onClick={() => setIsCheckOpen(true)}
+            aria-label={t("meetings.media.check")}
+            title={t("meetings.media.check")}
+            className="grid size-7 place-items-center rounded-md bg-white/[0.06] text-neutral-300 transition-colors hover:bg-white/[0.12] [&_svg]:size-3.5"
+          >
+            <Settings2Icon />
+          </button>
         </span>
       </header>
+      <RoomMediaCheck open={isCheckOpen} onOpenChange={setIsCheckOpen} />
 
       <BreakoutBanner code={meeting.code} session={session} />
       <DurationBanner code={meeting.code} isHost={isHost} />
       <SharingBanner />
+      <MicHealthBanner onOpenCheck={() => setIsCheckOpen(true)} />
 
       {/* Mobile browsers block autoplay after the tab was backgrounded;
           playback then needs a tap. */}

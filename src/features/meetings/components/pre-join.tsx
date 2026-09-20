@@ -1,11 +1,8 @@
 "use client";
 
+import { usePersistentUserChoices } from "@livekit/components-react";
 import {
-  usePersistentUserChoices,
-  usePreviewDevice,
-} from "@livekit/components-react";
-import type { LocalAudioTrack, LocalVideoTrack } from "livekit-client";
-import {
+  AlertTriangleIcon,
   CopyIcon,
   MicIcon,
   MicOffIcon,
@@ -22,9 +19,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslation } from "@/features/core/i18n/client";
+import {
+  deviceLabel,
+  resolveDeviceId,
+  useMediaDevices,
+  usePreviewTrack,
+  useTrackHealth,
+} from "@/features/meetings/lib/media";
 import { shareLink, useCanShare } from "@/features/meetings/lib/share-link";
 import { cn } from "@/lib/utils";
 import { DeviceSelect } from "./device-select";
+import { MediaCheckDialog } from "./media/media-check-dialog";
+import { MediaStatusLine, useMediaStatus } from "./media/media-status";
+import { MicLevelMeter } from "./media/mic-level-meter";
+import { PermissionHint } from "./media/permission-hint";
 import type { MeetingSummary, Viewer } from "./meeting-client";
 
 export type PreJoinValues = {
@@ -85,45 +93,106 @@ export function PreJoin({
   const [passcode, setPasscode] = useState("");
   const [nameError, setNameError] = useState(false);
 
-  const { localTrack: videoTrack, deviceError: videoError } =
-    usePreviewDevice<LocalVideoTrack>(
-      userChoices.videoEnabled,
-      userChoices.videoDeviceId,
-      "videoinput",
-    );
-  const { localTrack: audioTrack, deviceError: audioError } =
-    usePreviewDevice<LocalAudioTrack>(
-      userChoices.audioEnabled,
-      userChoices.audioDeviceId,
-      "audioinput",
-    );
-
-  // `usePreviewDevice`'s own unmount cleanup closes over the track from the
-  // first render — always undefined — so the preview tracks it creates a
-  // moment later are never stopped and the camera light stays on for the
-  // life of the tab, long after the meeting ended. Stop the *latest* ones
-  // ourselves when this screen goes away.
-  const previewTracksRef = useRef({ video: videoTrack, audio: audioTrack });
-  previewTracksRef.current = { video: videoTrack, audio: audioTrack };
-  useEffect(
-    () => () => {
-      previewTracksRef.current.video?.stop();
-      previewTracksRef.current.audio?.stop();
-    },
-    [],
+  // A remembered device id may point at last week's headset. Open the device
+  // that exists *today* and remember that instead, so the room opens the same
+  // one the person saw working here.
+  const { devices, isLoaded: devicesLoaded } = useMediaDevices();
+  const audioDeviceId = resolveDeviceId(
+    userChoices.audioDeviceId,
+    devices,
+    "audioinput",
   );
+  const videoDeviceId = resolveDeviceId(
+    userChoices.videoDeviceId,
+    devices,
+    "videoinput",
+  );
+  useEffect(() => {
+    if (!devicesLoaded) return;
+    if (audioDeviceId !== userChoices.audioDeviceId) {
+      saveAudioInputDeviceId(audioDeviceId);
+    }
+    if (videoDeviceId !== userChoices.videoDeviceId) {
+      saveVideoInputDeviceId(videoDeviceId);
+    }
+  }, [
+    devicesLoaded,
+    audioDeviceId,
+    videoDeviceId,
+    userChoices.audioDeviceId,
+    userChoices.videoDeviceId,
+    saveAudioInputDeviceId,
+    saveVideoInputDeviceId,
+  ]);
+
+  const video = usePreviewTrack(
+    "videoinput",
+    userChoices.videoEnabled,
+    videoDeviceId,
+  );
+  const audio = usePreviewTrack(
+    "audioinput",
+    userChoices.audioEnabled,
+    audioDeviceId,
+  );
+  const audioHealth = useTrackHealth(audio.track);
+
+  // What the browser *actually* opened, when we asked for "default".
+  useEffect(() => {
+    if (audio.actualDeviceId && !userChoices.audioDeviceId) {
+      saveAudioInputDeviceId(audio.actualDeviceId);
+    }
+  }, [audio.actualDeviceId, userChoices.audioDeviceId, saveAudioInputDeviceId]);
+  useEffect(() => {
+    if (video.actualDeviceId && !userChoices.videoDeviceId) {
+      saveVideoInputDeviceId(video.actualDeviceId);
+    }
+  }, [video.actualDeviceId, userChoices.videoDeviceId, saveVideoInputDeviceId]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   useEffect(() => {
     const element = videoRef.current;
-    if (!element || !videoTrack) return;
-    videoTrack.attach(element);
+    const track = video.track;
+    if (!element || !track) return;
+    track.attach(element);
     return () => {
-      videoTrack.detach(element);
+      track.detach(element);
     };
-  }, [videoTrack]);
+  }, [video.track]);
 
-  const mediaError = videoError ?? audioError;
+  const micName = deviceLabel(
+    audioDeviceId,
+    devices,
+    "audioinput",
+    t("meetings.media.microphone"),
+  );
+  const camName = deviceLabel(
+    videoDeviceId,
+    devices,
+    "videoinput",
+    t("meetings.media.camera"),
+  );
+  const micSource = {
+    kind: "microphone" as const,
+    enabled: userChoices.audioEnabled,
+    isPending: audio.isPending,
+    failure: audio.failure,
+    health: audioHealth,
+    hasTrack: audio.track != null,
+    deviceName: micName,
+  };
+  const camSource = {
+    kind: "camera" as const,
+    enabled: userChoices.videoEnabled,
+    isPending: video.isPending,
+    failure: video.failure,
+    hasTrack: video.track != null,
+    deviceName: camName,
+  };
+  const micStatus = useMediaStatus(micSource);
+  const camStatus = useMediaStatus(camSource);
+  const isBlocked = audio.failure === "denied" || video.failure === "denied";
+  const showsVideo = userChoices.videoEnabled && video.track != null;
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -135,10 +204,13 @@ export function PreJoin({
     onJoin({
       displayName,
       passcode,
-      audioEnabled: userChoices.audioEnabled,
-      videoEnabled: userChoices.videoEnabled,
-      audioDeviceId: userChoices.audioDeviceId,
-      videoDeviceId: userChoices.videoDeviceId,
+      // Only what actually worked here goes into the room: joining "with the
+      // mic on" when no mic could be opened is how people end up on a call
+      // with a live icon and no sound.
+      audioEnabled: userChoices.audioEnabled && audio.failure == null,
+      videoEnabled: userChoices.videoEnabled && video.failure == null,
+      audioDeviceId,
+      videoDeviceId,
     });
   }
 
@@ -151,35 +223,71 @@ export function PreJoin({
             ref={videoRef}
             className={cn(
               "size-full object-cover -scale-x-100 transition-opacity duration-300",
-              userChoices.videoEnabled && videoTrack
-                ? "opacity-100"
-                : "opacity-0",
+              showsVideo ? "opacity-100" : "opacity-0",
             )}
             muted
             playsInline
             autoPlay
           />
-          {!(userChoices.videoEnabled && videoTrack) && (
+          {!showsVideo && (
             <div className="absolute inset-0 grid place-items-center text-neutral-400">
               <div className="flex flex-col items-center gap-2">
                 <VideoOffIcon className="size-8" />
                 <span className="text-sm">
-                  {t("meetings.prejoin.cameraOff")}
+                  {userChoices.videoEnabled && video.failure
+                    ? camStatus.text
+                    : t("meetings.prejoin.cameraOff")}
                 </span>
               </div>
             </div>
           )}
 
+          {/* Everything the browser knows about the devices, one tap away. */}
+          <div className="dark absolute top-3 end-3 text-white">
+            <MediaCheckDialog
+              microphone={{
+                ...micSource,
+                track: audio.track,
+                onRetry: audio.retry,
+              }}
+              camera={{ ...camSource, onRetry: video.retry }}
+              audioInput={{
+                deviceId: audioDeviceId,
+                onChange: saveAudioInputDeviceId,
+              }}
+              videoInput={{
+                deviceId: videoDeviceId,
+                onChange: saveVideoInputDeviceId,
+              }}
+            />
+          </div>
+
+          {/* Live mic level, so "can they hear me?" is answered before joining. */}
+          {userChoices.audioEnabled && audio.track && (
+            <div className="absolute bottom-4 start-4 rounded-full bg-black/40 px-3 py-1.5 text-white backdrop-blur">
+              <MicLevelMeter track={audio.track} />
+            </div>
+          )}
+
           <div className="absolute inset-x-0 bottom-4 flex justify-center gap-3">
             <ToggleButton
-              active={userChoices.audioEnabled}
+              // The button says what is *true*: wanted-and-working is on,
+              // wanted-but-failed shows a warning badge, not a green mic.
+              active={userChoices.audioEnabled && audio.failure == null}
+              warning={
+                userChoices.audioEnabled &&
+                (audio.failure != null ||
+                  audioHealth.status === "silent" ||
+                  audioHealth.status === "hardwareMuted")
+              }
               onClick={() => saveAudioInputEnabled(!userChoices.audioEnabled)}
               label={t("meetings.prejoin.microphone")}
               onIcon={<MicIcon />}
               offIcon={<MicOffIcon />}
             />
             <ToggleButton
-              active={userChoices.videoEnabled}
+              active={userChoices.videoEnabled && video.failure == null}
+              warning={userChoices.videoEnabled && video.failure != null}
               onClick={() => saveVideoInputEnabled(!userChoices.videoEnabled)}
               label={t("meetings.prejoin.camera")}
               onIcon={<VideoIcon />}
@@ -189,26 +297,67 @@ export function PreJoin({
         </div>
 
         <div className="grid gap-3 *:min-w-0 sm:grid-cols-2">
-          <DeviceSelect
-            kind="audioinput"
-            value={userChoices.audioDeviceId}
-            onChange={saveAudioInputDeviceId}
-            ariaLabel={t("meetings.prejoin.microphone")}
-            emptyLabel={t("meetings.prejoin.noMicrophone")}
-          />
-          <DeviceSelect
-            kind="videoinput"
-            value={userChoices.videoDeviceId}
-            onChange={saveVideoInputDeviceId}
-            ariaLabel={t("meetings.prejoin.camera")}
-            emptyLabel={t("meetings.prejoin.noCamera")}
-          />
+          <div className="space-y-1.5">
+            <DeviceSelect
+              kind="audioinput"
+              value={audioDeviceId}
+              onChange={saveAudioInputDeviceId}
+              ariaLabel={t("meetings.prejoin.microphone")}
+              emptyLabel={t("meetings.prejoin.noMicrophone")}
+            />
+            <div className="flex items-start justify-between gap-2">
+              <MediaStatusLine status={micStatus} isPending={audio.isPending} />
+              {audio.failure && (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="xs"
+                  className="h-auto px-0"
+                  onClick={audio.retry}
+                >
+                  {t("meetings.media.retry")}
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <DeviceSelect
+              kind="videoinput"
+              value={videoDeviceId}
+              onChange={saveVideoInputDeviceId}
+              ariaLabel={t("meetings.prejoin.camera")}
+              emptyLabel={t("meetings.prejoin.noCamera")}
+            />
+            <div className="flex items-start justify-between gap-2">
+              <MediaStatusLine status={camStatus} isPending={video.isPending} />
+              {video.failure && (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="xs"
+                  className="h-auto px-0"
+                  onClick={video.retry}
+                >
+                  {t("meetings.media.retry")}
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
 
-        {mediaError && (
+        {isBlocked && (
           <Alert variant="destructive">
+            <AlertTriangleIcon />
             <AlertDescription>
-              {t("meetings.errors.mediaDenied")}
+              <PermissionHint />
+            </AlertDescription>
+          </Alert>
+        )}
+        {!isBlocked && micStatus.showSystemHint && (
+          <Alert variant="warning">
+            <AlertTriangleIcon />
+            <AlertDescription>
+              {t("meetings.media.hint.system")}
             </AlertDescription>
           </Alert>
         )}
@@ -307,12 +456,15 @@ export function PreJoin({
 
 function ToggleButton({
   active,
+  warning = false,
   onClick,
   label,
   onIcon,
   offIcon,
 }: {
   active: boolean;
+  /** Wanted on, but the device isn't delivering — badge it. */
+  warning?: boolean;
   onClick: () => void;
   label: string;
   onIcon: React.ReactNode;
@@ -325,13 +477,18 @@ function ToggleButton({
       aria-pressed={active}
       aria-label={label}
       className={cn(
-        "grid size-12 place-items-center rounded-full border backdrop-blur transition-[color,background-color,border-color,transform] duration-150 ease-standard active:scale-95 [&_svg]:size-5",
+        "relative grid size-12 place-items-center rounded-full border backdrop-blur transition-[color,background-color,border-color,transform] duration-150 ease-standard active:scale-95 [&>svg]:size-5",
         active
           ? "border-white/15 bg-white/10 text-white hover:bg-white/20"
           : "border-transparent bg-destructive text-white hover:bg-destructive/90",
       )}
     >
       {active ? onIcon : offIcon}
+      {warning && (
+        <span className="absolute -top-0.5 -end-0.5 grid size-4 place-items-center rounded-full bg-warning text-warning-foreground ring-2 ring-neutral-900">
+          <AlertTriangleIcon className="size-2.5" />
+        </span>
+      )}
     </button>
   );
 }
