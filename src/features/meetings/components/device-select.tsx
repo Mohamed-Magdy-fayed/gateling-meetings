@@ -1,7 +1,5 @@
 "use client";
 
-import { useMediaDevices } from "@livekit/components-react";
-
 import {
   Select,
   SelectContent,
@@ -9,10 +7,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useDevicesOfKind } from "@/features/meetings/lib/media";
 import { cn } from "@/lib/utils";
 
 type DeviceSelectProps = {
-  kind: "audioinput" | "videoinput";
+  kind: MediaDeviceKind;
   value: string;
   onChange: (deviceId: string) => void;
   emptyLabel: string;
@@ -21,9 +20,11 @@ type DeviceSelectProps = {
 };
 
 /**
- * A camera/microphone picker. Labels are empty until the browser has granted
- * media permission once, so a device without a label falls back to a
- * generic "Camera 1"-style name rather than an empty row.
+ * A camera/microphone/speaker picker. Labels are empty until the browser has
+ * granted media permission once, so a device without a label falls back to
+ * a generic "Camera 1"-style name rather than an empty row. The list comes
+ * from the shared device store, so it refreshes on plug/unplug and the
+ * moment permission is granted.
  */
 export function DeviceSelect({
   kind,
@@ -33,7 +34,7 @@ export function DeviceSelect({
   ariaLabel,
   className,
 }: DeviceSelectProps) {
-  const devices = useMediaDevices({ kind });
+  const devices = useDevicesOfKind(kind);
 
   if (devices.length === 0) {
     return (
@@ -46,9 +47,19 @@ export function DeviceSelect({
   const selected = devices.find((device) => device.deviceId === value)
     ? value
     : (devices[0]?.deviceId ?? "");
+  const items = devices.map((device, index) => ({
+    value: device.deviceId,
+    label: device.label || `${ariaLabel} ${index + 1}`,
+  }));
 
   return (
-    <Select value={selected} onValueChange={(next) => next && onChange(next)}>
+    // `items` lets the closed trigger show the label; without it Base UI
+    // prints the raw device id until the list has been opened once.
+    <Select
+      items={items}
+      value={selected}
+      onValueChange={(next) => next && onChange(next)}
+    >
       <SelectTrigger
         aria-label={ariaLabel}
         className={cn("w-full max-w-full", className)}
@@ -56,9 +67,9 @@ export function DeviceSelect({
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {devices.map((device, index) => (
-          <SelectItem key={device.deviceId} value={device.deviceId}>
-            {device.label || `${ariaLabel} ${index + 1}`}
+        {items.map((item) => (
+          <SelectItem key={item.value} value={item.value}>
+            {item.label}
           </SelectItem>
         ))}
       </SelectContent>

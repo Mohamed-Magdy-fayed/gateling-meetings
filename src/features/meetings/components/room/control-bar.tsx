@@ -15,7 +15,8 @@ import {
   VideoIcon,
   VideoOffIcon,
 } from "lucide-react";
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useCallback, useEffect } from "react";
+import { toast } from "sonner";
 
 import {
   AlertDialog,
@@ -35,7 +36,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useTranslation } from "@/features/core/i18n/client";
+import { classifyMediaError } from "@/features/meetings/lib/media";
 import { cn } from "@/lib/utils";
+import { DevicePickerMenu } from "./device-picker-menu";
 import { ReactionPicker } from "./reactions";
 import { useLocalHandRaise } from "./use-hand-raise";
 
@@ -70,8 +73,30 @@ export function ControlBar({
   const { t } = useTranslation();
   const hand = useLocalHandRaise();
 
-  const mic = useTrackToggle({ source: Track.Source.Microphone });
-  const camera = useTrackToggle({ source: Track.Source.Camera });
+  // A device that refuses to open gets the specific, translated reason —
+  // not LiveKit's default of rethrowing the raw browser error.
+  const onMicError = useCallback(
+    (error: Error) =>
+      toast.error(
+        t(`meetings.media.failure.${classifyMediaError(error)}.microphone`),
+      ),
+    [t],
+  );
+  const onCameraError = useCallback(
+    (error: Error) =>
+      toast.error(
+        t(`meetings.media.failure.${classifyMediaError(error)}.camera`),
+      ),
+    [t],
+  );
+  const mic = useTrackToggle({
+    source: Track.Source.Microphone,
+    onDeviceError: onMicError,
+  });
+  const camera = useTrackToggle({
+    source: Track.Source.Camera,
+    onDeviceError: onCameraError,
+  });
   const screen = useTrackToggle({
     source: Track.Source.ScreenShare,
     captureOptions: { audio: true, selfBrowserSurface: "include" },
@@ -99,29 +124,45 @@ export function ControlBar({
 
   return (
     <div className="flex items-center justify-center gap-2 px-3 py-3 sm:gap-3">
-      <ControlButton
-        label={
-          mic.enabled ? t("meetings.room.micOn") : t("meetings.room.micOff")
-        }
-        active={mic.enabled}
-        pending={mic.pending}
-        onClick={() => mic.toggle()}
-        danger={!mic.enabled}
-      >
-        {mic.enabled ? <MicIcon /> : <MicOffIcon />}
-      </ControlButton>
+      <span className="flex items-center gap-0.5">
+        <ControlButton
+          label={
+            mic.enabled ? t("meetings.room.micOn") : t("meetings.room.micOff")
+          }
+          active={mic.enabled}
+          pending={mic.pending}
+          onClick={() => mic.toggle()}
+          danger={!mic.enabled}
+        >
+          {mic.enabled ? <MicIcon /> : <MicOffIcon />}
+        </ControlButton>
+        <DevicePickerMenu
+          kinds={["audioinput", "audiooutput"]}
+          label={t("meetings.media.switchMic")}
+          className="hidden sm:grid"
+        />
+      </span>
 
-      <ControlButton
-        label={
-          camera.enabled ? t("meetings.room.camOn") : t("meetings.room.camOff")
-        }
-        active={camera.enabled}
-        pending={camera.pending}
-        onClick={() => camera.toggle()}
-        danger={!camera.enabled}
-      >
-        {camera.enabled ? <VideoIcon /> : <VideoOffIcon />}
-      </ControlButton>
+      <span className="flex items-center gap-0.5">
+        <ControlButton
+          label={
+            camera.enabled
+              ? t("meetings.room.camOn")
+              : t("meetings.room.camOff")
+          }
+          active={camera.enabled}
+          pending={camera.pending}
+          onClick={() => camera.toggle()}
+          danger={!camera.enabled}
+        >
+          {camera.enabled ? <VideoIcon /> : <VideoOffIcon />}
+        </ControlButton>
+        <DevicePickerMenu
+          kinds={["videoinput"]}
+          label={t("meetings.media.switchCamera")}
+          className="hidden sm:grid"
+        />
+      </span>
 
       {canShareScreen && (
         <ControlButton
