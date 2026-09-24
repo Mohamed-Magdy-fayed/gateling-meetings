@@ -47,6 +47,15 @@ test("sharer keeps the other cameras in view", async ({ newPage }) => {
     name: /close floating window/i,
   });
   await expect(closeFloating).toBeVisible();
+  // The floating window carries the sharer's own camera (self-view) next to
+  // the guest's, plus its own pause control.
+  await expect
+    .poll(() =>
+      host.evaluate(
+        () => window.documentPictureInPicture?.window?.document.body.innerText,
+      ),
+    )
+    .toMatch(/Guest Gina[\s\S]*You[\s\S]*Pause/);
   await closeFloating.click();
   await expect(
     host.getByRole("button", { name: /pop out people/i }),
@@ -58,6 +67,20 @@ test("sharer keeps the other cameras in view", async ({ newPage }) => {
   await expect(guest.locator(".lk-focus-layout")).toBeVisible({
     timeout: 15_000,
   });
+
+  // Pause keeps the share published (still pinned for the guest) but tells
+  // them it is paused; resume brings it back without a new picker.
+  await host.getByRole("button", { name: /^pause$/i }).click();
+  await expect(host.getByText(/your screen share is paused/i)).toBeVisible();
+  await expect(
+    guest.getByText(/Test Host paused their screen share/i),
+  ).toBeVisible({ timeout: 15_000 });
+  await expect(guest.locator(".lk-focus-layout")).toBeVisible();
+  await host.getByRole("button", { name: /^resume$/i }).click();
+  await expect(host.getByText(/you are sharing your screen/i)).toBeVisible();
+  await expect(
+    guest.getByText(/Test Host paused their screen share/i),
+  ).toBeHidden({ timeout: 15_000 });
 
   await host
     .getByRole("button", { name: /stop sharing/i })

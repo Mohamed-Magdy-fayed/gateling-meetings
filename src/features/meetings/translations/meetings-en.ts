@@ -134,6 +134,11 @@ export const meetingsEn = {
     host: "Host",
     sharingScreen: "{name} is sharing their screen",
     youAreSharing: "You are sharing your screen",
+    pauseSharing: "Pause",
+    resumeSharing: "Resume",
+    sharingPaused: "Your screen share is paused",
+    sharePausedBy: "{name} paused their screen share",
+    pauseSharingFailed: "Couldn't pause or resume your screen share.",
     popOut: "Pop out people",
     popIn: "Close floating window",
     popOutHint:

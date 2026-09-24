@@ -147,6 +147,11 @@ export const meetingsAr = {
     host: "المضيف",
     sharingScreen: "{name} يشارك شاشته",
     youAreSharing: "أنت تشارك شاشتك",
+    pauseSharing: "إيقاف مؤقت",
+    resumeSharing: "استئناف",
+    sharingPaused: "مشاركة شاشتك متوقفة مؤقتًا",
+    sharePausedBy: "أوقف {name} مشاركة شاشته مؤقتًا",
+    pauseSharingFailed: "تعذّر إيقاف مشاركة الشاشة مؤقتًا أو استئنافها.",
     popOut: "إظهار الحاضرين في نافذة عائمة",
     popIn: "إغلاق النافذة العائمة",
     popOutHint:

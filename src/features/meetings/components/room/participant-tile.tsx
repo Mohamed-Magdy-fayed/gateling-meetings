@@ -16,6 +16,7 @@ import { ConnectionQuality, Track } from "livekit-client";
 import {
   HandIcon,
   MicOffIcon,
+  PauseIcon,
   PinIcon,
   PinOffIcon,
   ScreenShareIcon,
@@ -96,6 +97,17 @@ function ParticipantTileInner({
             isScreenShare ? "object-contain" : "object-cover",
           )}
         />
+      ) : isScreenShare ? (
+        // A muted share is a paused one (see SharingBanner) — say so
+        // rather than showing a face placeholder in the presenter's slot.
+        <div className="grid size-full place-content-center justify-items-center gap-3 p-4 text-center text-sm text-neutral-300">
+          <PauseIcon className="size-8 text-warning" aria-hidden />
+          <p className="text-pretty">
+            {isLocal
+              ? t("meetings.room.sharingPaused")
+              : t("meetings.room.sharePausedBy", { name })}
+          </p>
+        </div>
       ) : (
         <div className="grid size-full place-items-center">
           <div
