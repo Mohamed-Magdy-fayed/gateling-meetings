@@ -21,6 +21,7 @@ import {
 import { isAdminEmail } from "@/features/core/auth/core/admin";
 import { LOCALE_COOKIE_NAME } from "@/features/core/i18n/lib";
 import { getT } from "@/features/core/i18n/server";
+import { hostActionErrorData } from "@/features/meetings/server/host-actions";
 import {
   ensurePersonalOrganization,
   loadActiveOrganization,
@@ -50,6 +51,8 @@ const t = initTRPC.context<TRPCContext>().create({
         // Lets the client show an "Upgrade" call to action keyed on what
         // ran out, without parsing the translated message.
         entitlement: entitlementErrorData(error.cause),
+        // A host action's stable refusal reason (see host-actions.ts).
+        hostAction: hostActionErrorData(error.cause),
       },
     };
   },

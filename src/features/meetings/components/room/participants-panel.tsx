@@ -5,7 +5,6 @@ import {
   useParticipants,
   useTrackMutedIndicator,
 } from "@livekit/components-react";
-import { useMutation } from "@tanstack/react-query";
 import type { Participant } from "livekit-client";
 import { Track } from "livekit-client";
 import {
@@ -17,6 +16,7 @@ import {
   VideoIcon,
   VideoOffIcon,
 } from "lucide-react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -27,10 +27,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "@/features/core/i18n/client";
-import { useTRPC } from "@/integrations/trpc/client";
 import { cn } from "@/lib/utils";
 import { useHostIdentity } from "./host-identity";
 import { useHandRaised } from "./use-hand-raise";
+import {
+  useHostMuteAll,
+  useHostParticipantActions,
+} from "./use-host-participant-actions";
 import { WaitingQueue, type WaitingQueueState } from "./waiting-queue";
 
 type ParticipantsPanelProps = {
@@ -45,13 +48,8 @@ export function ParticipantsPanel({
   waitingQueue,
 }: ParticipantsPanelProps) {
   const { t } = useTranslation();
-  const trpc = useTRPC();
   const participants = useParticipants();
-  const muteAll = useMutation(
-    trpc.host.muteAll.mutationOptions({
-      onError: (error) => toast.error(error.message),
-    }),
-  );
+  const muteAll = useHostMuteAll(code);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -73,11 +71,19 @@ export function ParticipantsPanel({
             size="sm"
             className="w-full"
             disabled={muteAll.isPending}
-            onClick={() => muteAll.mutate({ code })}
+            onClick={muteAll.muteAll}
           >
             <MicOffIcon data-icon="inline-start" />
             {t("meetings.host.muteAll")}
           </Button>
+          {muteAll.status && (
+            <p
+              role="status"
+              className="mt-1.5 text-center text-xs text-warning"
+            >
+              {muteAll.status}
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -92,7 +98,6 @@ type ParticipantRowProps = {
 
 function ParticipantRow({ participant, code, isHost }: ParticipantRowProps) {
   const { t } = useTranslation();
-  const trpc = useTRPC();
   const isSpeaking = useIsSpeaking(participant);
   const isHandRaised = useHandRaised(participant);
   const isParticipantHost = participant.identity === useHostIdentity();
@@ -105,20 +110,15 @@ function ParticipantRow({ participant, code, isHost }: ParticipantRowProps) {
     source: Track.Source.Camera,
   });
 
-  const onError = (error: { message: string }) => toast.error(error.message);
-  const mute = useMutation(
-    trpc.host.muteParticipant.mutationOptions({ onError }),
-  );
-  const lowerHand = useMutation(
-    trpc.host.lowerHand.mutationOptions({ onError }),
-  );
-  const remove = useMutation(
-    trpc.host.removeParticipant.mutationOptions({ onError }),
-  );
+  const actions = useHostParticipantActions(code, participant);
+  // The panel lives in the meeting tab, so failures can use the toast.
+  const errorMessage = actions.error?.message;
+  useEffect(() => {
+    if (errorMessage) toast.error(errorMessage);
+  }, [errorMessage]);
 
   const name = participant.name || participant.identity;
   const initial = name.trim().charAt(0).toUpperCase() || "?";
-  const identity = participant.identity;
   const canAct = isHost && !participant.isLocal;
 
   return (
@@ -167,16 +167,48 @@ function ParticipantRow({ participant, code, isHost }: ParticipantRowProps) {
             <MoreHorizontalIcon />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="dark w-44">
-            <DropdownMenuItem
-              disabled={isMicMuted}
-              onClick={() => mute.mutate({ code, identity })}
-            >
-              <MicOffIcon />
-              {t("meetings.host.mute")}
-            </DropdownMenuItem>
+            {isMicMuted ? (
+              <DropdownMenuItem
+                disabled={actions.asked.has("unmute")}
+                onClick={actions.askToUnmute}
+              >
+                <MicIcon />
+                {actions.asked.has("unmute")
+                  ? t("meetings.host.askedShort")
+                  : t("meetings.host.askUnmuteShort")}
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                disabled={actions.pending.has("mic")}
+                onClick={actions.muteMicrophone}
+              >
+                <MicOffIcon />
+                {t("meetings.host.mute")}
+              </DropdownMenuItem>
+            )}
+            {isCameraMuted ? (
+              <DropdownMenuItem
+                disabled={actions.asked.has("camera")}
+                onClick={actions.askToTurnOnCamera}
+              >
+                <VideoIcon />
+                {actions.asked.has("camera")
+                  ? t("meetings.host.askedShort")
+                  : t("meetings.host.askCameraShort")}
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                disabled={actions.pending.has("camera")}
+                onClick={actions.muteCamera}
+              >
+                <VideoOffIcon />
+                {t("meetings.host.turnOffCameraShort")}
+              </DropdownMenuItem>
+            )}
             {isHandRaised && (
               <DropdownMenuItem
-                onClick={() => lowerHand.mutate({ code, identity })}
+                disabled={actions.pending.has("hand")}
+                onClick={actions.lowerHand}
               >
                 <HandIcon />
                 {t("meetings.host.lowerHand")}
@@ -184,7 +216,8 @@ function ParticipantRow({ participant, code, isHost }: ParticipantRowProps) {
             )}
             <DropdownMenuItem
               variant="destructive"
-              onClick={() => remove.mutate({ code, identity })}
+              disabled={actions.pending.has("remove")}
+              onClick={actions.remove}
             >
               <UserXIcon />
               {t("meetings.host.remove")}

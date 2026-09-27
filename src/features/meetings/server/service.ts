@@ -4,6 +4,7 @@ import type { z } from "zod";
 
 import type { DatabaseOrTransaction } from "@/drizzle";
 import {
+  BreakoutRoomsTable,
   DEFAULT_MEETING_SETTINGS,
   type Meeting,
   type MeetingSettings,
@@ -31,6 +32,7 @@ import {
 } from "@/integrations/inngest/functions/meeting-events";
 import { sendEvents } from "@/integrations/inngest/send";
 import { getRoomService } from "@/integrations/livekit/client";
+import { type LiveSync, publishAllowAnnotations } from "./host-actions";
 import { createInvites } from "./invites";
 import type { scheduledMeetingSchema, updateMeetingSchema } from "./schemas";
 
@@ -310,6 +312,11 @@ export async function updateMeeting(
 /**
  * Merged in SQL (`||`) so two switches flipped in quick succession each
  * write only their own key instead of the last read winning.
+ *
+ * Settings participants' browsers act on mid-call (`allowAnnotations`) are
+ * then mirrored into the live LiveKit rooms. That write happens after the
+ * database commit and never fails the save: `liveSync` reports whether
+ * people already in the meeting will see the change without rejoining.
  */
 export async function updateMeetingSettings(
   ctx: MeetingServiceContext,
@@ -325,7 +332,33 @@ export async function updateMeetingSettings(
     })
     .where(eq(MeetingsTable.id, meeting.id))
     .returning({ settings: MeetingsTable.settings });
-  return meetingSettingsSchema.parse(updated?.settings ?? meeting.settings);
+  const next = meetingSettingsSchema.parse(
+    updated?.settings ?? meeting.settings,
+  );
+
+  let liveSync: LiveSync = "skipped";
+  if (settings.allowAnnotations !== undefined) {
+    const openBreakouts = await ctx.db.query.BreakoutRoomsTable.findMany({
+      where: and(
+        eq(BreakoutRoomsTable.meetingId, meeting.id),
+        eq(BreakoutRoomsTable.status, "open"),
+      ),
+      columns: { name: true, liveKitRoomName: true },
+    });
+    try {
+      liveSync = await publishAllowAnnotations(
+        getRoomService(),
+        meeting.code,
+        openBreakouts,
+        next.allowAnnotations,
+      );
+    } catch (error) {
+      // LiveKit not configured at all — the setting is saved regardless.
+      console.error(`[meetings] ${meeting.code}: live settings sync`, error);
+      liveSync = "failed";
+    }
+  }
+  return { settings: next, liveSync };
 }
 
 /** Soft delete; the link stops resolving and the reminder is cancelled. */

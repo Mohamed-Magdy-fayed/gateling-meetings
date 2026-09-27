@@ -25,6 +25,7 @@ const TOGGLES = [
   "muteOnEntry",
   "allowScreenShare",
   "allowGuests",
+  "allowAnnotations",
 ] as const satisfies readonly (keyof MeetingSettings)[];
 
 /**
@@ -49,7 +50,11 @@ export function HostSettings({ code, initial }: HostSettingsProps) {
         setSettings((current) => ({ ...current, ...variables.settings }));
         return { key, previous };
       },
-      onSuccess: (next) => setSettings(next),
+      onSuccess: ({ settings: next, liveSync }) => {
+        setSettings(next);
+        if (liveSync === "failed")
+          toast.warning(t("meetings.host.liveSyncFailed"));
+      },
       onError: (error, _variables, context) => {
         toast.error(error.message);
         if (context?.key !== undefined && context.previous !== undefined) {

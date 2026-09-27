@@ -1,0 +1,1 @@
+ALTER TABLE "meetings" ALTER COLUMN "settings" SET DEFAULT '{"waitingRoom":true,"muteOnEntry":false,"allowGuests":true,"allowScreenShare":true,"locked":false,"allowAnnotations":true}'::jsonb;

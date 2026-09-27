@@ -58,6 +58,10 @@ import { ChatPanel } from "./room/chat-panel";
 import { ControlBar, type SidePanel } from "./room/control-bar";
 import { DurationBanner } from "./room/duration-banner";
 import { HostIdentityProvider } from "./room/host-identity";
+import {
+  HostRequestPrompt,
+  HostRequestProvider,
+} from "./room/host-request-prompt";
 import { HostSettings } from "./room/host-settings";
 import { MicHealthBanner } from "./room/mic-health-banner";
 import { ParticipantsPanel } from "./room/participants-panel";
@@ -209,15 +213,17 @@ export function MeetingRoom({
       >
         <RoomAudioRenderer />
         <HostIdentityProvider value={meeting.hostIdentity}>
-          <RoomShell
-            meeting={meeting}
-            session={session}
-            onMove={handleMove}
-            onLeave={handleLeave}
-            onEnded={() => {
-              leaveReasonRef.current = "ended";
-            }}
-          />
+          <HostRequestProvider>
+            <RoomShell
+              meeting={meeting}
+              session={session}
+              onMove={handleMove}
+              onLeave={handleLeave}
+              onEnded={() => {
+                leaveReasonRef.current = "ended";
+              }}
+            />
+          </HostRequestProvider>
         </HostIdentityProvider>
       </LiveKitRoom>
     </div>
@@ -282,6 +288,18 @@ function RoomShell({
   useEffect(() => {
     if (panel === "chat") setSeenChatCount(chatMessages.length);
   }, [panel, chatMessages.length]);
+
+  // The host copies the live meeting settings into the room once connected:
+  // the room may not have existed when a setting was last changed.
+  const syncRoomState = useMutation(trpc.host.syncRoomState.mutationOptions());
+  const syncMutate = syncRoomState.mutate;
+  const hasSyncedRef = useRef(false);
+  useEffect(() => {
+    if (!isHost || hasSyncedRef.current) return;
+    if (connectionState !== ConnectionState.Connected) return;
+    hasSyncedRef.current = true;
+    syncMutate({ code: meeting.code });
+  }, [isHost, connectionState, meeting.code, syncMutate]);
 
   const endMeeting = useMutation(
     trpc.meetings.end.mutationOptions({
@@ -392,7 +410,7 @@ function RoomShell({
 
       <BreakoutBanner code={meeting.code} session={session} />
       <DurationBanner code={meeting.code} isHost={isHost} />
-      <SharingBanner />
+      <SharingBanner code={meeting.code} isHost={isHost} />
       <MicHealthBanner onOpenCheck={() => setIsCheckOpen(true)} />
 
       {/* Mobile browsers block autoplay after the tab was backgrounded;
@@ -412,6 +430,7 @@ function RoomShell({
       <div className="relative flex min-h-0 flex-1">
         <Stage layout={layout} />
         <ReactionsOverlay reactions={reactions} />
+        <HostRequestPrompt />
         {!isMobile && panel && (
           <aside className="flex w-80 shrink-0 flex-col border-s border-white/10 bg-neutral-900">
             <div className="flex h-12 items-center justify-between border-b border-white/10 px-3">

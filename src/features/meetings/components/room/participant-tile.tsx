@@ -22,6 +22,8 @@ import {
   ScreenShareIcon,
 } from "lucide-react";
 
+import { type ReactNode, useState } from "react";
+
 import { useTranslation } from "@/features/core/i18n/client";
 import { cn } from "@/lib/utils";
 import { useHostIdentity } from "./host-identity";
@@ -32,29 +34,43 @@ import { useHandRaised } from "./use-hand-raise";
  * `FocusLayout`, which hand the track reference down through context — so
  * the component takes no props and reads `useTrackRefContext()`.
  */
-export function ParticipantTile({ className, pinnable = true }: TileOptions) {
+export function ParticipantTile(options: TileOptions) {
   const trackRef = useTrackRefContext();
-  return (
-    <ParticipantTileInner
-      trackRef={trackRef}
-      className={className}
-      pinnable={pinnable}
-    />
-  );
+  return <ParticipantTileInner trackRef={trackRef} {...options} />;
 }
 
 type TileOptions = {
   className?: string;
   /** Off where there is no stage to pin to (the floating window). */
   pinnable?: boolean;
+  /**
+   * Controls laid over the tile, above the name plate (the host's action
+   * strip in the floating window).
+   *
+   * @example <ParticipantTile actions={<FloatingTileActions … />} />
+   */
+  actions?: ReactNode;
+  /**
+   * Rendered over the video, given the tile's `<video>` element once it
+   * mounts (null while there is none) — the annotation layer measures it.
+   * Stacking: video < overlay < name plate < pin button. An overlay that
+   * sets `data-annotating="true"` on its root hides the pin button, so
+   * pointer input goes to the overlay.
+   *
+   * @example <ParticipantTile overlay={(video) => <AnnotationLayer video={video} />} />
+   */
+  overlay?: (video: HTMLVideoElement | null) => ReactNode;
 };
 
 function ParticipantTileInner({
   trackRef,
   className,
-  pinnable,
+  pinnable = true,
+  actions,
+  overlay,
 }: TileOptions & { trackRef: TrackReferenceOrPlaceholder }) {
   const { t } = useTranslation();
+  const [video, setVideo] = useState<HTMLVideoElement | null>(null);
   const participant = trackRef.participant;
   const isLocal = participant.isLocal;
   const isScreenShare = trackRef.source === Track.Source.ScreenShare;
@@ -91,6 +107,7 @@ function ParticipantTileInner({
     >
       {hasVideo ? (
         <VideoTrack
+          ref={setVideo}
           trackRef={trackRef}
           className={cn(
             "size-full",
@@ -120,6 +137,8 @@ function ParticipantTileInner({
           </div>
         </div>
       )}
+
+      {overlay?.(hasVideo ? video : null)}
 
       {/* Name plate */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 bg-gradient-to-t from-black/60 to-transparent p-2 pt-8">
@@ -159,6 +178,8 @@ function ParticipantTileInner({
         </span>
       )}
 
+      {actions}
+
       {/* Pin — appears on hover / focus, always visible while pinned */}
       {pinnable && (
         <button
@@ -167,6 +188,7 @@ function ParticipantTileInner({
           className={cn(
             "absolute top-2 end-2 grid size-8 place-items-center rounded-md bg-black/40 text-white opacity-0 backdrop-blur transition-opacity group-hover/tile:opacity-100 focus-visible:opacity-100",
             inFocus && "opacity-100",
+            "group-has-[[data-annotating=true]]/tile:hidden",
           )}
           aria-label={
             inFocus ? t("meetings.room.unpin") : t("meetings.room.pin")

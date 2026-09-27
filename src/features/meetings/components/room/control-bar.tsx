@@ -39,6 +39,7 @@ import { useTranslation } from "@/features/core/i18n/client";
 import { classifyMediaError } from "@/features/meetings/lib/media";
 import { cn } from "@/lib/utils";
 import { DevicePickerMenu } from "./device-picker-menu";
+import { useHostAskBadge } from "./host-request-prompt";
 import { ReactionPicker } from "./reactions";
 import { useLocalHandRaise } from "./use-hand-raise";
 
@@ -72,6 +73,8 @@ export function ControlBar({
 }: ControlBarProps) {
   const { t } = useTranslation();
   const hand = useLocalHandRaise();
+  const isMicAsked = useHostAskBadge("mic");
+  const isCameraAsked = useHostAskBadge("camera");
 
   // A device that refuses to open gets the specific, translated reason —
   // not LiveKit's default of rethrowing the raw browser error.
@@ -129,6 +132,9 @@ export function ControlBar({
           label={
             mic.enabled ? t("meetings.room.micOn") : t("meetings.room.micOff")
           }
+          askedLabel={
+            isMicAsked ? t("meetings.hostRequest.askUnmute") : undefined
+          }
           active={mic.enabled}
           pending={mic.pending}
           onClick={() => mic.toggle()}
@@ -149,6 +155,9 @@ export function ControlBar({
             camera.enabled
               ? t("meetings.room.camOn")
               : t("meetings.room.camOff")
+          }
+          askedLabel={
+            isCameraAsked ? t("meetings.hostRequest.askCamera") : undefined
           }
           active={camera.enabled}
           pending={camera.pending}
@@ -295,6 +304,8 @@ type ControlButtonProps = {
   highlight?: boolean;
   badge?: number;
   badgeAccent?: boolean;
+  /** Set while an unanswered host ask is pending: a hand badge plus this text. */
+  askedLabel?: string;
   onClick: () => void;
   className?: string;
   children: ReactNode;
@@ -308,10 +319,12 @@ function ControlButton({
   highlight,
   badge,
   badgeAccent,
+  askedLabel,
   onClick,
   className,
   children,
 }: ControlButtonProps) {
+  const fullLabel = askedLabel ? `${label}. ${askedLabel}` : label;
   return (
     <Tooltip>
       <TooltipTrigger
@@ -321,7 +334,7 @@ function ControlButton({
             onClick={onClick}
             disabled={pending}
             aria-pressed={active}
-            aria-label={label}
+            aria-label={fullLabel}
             className={cn(
               "relative grid size-12 place-items-center rounded-full border transition-[color,background-color,border-color,transform] duration-150 ease-standard active:scale-95 disabled:opacity-60 [&_svg]:size-5",
               danger
@@ -335,6 +348,11 @@ function ControlButton({
         }
       >
         {children}
+        {askedLabel && (
+          <span className="absolute -top-1 -start-1 grid size-5 place-items-center rounded-full bg-warning text-warning-foreground [&_svg]:size-3">
+            <HandIcon aria-hidden />
+          </span>
+        )}
         {badge != null && (
           <span
             className={cn(
@@ -348,7 +366,7 @@ function ControlButton({
           </span>
         )}
       </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
+      <TooltipContent>{fullLabel}</TooltipContent>
     </Tooltip>
   );
 }

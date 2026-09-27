@@ -4,12 +4,17 @@ import { DataPacket_Kind } from "livekit-server-sdk";
 import { z } from "zod";
 
 import type { DatabaseOrTransaction } from "@/drizzle";
-import { BreakoutAssignmentsTable, BreakoutRoomsTable } from "@/drizzle/schema";
+import {
+  BreakoutAssignmentsTable,
+  BreakoutRoomsTable,
+  meetingSettingsSchema,
+} from "@/drizzle/schema";
 import { assertEntitlement } from "@/features/billing/plans";
 import { entitlementsForMeeting } from "@/features/billing/server/entitlements";
 import { getRoomService } from "@/integrations/livekit/client";
 import { moveParticipant } from "@/integrations/livekit/move";
 import { verifyParticipantKey } from "@/integrations/livekit/participant-key";
+import { breakoutMetadata } from "@/integrations/livekit/room-metadata";
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -32,12 +37,10 @@ export function breakoutRoomName(code: string, index: number) {
   return `${code}:b${index}`;
 }
 
-/** Room metadata lets a participant's client show the room's name without a query. */
-export function breakoutMetadata(name: string, mainRoom: string) {
-  return JSON.stringify({ breakout: name, main: mainRoom });
-}
-
-async function activeRooms(db: DatabaseOrTransaction, meetingId: string) {
+export async function activeRooms(
+  db: DatabaseOrTransaction,
+  meetingId: string,
+) {
   return db.query.BreakoutRoomsTable.findMany({
     where: and(
       eq(BreakoutRoomsTable.meetingId, meetingId),
@@ -272,12 +275,15 @@ export const breakoutsRouter = createTRPCRouter({
       throw new TRPCError({ code: "PRECONDITION_FAILED" });
     }
     const service = getRoomService();
+    const { allowAnnotations } = meetingSettingsSchema.parse(meeting.settings);
 
     let moved = 0;
     for (const room of rooms) {
       await service.createRoom({
         name: room.liveKitRoomName,
-        metadata: breakoutMetadata(room.name, meeting.code),
+        // Room metadata lets a participant's client show the room's name
+        // (and the live annotation switch) without a query.
+        metadata: breakoutMetadata(room.name, meeting.code, allowAnnotations),
         emptyTimeout: 60 * 60,
       });
       for (const assignment of room.assignments) {

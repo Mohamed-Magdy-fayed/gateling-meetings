@@ -4,28 +4,29 @@ import { useRoomContext } from "@livekit/components-react";
 import { RoomEvent } from "livekit-client";
 import { useEffect, useState } from "react";
 
+import {
+  annotationsAllowed,
+  parseRoomMetadata,
+} from "@/integrations/livekit/room-metadata";
+
 export type CurrentRoom = {
   name: string;
   /** From `breakoutMetadata()` on the server; null in the main room. */
   breakout: { name: string; main: string } | null;
+  /** The live copy of the meeting setting (room metadata; missing = on). */
+  allowAnnotations: boolean;
 };
 
 function read(room: { name: string; metadata?: string }): CurrentRoom {
-  let breakout: CurrentRoom["breakout"] = null;
-  if (room.metadata) {
-    try {
-      const parsed = JSON.parse(room.metadata) as Partial<{
-        breakout: string;
-        main: string;
-      }>;
-      if (parsed.breakout && parsed.main) {
-        breakout = { name: parsed.breakout, main: parsed.main };
-      }
-    } catch {
-      // Not ours — some other metadata shape.
-    }
-  }
-  return { name: room.name, breakout };
+  const metadata = parseRoomMetadata(room.metadata);
+  return {
+    name: room.name,
+    breakout:
+      metadata.breakout && metadata.main
+        ? { name: metadata.breakout, main: metadata.main }
+        : null,
+    allowAnnotations: annotationsAllowed(metadata),
+  };
 }
 
 /**

@@ -16,6 +16,11 @@ export const meetingSettingsSchema = z.object({
   allowScreenShare: z.boolean().default(true),
   /** Nobody new can join, even with the link and passcode. */
   locked: z.boolean().default(false),
+  /**
+   * Non-host participants may draw on a screen share (laser and pen). The
+   * host always can. Mirrored live into LiveKit room metadata.
+   */
+  allowAnnotations: z.boolean().default(true),
 });
 
 export type MeetingSettings = z.infer<typeof meetingSettingsSchema>;

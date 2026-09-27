@@ -18,6 +18,7 @@ import {
   getLiveKitConfig,
   getRoomService,
 } from "@/integrations/livekit/client";
+import { userIdentity } from "@/integrations/livekit/identity";
 import { signParticipantIdentity } from "@/integrations/livekit/participant-key";
 import {
   createMeetingToken,
@@ -38,14 +39,9 @@ import { findMeetingByCode } from "./queries";
 import { joinRequestSchema } from "./schemas";
 
 /**
- * LiveKit identities must be unique per room; a second connection with the
- * same identity bumps the first. Hosts are stable (`user:<id>`) so a host
- * who reopens the tab replaces their stale session rather than appearing
- * twice. Guests get a fresh id per join — the client keeps it for rejoins.
+ * Guests get a fresh id per join — the client keeps it for rejoins. Hosts
+ * use the stable `userIdentity` (see integrations/livekit/identity.ts).
  */
-function hostIdentity(userId: string) {
-  return `user:${userId}`;
-}
 function guestIdentity() {
   return `guest:${crypto.randomBytes(6).toString("hex")}`;
 }
@@ -211,7 +207,7 @@ export const joinRouter = createTRPCRouter({
         }
       }
 
-      const identity = userId ? hostIdentity(userId) : guestIdentity();
+      const identity = userId ? userIdentity(userId) : guestIdentity();
       const entitlements = entitlementsForMeeting(meeting);
 
       // The monthly allowance applies to the host too: a room nobody can
