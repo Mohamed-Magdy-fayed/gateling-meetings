@@ -123,7 +123,7 @@ export const termsDocuments: LegalDocuments = {
       {
         heading: "15. Contact",
         paragraphs: [
-          `${E.name}, ${E.country} — ${E.email} — ${E.site}. Questions about a charge, receipt or refund go to the same address; Paymob only processes the payment and cannot change your plan.`,
+          `${E.name}, ${E.city}, ${E.country} — ${E.email} — ${E.phoneDisplay} — ${E.site}. Questions about a charge, receipt or refund go to the same address; Paymob only processes the payment and cannot change your plan.`,
         ],
       },
     ],
@@ -244,7 +244,7 @@ export const termsDocuments: LegalDocuments = {
       {
         heading: "15. التواصل",
         paragraphs: [
-          `${E.name}، ${E.country} — ${E.email} — ${E.site}. تُرسل الاستفسارات المتعلقة بعملية دفع أو إيصال أو استرداد إلى العنوان نفسه؛ فـ Paymob تعالج الدفع فقط ولا يمكنها تغيير خطتك.`,
+          `${E.name}، القاهرة، مصر — ${E.email} — ⁦${E.phoneDisplay}⁩ — ${E.site}. تُرسل الاستفسارات المتعلقة بعملية دفع أو إيصال أو استرداد إلى العنوان نفسه؛ فـ Paymob تعالج الدفع فقط ولا يمكنها تغيير خطتك.`,
         ],
       },
     ],

@@ -9,6 +9,7 @@ export const legalAr = {
     privacy: "الخصوصية",
     refunds: "الاسترداد والإلغاء",
     contact: "تواصل معنا",
+    location: "القاهرة، مصر",
     company: "Gateling Solutions",
     legal: "القانونية",
   },

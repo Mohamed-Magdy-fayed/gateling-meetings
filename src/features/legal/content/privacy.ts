@@ -117,7 +117,9 @@ export const privacyDocuments: LegalDocuments = {
       },
       {
         heading: "10. Contact",
-        paragraphs: [`${E.name}, ${E.country} — ${E.email} — ${E.site}.`],
+        paragraphs: [
+          `${E.name}, ${E.city}, ${E.country} — ${E.email} — ${E.phoneDisplay} — ${E.site}.`,
+        ],
       },
     ],
   },
@@ -231,7 +233,9 @@ export const privacyDocuments: LegalDocuments = {
       },
       {
         heading: "10. التواصل",
-        paragraphs: [`${E.name}، ${E.country} — ${E.email} — ${E.site}.`],
+        paragraphs: [
+          `${E.name}، القاهرة، مصر — ${E.email} — ⁦${E.phoneDisplay}⁩ — ${E.site}.`,
+        ],
       },
     ],
   },
