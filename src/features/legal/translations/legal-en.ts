@@ -9,6 +9,7 @@ export const legalEn = {
     privacy: "Privacy",
     refunds: "Refunds & cancellation",
     contact: "Contact",
+    location: "Cairo, Egypt",
     company: "Gateling Solutions",
     legal: "Legal",
   },
