@@ -40,6 +40,12 @@
   scrollbar-width: none;
 }
 
+/* LiveKit renders the carousel before the focus tile; put it after, so the
+   focused tile (a pinned share) takes the wide column / tall row above. */
+.meeting-room .lk-focus-layout > .lk-carousel {
+  order: 1;
+}
+
 /* Mirror the local camera the way a mirror would; never screen share or remote video. */
 .meeting-room [data-mirror="true"] video {
   transform: scaleX(-1);
@@ -58,4 +64,21 @@
     opacity: 0;
     transform: translateY(-14rem) scale(1);
   }
+}
+
+/*
+ * Annotation ink: eight high-chroma colours, one per person (hashed from
+ * their identity, see annotations/geometry.ts). Every stroke also gets a
+ * dark halo, so these read on light and dark shared content alike. This is
+ * the only place raw colours are allowed for the feature.
+ */
+.meeting-room {
+  --ink-0: #ff3b6b;
+  --ink-1: #ff9f1a;
+  --ink-2: #f5e10a;
+  --ink-3: #2fe07a;
+  --ink-4: #1ad5ff;
+  --ink-5: #4d7cff;
+  --ink-6: #b45cff;
+  --ink-7: #ff5cd6;
 }

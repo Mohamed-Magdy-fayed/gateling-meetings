@@ -19,6 +19,7 @@ import {
 import { RoomEvent, Track } from "livekit-client";
 import { useEffect, useRef, useState } from "react";
 
+import { AnnotationLayer } from "./annotations/overlay";
 import { ParticipantTile } from "./participant-tile";
 
 export type StageLayout = "grid" | "speaker";
@@ -31,7 +32,13 @@ export type StageLayout = "grid" | "speaker";
  * or a screen share still wins). Mirrors the decision logic of LiveKit's
  * `VideoConference` prefab, minus the prefab's chrome.
  */
-export function Stage({ layout }: { layout: StageLayout }) {
+type StageProps = {
+  layout: StageLayout;
+  /** The sharer's Annotate view: keep their own share on their stage. */
+  showOwnShare?: boolean;
+};
+
+export function Stage({ layout, showOwnShare = false }: StageProps) {
   const layoutContext = useCreateLayoutContext();
 
   const allTracks = useTracks(
@@ -44,9 +51,11 @@ export function Stage({ layout }: { layout: StageLayout }) {
   // The sharer's own screen is kept off their stage: it would only mirror
   // what they already see (an infinite tunnel when it is the browser) and
   // take the room away from the people they are presenting to. Everyone
-  // else still gets it pinned; the sharer gets a banner (SharingBanner).
+  // else still gets it pinned; the sharer gets a banner (SharingBanner) —
+  // unless they turned on Annotate to see everyone's ink on it.
   const tracks = allTracks.filter(
     (track) =>
+      showOwnShare ||
       !(track.source === Track.Source.ScreenShare && track.participant.isLocal),
   );
 
@@ -123,7 +132,21 @@ export function Stage({ layout }: { layout: StageLayout }) {
             </CarouselLayout>
             {/* LiveKit's FocusLayout renders its own prefab tile; we want ours. */}
             <TrackRefContext.Provider value={focusTrack}>
-              <ParticipantTile className="lk-focus-layout-stage" />
+              <ParticipantTile
+                className="lk-focus-layout-stage"
+                overlay={
+                  isTrackReference(focusTrack) &&
+                  focusTrack.source === Track.Source.ScreenShare
+                    ? (video) => (
+                        <AnnotationLayer
+                          video={video}
+                          shareSid={focusTrack.publication.trackSid}
+                          isOwnShare={focusTrack.participant.isLocal}
+                        />
+                      )
+                    : undefined
+                }
+              />
             </TrackRefContext.Provider>
           </FocusLayoutContainer>
         ) : (

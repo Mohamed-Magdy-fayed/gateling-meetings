@@ -1,6 +1,15 @@
-import { expect, test } from "./fixtures";
+import type { Page } from "@playwright/test";
 
-import { joinRoom, signIn, submitPreJoin } from "./helpers";
+import { expect, test } from "./fixtures";
+import {
+  clickInPip,
+  joinAsGuest,
+  joinRoom,
+  pipText,
+  routeTrpcError,
+  signIn,
+  submitPreJoin,
+} from "./helpers";
 
 /**
  * The sharer keeps seeing people: their own screen is not pinned on their
@@ -90,4 +99,211 @@ test("sharer keeps the other cameras in view", async ({ newPage }) => {
   await expect(guest.locator(".lk-focus-layout")).toHaveCount(0, {
     timeout: 15_000,
   });
+});
+
+/** Host in a new meeting, one admitted guest, the host sharing their screen. */
+async function hostSharingWithGuest(newPage: () => Promise<Page>) {
+  const host = await newPage();
+  await signIn(host);
+  await host.goto("/dashboard");
+  await host.getByRole("button", { name: /new meeting/i }).click();
+  await host.waitForURL(/\/m\/[a-z]{3}-[a-z]{4}-[a-z]{3}$/);
+  const meetingUrl = host.url();
+  await joinRoom(host, "Test Host");
+
+  const guest = await newPage();
+  await joinAsGuest(guest, host, meetingUrl, "Guest Gina");
+  await expect(host.getByText(/2 participants/)).toBeVisible({
+    timeout: 15_000,
+  });
+
+  await host.getByRole("button", { name: /share screen/i }).click();
+  await expect(host.getByText(/you are sharing your screen/i)).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect.poll(() => pipText(host)).toMatch(/Guest Gina/);
+  await expect(guest.locator(".lk-focus-layout")).toBeVisible({
+    timeout: 15_000,
+  });
+  return { host, guest };
+}
+
+/** The floating window's button labels, for label assertions. */
+function pipLabels(page: Page) {
+  return page.evaluate(() =>
+    [
+      ...(window.documentPictureInPicture?.window?.document.querySelectorAll(
+        "button",
+      ) ?? []),
+    ].map((button) => button.getAttribute("aria-label") ?? button.innerText),
+  );
+}
+
+test("host moderates a guest from the floating window", async ({ newPage }) => {
+  const { host, guest } = await hostSharingWithGuest(newPage);
+
+  // Mute: the guest is told, and the host's button turns into an ask.
+  await clickInPip(host, /^Mute .*Guest Gina/);
+  await expect(guest.getByText("The host muted you.")).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect
+    .poll(() => pipLabels(host))
+    .toContainEqual(expect.stringMatching(/Ask .*Guest Gina.* to unmute/));
+
+  // Ask to unmute: the guest accepts, the host sees the mic back on.
+  await clickInPip(host, /Ask .*Guest Gina.* to unmute/);
+  await expect(guest.getByText(/the host asked you to unmute/i)).toBeVisible({
+    timeout: 15_000,
+  });
+  await guest.getByRole("button", { name: /^unmute$/i }).click();
+  await expect
+    .poll(() => pipLabels(host), { timeout: 15_000 })
+    .toContainEqual(expect.stringMatching(/^Mute .*Guest Gina/));
+
+  // Camera off.
+  await clickInPip(host, /Turn off .*Guest Gina.*camera/);
+  await expect(guest.getByText("The host turned off your camera.")).toBeVisible(
+    { timeout: 15_000 },
+  );
+
+  // Lower a raised hand.
+  await guest.getByRole("button", { name: /raise hand/i }).click();
+  await expect
+    .poll(() => pipLabels(host), { timeout: 15_000 })
+    .toContainEqual(expect.stringMatching(/Lower .*Guest Gina.*hand/));
+  await clickInPip(host, /Lower .*Guest Gina.*hand/);
+  await expect(guest.getByText("The host lowered your hand.")).toBeVisible({
+    timeout: 15_000,
+  });
+
+  // Mute everyone (the guest's mic is on again since they accepted the ask).
+  await clickInPip(host, /^Mute everyone$/);
+  await expect(guest.getByText("The host muted everyone.")).toBeVisible({
+    timeout: 15_000,
+  });
+
+  // Remove: Esc cancels and returns focus to Remove; Confirm removes.
+  await clickInPip(host, /^Remove .*Guest Gina/);
+  expect(
+    await host.evaluate(() => {
+      const doc = window.documentPictureInPicture?.window?.document;
+      const active = doc?.activeElement as HTMLElement | null;
+      const label = active?.innerText;
+      active?.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+      return label;
+    }),
+  ).toBe("Cancel");
+  await expect
+    .poll(() =>
+      host.evaluate(
+        () =>
+          window.documentPictureInPicture?.window?.document.activeElement?.getAttribute(
+            "aria-label",
+          ) ?? "",
+      ),
+    )
+    .toMatch(/^Remove .*Guest Gina/);
+  await clickInPip(host, /^Remove .*Guest Gina/);
+  await clickInPip(host, /^Remove$/);
+  await expect(
+    guest.getByText(/you were removed from the meeting/i),
+  ).toBeVisible({ timeout: 15_000 });
+});
+
+test("a failed host action shows inline in the floating window", async ({
+  newPage,
+}) => {
+  const { host } = await hostSharingWithGuest(newPage);
+  await routeTrpcError(host, "host.muteMicrophone");
+  await clickInPip(host, /^Mute .*Guest Gina/);
+  await expect.poll(() => pipText(host)).toMatch(/didn.t work[\s\S]*Retry/);
+});
+
+/** Drags a pen stroke across the middle of the pinned share. */
+async function drawStroke(page: Page, atY: number) {
+  const share = page.locator(".lk-focus-layout-stage");
+  // The ink layer appears once the share's frame size is known.
+  await expect(share.locator("svg[data-annotation-ink]")).toBeVisible({
+    timeout: 15_000,
+  });
+  const box = await share.boundingBox();
+  if (!box) throw new Error("no share on stage");
+  const y = box.y + box.height * atY;
+  await page.mouse.move(box.x + box.width * 0.3, y);
+  await page.mouse.down();
+  for (let i = 1; i <= 10; i++) {
+    await page.mouse.move(box.x + box.width * (0.3 + i * 0.03), y + i * 3);
+  }
+  await page.mouse.up();
+}
+
+/** Visible strokes on the pinned share (each is a halo path plus an ink path). */
+async function strokeCount(page: Page) {
+  const paths = await page
+    .locator(".lk-focus-layout-stage svg[data-annotation-ink] path")
+    .count();
+  return paths / 2;
+}
+
+test("guest annotates the share and the host sees it", async ({ newPage }) => {
+  const { host, guest } = await hostSharingWithGuest(newPage);
+
+  await guest
+    .getByRole("button", { name: /draw on the shared screen/i })
+    .click();
+  await drawStroke(guest, 0.4);
+  await drawStroke(guest, 0.6);
+  await expect.poll(() => strokeCount(guest)).toBe(2);
+
+  // The sharer is told, then turns on their Annotate view to see the ink.
+  await expect(host.getByText("1 person annotating").first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await host.getByRole("button", { name: /^annotate$/i }).click();
+  await expect.poll(() => strokeCount(host), { timeout: 15_000 }).toBe(2);
+
+  // Undo removes only the latest stroke, everywhere.
+  await guest.getByRole("button", { name: /^undo$/i }).click();
+  await expect.poll(() => strokeCount(host), { timeout: 15_000 }).toBe(1);
+
+  // Clicking the active pen again leaves the tool.
+  await guest.getByRole("button", { name: /^pen$/i }).click();
+  await expect(
+    guest.getByRole("button", { name: /draw on the shared screen/i }),
+  ).toBeVisible();
+
+  // The host clears everyone's ink (two-step, from the banner).
+  await host
+    .getByRole("button", { name: /clear everyone.s ink/i })
+    .first()
+    .click();
+  await host.getByRole("button", { name: /^clear$/i }).click();
+  await expect.poll(() => strokeCount(guest), { timeout: 15_000 }).toBe(0);
+});
+
+test("turning annotations off hides the guest's tools and ink", async ({
+  newPage,
+}) => {
+  const { host, guest } = await hostSharingWithGuest(newPage);
+  await guest
+    .getByRole("button", { name: /draw on the shared screen/i })
+    .click();
+  await drawStroke(guest, 0.5);
+  await expect.poll(() => strokeCount(guest)).toBe(1);
+
+  await host.getByRole("button", { name: /^settings$/i }).click();
+  await host
+    .getByRole("switch", { name: /participants can draw on shared screens/i })
+    .click();
+
+  await expect(guest.getByText("The host turned off annotations.")).toBeVisible(
+    { timeout: 15_000 },
+  );
+  await expect(
+    guest.getByRole("button", { name: /draw on the shared screen/i }),
+  ).toHaveCount(0);
+  await expect.poll(() => strokeCount(guest)).toBe(0);
 });

@@ -21,6 +21,11 @@ import { toast } from "sonner";
 
 import { useTranslation } from "@/features/core/i18n/client";
 import { cn } from "@/lib/utils";
+import {
+  AnnotateToggle,
+  AnnotatingNotice,
+  SharerAnnotateNotice,
+} from "./annotations/sharer-controls";
 import { FloatingGrid } from "./floating-grid";
 import {
   BannerButton,
@@ -30,7 +35,13 @@ import {
 } from "./share-controls";
 import { usePictureInPicture } from "./use-picture-in-picture";
 
-type SharingBannerProps = { code: string; isHost: boolean };
+type SharingBannerProps = {
+  code: string;
+  isHost: boolean;
+  /** The sharer's Annotate view (their own share on their stage, with ink). */
+  isAnnotating: boolean;
+  onAnnotatingChange: (next: boolean) => void;
+};
 
 /**
  * Shown to whoever is sharing their screen. Their own share is kept off
@@ -39,7 +50,12 @@ type SharingBannerProps = { code: string; isHost: boolean };
  * (themselves included) out into a floating window that stays on top of
  * whatever they are showing.
  */
-export function SharingBanner({ code, isHost }: SharingBannerProps) {
+export function SharingBanner({
+  code,
+  isHost,
+  isAnnotating,
+  onAnnotatingChange,
+}: SharingBannerProps) {
   const { t } = useTranslation();
   const { isScreenShareEnabled } = useLocalParticipant();
   const pip = usePictureInPicture({ active: isScreenShareEnabled });
@@ -89,13 +105,28 @@ export function SharingBanner({ code, isHost }: SharingBannerProps) {
             {pip.isOpen ? t("meetings.room.popIn") : t("meetings.room.popOut")}
           </BannerButton>
         )}
+        <AnnotateToggle isOn={isAnnotating} onChange={onAnnotatingChange} />
         <StopButton />
+        <AnnotatingNotice
+          isAnnotating={isAnnotating}
+          onShow={() => onAnnotatingChange(true)}
+        />
+        {isAnnotating && <SharerAnnotateNotice />}
       </div>
 
       {pip.mode === "document" &&
         pip.pipWindow &&
         createPortal(
-          <FloatingGrid code={code} isHost={isHost} />,
+          <FloatingGrid
+            code={code}
+            isHost={isHost}
+            footerExtra={
+              <AnnotatingNotice
+                isAnnotating={isAnnotating}
+                onShow={() => onAnnotatingChange(true)}
+              />
+            }
+          />,
           pip.pipWindow.document.body,
         )}
       {pip.mode === "video" && <SpeakerVideo ref={pip.videoRef} />}

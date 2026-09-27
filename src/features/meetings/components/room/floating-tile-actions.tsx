@@ -48,22 +48,31 @@ export function FloatingTileActions({
 
   const removeButtonRef = useRef<HTMLButtonElement>(null);
   const manageButtonRef = useRef<HTMLButtonElement>(null);
-  const returnFocusRef = useRef<HTMLButtonElement | null>(null);
+  // Focus to restore once the strip has rendered back. Done in an effect,
+  // not requestAnimationFrame: the meeting tab is usually in the background
+  // while presenting, and a background tab gets no animation frames.
+  const [restoreFocus, setRestoreFocus] = useState<"remove" | "manage" | null>(
+    null,
+  );
+  useEffect(() => {
+    if (!restoreFocus || view !== "strip") return;
+    setRestoreFocus(null);
+    // Whichever is displayed: the strip, or "Manage" on a narrow tile.
+    const candidates =
+      restoreFocus === "remove"
+        ? [removeButtonRef.current, manageButtonRef.current]
+        : [manageButtonRef.current, removeButtonRef.current];
+    candidates
+      .find((button) => button != null && button.offsetParent != null)
+      ?.focus();
+  }, [restoreFocus, view]);
 
-  function openConfirm(from: HTMLButtonElement | null) {
-    returnFocusRef.current = from;
+  function openConfirm() {
     setView("confirm");
   }
   function closeConfirm() {
     setView("strip");
-    // Wait for the strip to render back, then return focus where it was.
-    requestAnimationFrame(() =>
-      (
-        returnFocusRef.current ??
-        removeButtonRef.current ??
-        manageButtonRef.current
-      )?.focus(),
-    );
+    setRestoreFocus("remove");
   }
 
   if (actions.error) {
@@ -103,7 +112,7 @@ export function FloatingTileActions({
           type="button"
           onClick={() => {
             setView("strip");
-            requestAnimationFrame(() => manageButtonRef.current?.focus());
+            setRestoreFocus("manage");
           }}
           className="flex items-center gap-1.5 rounded-md px-1.5 py-1 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-primary"
         >
@@ -115,7 +124,7 @@ export function FloatingTileActions({
           participant={participant}
           name={name}
           layout="list"
-          onRemove={(from) => openConfirm(from)}
+          onRemove={openConfirm}
         />
       </div>
     );
@@ -130,7 +139,7 @@ export function FloatingTileActions({
           name={name}
           layout="strip"
           removeRef={removeButtonRef}
-          onRemove={(from) => openConfirm(from)}
+          onRemove={openConfirm}
         />
       </Scrim>
       <Scrim className="pointer-events-auto bottom-9 end-1.5 hidden p-0.5 @max-[10rem]:flex">
@@ -159,7 +168,7 @@ function ActionButtons({
   name: string;
   layout: "strip" | "list";
   removeRef?: React.Ref<HTMLButtonElement>;
-  onRemove: (from: HTMLButtonElement | null) => void;
+  onRemove: () => void;
 }) {
   const { t } = useTranslation();
   const isHandRaised = useHandRaised(participant);
@@ -241,7 +250,7 @@ function ActionButtons({
         ref={removeRef}
         label={t("meetings.host.removeOf", { name })}
         disabled={actions.pending.has("remove")}
-        onClick={(event) => onRemove(event.currentTarget)}
+        onClick={onRemove}
         className="text-destructive"
       >
         <StateIcon

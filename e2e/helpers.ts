@@ -54,3 +54,84 @@ export async function joinRoom(page: Page, displayName: string) {
   await submitPreJoin(page, displayName);
   await expectInRoom(page);
 }
+
+/** Runs `fn` against the Document Picture-in-Picture window's document. */
+export function pipText(page: Page) {
+  return page.evaluate(
+    () =>
+      window.documentPictureInPicture?.window?.document.body.innerText ?? "",
+  );
+}
+
+/** Clicks the first button in the floating window whose aria-label matches. */
+export async function clickInPip(page: Page, label: RegExp) {
+  const clicked = await page.evaluate(
+    ({ source, flags }) => {
+      const pattern = new RegExp(source, flags);
+      const doc = window.documentPictureInPicture?.window?.document;
+      const button = [...(doc?.querySelectorAll("button") ?? [])].find(
+        (candidate) =>
+          pattern.test(
+            candidate.getAttribute("aria-label") ?? candidate.innerText,
+          ) && !candidate.disabled,
+      );
+      button?.click();
+      return button != null;
+    },
+    { source: label.source, flags: label.flags },
+  );
+  expect(clicked, `no enabled floating-window button matching ${label}`).toBe(
+    true,
+  );
+}
+
+/** Has the guest at `meetingUrl` join, and the host admit them from the queue. */
+export async function joinAsGuest(
+  guest: Page,
+  host: Page,
+  meetingUrl: string,
+  name: string,
+) {
+  await guest.goto(meetingUrl);
+  await submitPreJoin(guest, name);
+  await expect(host.getByText(new RegExp(`${name} wants to join`))).toBeVisible(
+    { timeout: 10_000 },
+  );
+  await host
+    .getByRole("button", { name: /^admit$/i })
+    .first()
+    .click();
+  await expectInRoom(guest);
+}
+
+/**
+ * Makes one tRPC procedure fail with `status`. tRPC batches calls into
+ * `/api/trpc/a,b?batch=1`, so the match is on the path segment.
+ */
+export async function routeTrpcError(
+  page: Page,
+  procedure: string,
+  status = 500,
+) {
+  await page.route(
+    (url) =>
+      url.pathname.startsWith("/api/trpc/") &&
+      url.pathname.split("/").at(-1)?.split(",").includes(procedure) === true,
+    (route) =>
+      route.fulfill({
+        status,
+        contentType: "application/json",
+        body: JSON.stringify([
+          {
+            error: {
+              json: {
+                message: "Injected failure",
+                code: -32603,
+                data: { code: "INTERNAL_SERVER_ERROR", httpStatus: status },
+              },
+            },
+          },
+        ]),
+      }),
+  );
+}

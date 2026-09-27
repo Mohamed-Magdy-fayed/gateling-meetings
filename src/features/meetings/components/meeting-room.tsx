@@ -10,6 +10,7 @@ import {
   useChat,
   useConnectionState,
   useDataChannel,
+  useLocalParticipant,
   useParticipants,
 } from "@livekit/components-react";
 import { useMutation } from "@tanstack/react-query";
@@ -52,6 +53,7 @@ import type {
   MeetingSummary,
 } from "./meeting-client";
 import type { PreJoinValues } from "./pre-join";
+import { AnnotationsProvider } from "./room/annotations/use-annotations";
 import { BreakoutBanner } from "./room/breakout-banner";
 import { BreakoutPanel } from "./room/breakout-panel";
 import { ChatPanel } from "./room/chat-panel";
@@ -214,15 +216,17 @@ export function MeetingRoom({
         <RoomAudioRenderer />
         <HostIdentityProvider value={meeting.hostIdentity}>
           <HostRequestProvider>
-            <RoomShell
-              meeting={meeting}
-              session={session}
-              onMove={handleMove}
-              onLeave={handleLeave}
-              onEnded={() => {
-                leaveReasonRef.current = "ended";
-              }}
-            />
+            <AnnotationsProvider>
+              <RoomShell
+                meeting={meeting}
+                session={session}
+                onMove={handleMove}
+                onLeave={handleLeave}
+                onEnded={() => {
+                  leaveReasonRef.current = "ended";
+                }}
+              />
+            </AnnotationsProvider>
           </HostRequestProvider>
         </HostIdentityProvider>
       </LiveKitRoom>
@@ -280,6 +284,12 @@ function RoomShell({
 
   const [panel, setPanel] = useState<SidePanel>(null);
   const [layout, setLayout] = useState<StageLayout>("grid");
+  // The sharer's Annotate view; off again whenever their share stops.
+  const [isAnnotating, setIsAnnotating] = useState(false);
+  const { isScreenShareEnabled } = useLocalParticipant();
+  useEffect(() => {
+    if (!isScreenShareEnabled) setIsAnnotating(false);
+  }, [isScreenShareEnabled]);
   const [isCheckOpen, setIsCheckOpen] = useState(false);
   const [seenChatCount, setSeenChatCount] = useState(0);
   const unreadChat = panel === "chat" ? 0 : chatMessages.length - seenChatCount;
@@ -410,7 +420,12 @@ function RoomShell({
 
       <BreakoutBanner code={meeting.code} session={session} />
       <DurationBanner code={meeting.code} isHost={isHost} />
-      <SharingBanner code={meeting.code} isHost={isHost} />
+      <SharingBanner
+        code={meeting.code}
+        isHost={isHost}
+        isAnnotating={isAnnotating}
+        onAnnotatingChange={setIsAnnotating}
+      />
       <MicHealthBanner onOpenCheck={() => setIsCheckOpen(true)} />
 
       {/* Mobile browsers block autoplay after the tab was backgrounded;
@@ -428,7 +443,7 @@ function RoomShell({
 
       {/* Stage + side panel */}
       <div className="relative flex min-h-0 flex-1">
-        <Stage layout={layout} />
+        <Stage layout={layout} showOwnShare={isAnnotating} />
         <ReactionsOverlay reactions={reactions} />
         <HostRequestPrompt />
         {!isMobile && panel && (

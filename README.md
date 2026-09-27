@@ -29,6 +29,27 @@ nothing else changes.
 Sessions live in Upstash Redis (`REDIS_URL` / `REDIS_TOKEN`); the free tier is
 enough.
 
+### Trying screen-share host controls and annotations
+
+Open the meeting as the host in Chromium (Document Picture-in-Picture is
+Chromium desktop only) and as a guest in a second browser profile or an
+incognito window. Share a tab as the host: the floating window opens with
+per-person controls (mute, camera off, lower hand, remove) and "Mute
+everyone". The guest gets a pen button on the pinned share; the host sees
+the guest's ink after pressing **Annotate** in the sharing banner. One
+command covers the flow:
+
+```bash
+npx playwright test e2e/screen-share.spec.ts
+```
+
+Hosts can only turn a mic or camera *off*; turning it on is an "ask" the
+participant accepts. To allow true remote unmute instead, set
+`room: enable_remote_unmute: true` in `livekit.dev.yaml` (and "Allow remote
+unmute" in the LiveKit Cloud project settings). Kill switches:
+`NEXT_PUBLIC_MEETING_PIP_HOST_CONTROLS=0` and `NEXT_PUBLIC_MEETING_ANNOTATIONS=0`
+(build-time).
+
 ## Verification
 
 ```bash
