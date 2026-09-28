@@ -56,8 +56,13 @@ type AnnotationsContextValue = {
   isHost: boolean;
   /** Whether the local user may draw right now (host, or the room allows it). */
   canDraw: boolean;
-  /** Sends and echoes locally. Returns false when the message was too big to send. */
-  send: (message: OutgoingAnnotation) => boolean;
+  /**
+   * Sends and, unless `echo: false` (already echoed via `echo`), applies it
+   * locally. Returns false when the message was too big to send.
+   */
+  send: (message: OutgoingAnnotation, options?: { echo?: boolean }) => boolean;
+  /** Applies local ink now, without sending (pen and laser between flushes). */
+  echo: (message: OutgoingAnnotation) => void;
 };
 
 const AnnotationsContext = createContext<AnnotationsContextValue | null>(null);
@@ -167,32 +172,39 @@ function AnnotationsRoot({ children }: { children: ReactNode }) {
     if (dropped) logDrop(dropped, sender);
   });
 
-  const send = useCallback(
+  // The data channel does not echo: our own ink is applied locally.
+  const echo = useCallback(
     (message: OutgoingAnnotation) => {
-      const envelope = { v: PROTOCOL_VERSION, ...message } as Annotation;
-      const payload = encodeMessage(envelope);
-      const isLossy = LOSSY_KINDS.has(envelope.kind);
-      const cap = isLossy ? POINTS_MESSAGE_MAX_BYTES : MESSAGE_MAX_BYTES;
-      if (payload.byteLength > cap) return false;
-      // The data channel does not echo: apply our own ink locally.
-      store.apply(envelope, {
+      store.apply({ v: PROTOCOL_VERSION, ...message } as Annotation, {
         sender: localParticipant.identity,
         senderName: localParticipant.name || localParticipant.identity,
         now: performance.now(),
         isLocal: true,
         ...settingsRef.current,
       });
+    },
+    [localParticipant, store],
+  );
+
+  const send = useCallback(
+    (message: OutgoingAnnotation, options?: { echo?: boolean }) => {
+      const envelope = { v: PROTOCOL_VERSION, ...message } as Annotation;
+      const payload = encodeMessage(envelope);
+      const isLossy = LOSSY_KINDS.has(envelope.kind);
+      const cap = isLossy ? POINTS_MESSAGE_MAX_BYTES : MESSAGE_MAX_BYTES;
+      if (payload.byteLength > cap) return false;
+      if (options?.echo !== false) echo(message);
       void publish(payload, { reliable: !isLossy }).catch(() => {
         // Lossy by design; reliable kinds are retried by the transport.
       });
       return true;
     },
-    [localParticipant, publish, store],
+    [echo, publish],
   );
 
   const value = useMemo(
-    () => ({ store, localIdentity, hostIdentity, isHost, canDraw, send }),
-    [store, localIdentity, hostIdentity, isHost, canDraw, send],
+    () => ({ store, localIdentity, hostIdentity, isHost, canDraw, send, echo }),
+    [store, localIdentity, hostIdentity, isHost, canDraw, send, echo],
   );
 
   return (
