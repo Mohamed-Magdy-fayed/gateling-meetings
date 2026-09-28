@@ -5,17 +5,18 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "@/features/core/i18n/client";
 import { cn } from "@/lib/utils";
 import {
-  finishStroke,
   LASER_FADE_MS,
   normalizeCoordinate,
   POINTS_FLUSH_MS,
-  POINTS_PER_BATCH,
   type Point,
 } from "../protocol";
 import { type Box, contentBox, inkColour } from "./geometry";
-import type { Laser, Stroke } from "./store";
+import { InkRecorder } from "./ink-recorder";
+import { type Laser, laserFrame, type Stroke } from "./store";
 import { AnnotationToolbar, type Tool } from "./toolbar";
 import { useAnnotations, useAnnotationVersion } from "./use-annotations";
+
+type AnnotationsApi = NonNullable<ReturnType<typeof useAnnotations>>;
 
 type AnnotationLayerProps = {
   /** The share tile's `<video>`; null while the share is paused. */
@@ -162,9 +163,15 @@ export function AnnotationLayer({
           }}
         >
           <Ink strokes={snapshot.strokes} />
-          <Lasers lasers={snapshot.lasers} store={store} />
+          <Lasers lasers={snapshot.lasers} store={store} box={box} />
           {activeTool !== "none" && send && (
-            <PointerInput tool={activeTool} shareSid={shareSid} send={send} />
+            <PointerInput
+              key={shareSid}
+              tool={activeTool}
+              shareSid={shareSid}
+              send={send}
+              echo={annotations.echo}
+            />
           )}
         </div>
       )}
@@ -245,17 +252,25 @@ const StrokePath = memo(function StrokePath({ stroke }: { stroke: Stroke }) {
   );
 });
 
-/** Laser dots with a short fading trail and the sender's name. */
+/**
+ * Laser pointers: a head interpolated between samples on every frame,
+ * a fading polyline trail, and the sender's name. The head and label move
+ * with `transform` (compositor only). Rendered inside the `dir="ltr"` ink
+ * layer: the physical `left-0`/`translate-x` here are frame coordinates, not
+ * text direction — intentional, do not convert to logical properties.
+ */
 function Lasers({
   lasers,
   store,
+  box,
 }: {
   lasers: readonly Laser[];
   store: { expireLasers: (now: number) => boolean } | undefined;
+  box: Box;
 }) {
   const [now, setNow] = useState(() => performance.now());
   const hasLasers = lasers.length > 0;
-  // Animate the fade only while a pointer is visible.
+  // Animate only while a pointer is visible.
   useEffect(() => {
     if (!hasLasers || !store) return;
     let frame = requestAnimationFrame(function tick(time) {
@@ -268,46 +283,59 @@ function Lasers({
   return (
     <div className="pointer-events-none absolute inset-0">
       {lasers.map((laser) => {
+        const frame = laserFrame(laser.trail, now);
+        if (!frame) return null;
         const colour = inkColour(laser.owner);
-        const last = laser.trail.at(-1);
-        if (!last) return null;
-        const [x, y] = last.at;
-        const flip = x > 0.75;
+        const [x, y] = frame.head;
+        const opacity = Math.max(0, 1 - (now - frame.headT) / LASER_FADE_MS);
+        const trail = frame.due
+          .filter((entry) => now - entry.t < LASER_FADE_MS)
+          .map((entry) => `${entry.at[0]},${entry.at[1]}`);
+        trail.push(`${x},${y}`);
+        const position = `translate(${x * box.width}px, ${y * box.height}px)`;
         return (
-          <div key={laser.owner}>
-            {laser.trail.map((entry, index) => {
-              const age = Math.max(0, now - entry.t);
-              const opacity = Math.max(0, 1 - age / LASER_FADE_MS);
-              const isHead = index === laser.trail.length - 1;
-              return (
-                <span
-                  key={entry.t}
-                  className={cn(
-                    "absolute -translate-x-1/2 -translate-y-1/2 rounded-full shadow-[0_0_0_2px_rgb(0_0_0/0.6)]",
-                    isHead ? "size-3.5" : "size-2",
-                  )}
-                  style={{
-                    left: `${entry.at[0] * 100}%`,
-                    top: `${entry.at[1] * 100}%`,
-                    background: colour,
-                    opacity: isHead ? opacity : opacity * 0.5,
-                  }}
+          <div key={laser.owner} data-annotation-laser style={{ opacity }}>
+            {trail.length > 1 && (
+              <svg
+                className="absolute inset-0 size-full overflow-visible"
+                viewBox="0 0 1 1"
+                preserveAspectRatio="none"
+                aria-hidden
+              >
+                <polyline
+                  points={trail.join(" ")}
+                  fill="none"
+                  stroke={colour}
+                  strokeOpacity={0.5}
+                  strokeWidth={4}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  vectorEffect="non-scaling-stroke"
                 />
-              );
-            })}
+              </svg>
+            )}
             <span
-              className={cn(
-                "absolute -translate-y-1/2 whitespace-nowrap rounded-full border-2 bg-black/75 px-2 py-0.5 text-[0.6875rem] font-medium text-white shadow",
-                flip ? "-translate-x-[calc(100%+0.75rem)]" : "translate-x-3",
-              )}
+              className="absolute top-0 left-0 size-3.5 rounded-full shadow-[0_0_0_2px_rgb(0_0_0/0.6)] will-change-transform"
               style={{
-                left: `${x * 100}%`,
-                top: `${y * 100}%`,
-                borderColor: colour,
-                opacity: Math.max(0, 1 - (now - last.t) / LASER_FADE_MS),
+                transform: `${position} translate(-50%, -50%)`,
+                background: colour,
               }}
+            />
+            <span
+              className="absolute top-0 left-0 will-change-transform"
+              style={{ transform: position }}
             >
-              <bdi>{laser.name}</bdi>
+              <span
+                className={cn(
+                  "absolute -translate-y-1/2 whitespace-nowrap rounded-full border-2 bg-black/75 px-2 py-0.5 text-[0.6875rem] font-medium text-white shadow",
+                  x > 0.75
+                    ? "-translate-x-[calc(100%+0.75rem)]"
+                    : "translate-x-3",
+                )}
+                style={{ borderColor: colour }}
+              >
+                <bdi>{laser.name}</bdi>
+              </span>
             </span>
           </div>
         );
@@ -317,70 +345,55 @@ function Lasers({
 }
 
 /**
- * Turns pointer input into protocol messages: laser moves every
- * `POINTS_FLUSH_MS` when changed; pen points batched on the same clock,
- * then the whole simplified stroke as `stroke-end` on release.
+ * Pointer input → `InkRecorder`: ink is echoed locally on every move and
+ * sent in batches every `POINTS_FLUSH_MS`; see ink-recorder.ts.
  */
 function PointerInput({
   tool,
   shareSid,
   send,
+  echo,
 }: {
   tool: Exclude<Tool, "none">;
   shareSid: string;
-  send: NonNullable<ReturnType<typeof useAnnotations>>["send"];
+  send: AnnotationsApi["send"];
+  echo: AnnotationsApi["echo"];
 }) {
-  const laserRef = useRef<{ at: Point; sent: boolean } | null>(null);
-  const strokeRef = useRef<{
-    id: string;
-    points: Point[];
-    flushed: number;
-  } | null>(null);
-
-  const flush = useCallback(() => {
-    const laser = laserRef.current;
-    if (laser && !laser.sent) {
-      laser.sent = true;
-      send({ kind: "laser", shareSid, at: laser.at });
-    }
-    const stroke = strokeRef.current;
-    if (stroke && stroke.flushed < stroke.points.length) {
-      while (stroke.flushed < stroke.points.length) {
-        const batch = stroke.points.slice(
-          stroke.flushed,
-          stroke.flushed + POINTS_PER_BATCH,
-        );
-        stroke.flushed += batch.length;
-        send({ kind: "points", shareSid, strokeId: stroke.id, points: batch });
-      }
-    }
-  }, [send, shareSid]);
+  // The recorder lives as long as the tool; it reads the latest callbacks.
+  const outRef = useRef({ send, echo });
+  useEffect(() => {
+    outRef.current = { send, echo };
+  }, [send, echo]);
+  const [recorder] = useState(
+    () =>
+      new InkRecorder(shareSid, {
+        echo: (message) => outRef.current.echo(message),
+        send: (message, options) => outRef.current.send(message, options),
+        sendAndEcho: (message) => outRef.current.send(message),
+      }),
+  );
 
   useEffect(() => {
-    const id = setInterval(flush, POINTS_FLUSH_MS);
-    return () => clearInterval(id);
-  }, [flush]);
+    const id = setInterval(() => recorder.flush(), POINTS_FLUSH_MS);
+    return () => {
+      clearInterval(id);
+      recorder.penUp();
+      recorder.flush();
+    };
+  }, [recorder]);
 
-  function pointAt(event: React.PointerEvent<HTMLDivElement>): Point {
+  /** The move's coalesced samples (high-rate mice), in frame space. */
+  function samplesOf(event: React.PointerEvent<HTMLDivElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
-    return [
-      normalizeCoordinate((event.clientX - rect.left) / rect.width),
-      normalizeCoordinate((event.clientY - rect.top) / rect.height),
-    ];
-  }
-
-  function endStroke() {
-    const stroke = strokeRef.current;
-    if (!stroke) return;
-    flush();
-    strokeRef.current = null;
-    // Too big to send (never at these caps) — the partial points stand.
-    send({
-      kind: "stroke-end",
-      shareSid,
-      strokeId: stroke.id,
-      points: finishStroke(stroke.points),
-    });
+    const native = event.nativeEvent;
+    const events = native.getCoalescedEvents?.() ?? [];
+    return (events.length > 0 ? events : [native]).map((sample) => ({
+      at: [
+        normalizeCoordinate((sample.clientX - rect.left) / rect.width),
+        normalizeCoordinate((sample.clientY - rect.top) / rect.height),
+      ] as Point,
+      t: sample.timeStamp,
+    }));
   }
 
   return (
@@ -389,35 +402,20 @@ function PointerInput({
       onPointerDown={(event) => {
         if (event.button !== 0) return;
         event.currentTarget.setPointerCapture(event.pointerId);
-        const at = pointAt(event);
-        if (tool === "pen") {
-          strokeRef.current = {
-            id: crypto.randomUUID(),
-            points: [at],
-            flushed: 0,
-          };
-        } else {
-          laserRef.current = { at, sent: false };
-        }
+        const samples = samplesOf(event);
+        const at = samples.at(-1)?.at;
+        if (!at) return;
+        if (tool === "pen") recorder.penDown(at);
+        else recorder.laserMove(samples);
       }}
       onPointerMove={(event) => {
-        const at = pointAt(event);
-        if (tool === "laser") {
-          const previous = laserRef.current?.at;
-          if (!previous || previous[0] !== at[0] || previous[1] !== at[1]) {
-            laserRef.current = { at, sent: false };
-          }
-          return;
-        }
-        const stroke = strokeRef.current;
-        if (!stroke) return;
-        const last = stroke.points.at(-1);
-        if (last && last[0] === at[0] && last[1] === at[1]) return;
-        stroke.points.push(at);
+        const samples = samplesOf(event);
+        if (tool === "laser") recorder.laserMove(samples);
+        else recorder.penMove(samples.map((sample) => sample.at));
       }}
-      onPointerUp={endStroke}
-      onPointerCancel={endStroke}
-      onLostPointerCapture={endStroke}
+      onPointerUp={() => recorder.penUp()}
+      onPointerCancel={() => recorder.penUp()}
+      onLostPointerCapture={() => recorder.penUp()}
     />
   );
 }

@@ -2,7 +2,9 @@ import {
   type Annotation,
   createRateLimiter,
   LASER_FADE_MS,
+  LASER_SAMPLES_MAX,
   LOSSY_KINDS,
+  POINTS_FLUSH_MS,
   type Point,
   STROKES_PER_SENDER,
 } from "../protocol";
@@ -62,7 +64,57 @@ export type ApplyContext = {
   isLocal?: boolean;
 };
 
-const TRAIL_LENGTH = 8;
+/** Two flushes' worth of samples, so the trail spans the replay delay. */
+const TRAIL_LENGTH = LASER_SAMPLES_MAX * 2;
+
+type TrailEntry = Laser["trail"][number];
+
+/**
+ * A laser message as trail entries. With `samples`, positions are replayed
+ * on the receiver's clock (spaced as they were drawn, starting now or where
+ * the previous batch ends), which turns 40 ms jumps into movement. Without
+ * them (older clients) it is the single `at` point, now.
+ */
+function laserEntries(
+  message: Extract<Annotation, { kind: "laser" }>,
+  now: number,
+  lastT: number | undefined,
+): TrailEntry[] {
+  const samples = message.samples;
+  if (!samples) return [{ at: message.at, t: now }];
+  // Never schedule behind the previous batch, never lag by more than a flush.
+  const start = Math.min(Math.max(now, lastT ?? now), now + POINTS_FLUSH_MS);
+  const first = samples[0]?.[2] ?? 0;
+  return samples.map(([x, y, dt]) => ({ at: [x, y], t: start + dt - first }));
+}
+
+/**
+ * What to draw at `now`: the trail entries already due, and the head
+ * interpolated toward the next scheduled entry. Null when nothing is due.
+ */
+export function laserFrame(
+  trail: readonly TrailEntry[],
+  now: number,
+): { head: Point; headT: number; due: readonly TrailEntry[] } | null {
+  let index = -1;
+  for (let i = 0; i < trail.length; i++) {
+    if ((trail[i] as TrailEntry).t <= now) index = i;
+  }
+  if (index === -1) return null;
+  const due = trail.slice(0, index + 1);
+  const a = trail[index] as TrailEntry;
+  const b = trail[index + 1];
+  if (!b || b.t <= a.t) return { head: a.at, headT: a.t, due };
+  const f = Math.min(1, (now - a.t) / (b.t - a.t));
+  return {
+    head: [
+      a.at[0] + (b.at[0] - a.at[0]) * f,
+      a.at[1] + (b.at[1] - a.at[1]) * f,
+    ],
+    headT: now,
+    due,
+  };
+}
 
 class ShareInk {
   strokes = new Map<string, Stroke>();
@@ -118,7 +170,7 @@ export class AnnotationStore {
           ...(current?.trail ?? []).filter(
             (entry) => ctx.now - entry.t < LASER_FADE_MS,
           ),
-          { at: message.at, t: ctx.now },
+          ...laserEntries(message, ctx.now, current?.trail.at(-1)?.t),
         ].slice(-TRAIL_LENGTH);
         ink.lasers.set(ctx.sender, {
           owner: ctx.sender,
