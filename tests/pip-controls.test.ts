@@ -128,10 +128,10 @@ describe("WaitingDispatcher", () => {
       () => new Promise<void>((done) => (resolve = done)),
     );
     const call = vi.fn(async () => {});
-    expect(await d.run({ kind: "one", id: "b" }, call)).toBe(false);
+    expect(await d.run({ kind: "one", id: "b" }, call)).toBe("ignored");
     expect(call).not.toHaveBeenCalled();
     resolve();
-    expect(await first).toBe(true);
+    expect(await first).toBe("done");
     expect(d.isBusy).toBe(false);
   });
 
