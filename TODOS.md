@@ -8,6 +8,18 @@ Deferred from the /autoplan review of "host controls in the sharing popup + pres
   - Why: hosts presenting in-tab or reading notes still want a people view with moderation.
   - Context: `use-picture-in-picture.ts` ties the window's lifetime to `active` (screen share on). Needs an explicit open/close independent of sharing.
 
+- **Raise hand / reactions from the floating window** (P3, human: S / CC: S)
+  - Why: presenters occasionally need it without going back to the meeting tab. Deferred from the share-controls plan (2026-09-27) as not requested.
+  - Context: `floating-grid.tsx` footer; add H to `media-shortcuts.ts` bound to the floating window's document.
+
+- **Opt-in OS notification on the first knock** (P3, human: S / CC: S)
+  - Why: hosts working in another app with the meeting tab hidden miss knocks; the tab badge only helps if they look at the tab strip.
+  - Context: `use-knock-cues.ts`; Notifications API permission asked from a user gesture, count-only text.
+
+- **Lobby bypass for invited / same-org participants** (P3, human: M / CC: S)
+  - Why: fewer knocks at the source during presentations.
+  - Context: `join-router.ts` decides waiting vs. admit; needs a meeting setting.
+
 - **Late-joiner annotation replay** (P3, human: M / CC: S)
   - Why: people who join mid-presentation don't see existing ink.
   - Context: the sharer (or host) answers an `annotation-sync` request with current strokes from `annotations/store.ts`; needs size limits and a new protocol kind.

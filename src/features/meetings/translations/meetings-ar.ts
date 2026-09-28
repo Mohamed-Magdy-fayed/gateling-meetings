@@ -287,6 +287,13 @@ export const meetingsAr = {
     admit: "قبول",
     deny: "رفض",
     admitAll: "قبول الجميع",
+    review: "مراجعة",
+    hideList: "إخفاء",
+    guestFallback: "ضيف",
+    actionFailed: "لم ينجح ذلك. حاول مرة أخرى.",
+    notHost: "المضيف وحده يمكنه قبول الأشخاص.",
+    offline: "أنت غير متصل. تحقق من اتصالك وحاول مرة أخرى.",
+    tabBadge: "({count})",
     queueTitle: dt("{count:plural}", {
       plural: {
         count: {
@@ -299,6 +306,12 @@ export const meetingsAr = {
         },
       },
     }),
+  },
+  pip: {
+    permissionHint: "اسمح بذلك من علامة تبويب الاجتماع.",
+    backToTab: "العودة إلى الاجتماع",
+    actionFailed: "لم ينجح ذلك. حاول مرة أخرى.",
+    dismiss: "إغلاق",
   },
   host: {
     settings: "الإعدادات",

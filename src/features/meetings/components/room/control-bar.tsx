@@ -40,6 +40,7 @@ import { classifyMediaError } from "@/features/meetings/lib/media";
 import { cn } from "@/lib/utils";
 import { DevicePickerMenu } from "./device-picker-menu";
 import { useHostAskBadge } from "./host-request-prompt";
+import { handleMediaShortcut, isShortcutKey } from "./media-shortcuts";
 import { ReactionPicker } from "./reactions";
 import { useLocalHandRaise } from "./use-hand-raise";
 
@@ -105,21 +106,15 @@ export function ControlBar({
     captureOptions: { audio: true, selfBrowserSurface: "include" },
   });
 
-  // Keyboard shortcuts: M (mic) / V (camera) — but never while typing.
+  // Keyboard shortcuts: M (mic) / V (camera) / H (hand) — never while typing.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      const target = event.target as HTMLElement | null;
-      if (
-        event.metaKey ||
-        event.ctrlKey ||
-        event.altKey ||
-        target?.closest("input, textarea, [contenteditable=true]")
-      ) {
-        return;
-      }
-      if (event.key === "m" || event.key === "M") mic.toggle();
-      if (event.key === "v" || event.key === "V") camera.toggle();
-      if (event.key === "h" || event.key === "H") hand.toggle();
+      const toggles = {
+        mic: { toggle: mic.toggle },
+        camera: { toggle: camera.toggle },
+      };
+      if (handleMediaShortcut(event, toggles)) return;
+      if (isShortcutKey(event, "h")) hand.toggle();
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);

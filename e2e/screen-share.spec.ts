@@ -3,10 +3,14 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 import {
   clickInPip,
+  expectInRoom,
   joinAsGuest,
   joinRoom,
+  keyInPip,
+  pipPressed,
   pipText,
   routeTrpcError,
+  setDocumentHidden,
   signIn,
   submitPreJoin,
 } from "./helpers";
@@ -220,6 +224,78 @@ test("a failed host action shows inline in the floating window", async ({
   await routeTrpcError(host, "host.muteMicrophone");
   await clickInPip(host, /^Mute .*Guest Gina/);
   await expect.poll(() => pipText(host)).toMatch(/didn.t work[\s\S]*Retry/);
+});
+
+/**
+ * A second guest knocks while the host shares. The e2e share is the entire
+ * (virtual) screen, so the strip shows only the count — the floating window
+ * is captured too — and names appear after "Review".
+ */
+async function knockWhileSharing(
+  newPage: () => Promise<Page>,
+  host: Page,
+  guest: Page,
+) {
+  const knocker = await newPage();
+  await knocker.goto(guest.url());
+  await submitPreJoin(knocker, "Knocker Kim");
+  await expect
+    .poll(() => pipText(host), { timeout: 15_000 })
+    .toMatch(/1 person waiting/);
+  expect(await pipText(host)).not.toMatch(/Knocker Kim/);
+  await clickInPip(host, /^review$/i);
+  await expect.poll(() => pipText(host)).toMatch(/Knocker Kim/);
+  return knocker;
+}
+
+test("host admits a knock from the floating window", async ({ newPage }) => {
+  const { host, guest } = await hostSharingWithGuest(newPage);
+  const knocker = await knockWhileSharing(newPage, host, guest);
+
+  await clickInPip(host, /^admit$/i);
+  await expectInRoom(knocker);
+  await expect.poll(() => pipText(host)).not.toMatch(/Knocker Kim/);
+  // The opener's toast for that knock is gone too.
+  await expect(host.getByText(/Knocker Kim wants to join/)).toHaveCount(0);
+});
+
+test("a failed admit shows inline in the strip and can be retried", async ({
+  newPage,
+}) => {
+  const { host, guest } = await hostSharingWithGuest(newPage);
+  await knockWhileSharing(newPage, host, guest);
+  await routeTrpcError(host, "host.admit");
+  await clickInPip(host, /^admit$/i);
+  await expect.poll(() => pipText(host)).toMatch(/didn.t work/);
+  // The row is back and its buttons are enabled for a retry.
+  await clickInPip(host, /^admit$/i);
+});
+
+test("the sharer toggles their own mic from the floating window", async ({
+  newPage,
+}) => {
+  const { host } = await hostSharingWithGuest(newPage);
+  const micButton = /^(mute|unmute) \(m\)$/i;
+  const before = await pipPressed(host, micButton);
+  expect(before).not.toBeNull();
+
+  await clickInPip(host, micButton);
+  await expect.poll(() => pipPressed(host, micButton)).not.toBe(before);
+
+  // M in the floating window flips it back; Ctrl+M does nothing.
+  await keyInPip(host, "m", { ctrlKey: true });
+  await expect.poll(() => pipPressed(host, micButton)).not.toBe(before);
+  await keyInPip(host, "m");
+  await expect.poll(() => pipPressed(host, micButton)).toBe(before);
+});
+
+test("a knock badges the hidden meeting tab's title", async ({ newPage }) => {
+  const { host, guest } = await hostSharingWithGuest(newPage);
+  await setDocumentHidden(host, true);
+  await knockWhileSharing(newPage, host, guest);
+  await expect.poll(() => host.title()).toMatch(/^⁨\(1\)⁩ /);
+  await setDocumentHidden(host, false);
+  await expect.poll(() => host.title()).not.toMatch(/\(1\)/);
 });
 
 /** Drags a pen stroke across the middle of the pinned share. */

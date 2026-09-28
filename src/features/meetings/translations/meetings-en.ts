@@ -267,11 +267,24 @@ export const meetingsEn = {
     admit: "Admit",
     deny: "Deny",
     admitAll: "Admit all",
+    review: "Review",
+    hideList: "Hide",
+    guestFallback: "Guest",
+    actionFailed: "That didn't work. Try again.",
+    notHost: "Only the host can let people in.",
+    offline: "You're offline. Check your connection and try again.",
+    tabBadge: "({count})",
     queueTitle: dt("{count:plural}", {
       plural: {
         count: { one: "{?} person waiting", other: "{?} people waiting" },
       },
     }),
+  },
+  pip: {
+    permissionHint: "Allow it in the meeting tab.",
+    backToTab: "Back to the meeting",
+    actionFailed: "That didn't work. Try again.",
+    dismiss: "Dismiss",
   },
   host: {
     settings: "Settings",

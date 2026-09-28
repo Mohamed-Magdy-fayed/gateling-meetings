@@ -17,6 +17,7 @@ import { PARTICIPANT_ATTRIBUTE_HAND_RAISED } from "@/integrations/livekit/attrib
 import { cn } from "@/lib/utils";
 import { FloatingTileActions } from "./floating-tile-actions";
 import { ParticipantTile } from "./participant-tile";
+import { SelfMediaButtons } from "./self-media-buttons";
 import {
   BannerButton,
   PauseButton,
@@ -24,6 +25,7 @@ import {
   useSharePause,
 } from "./share-controls";
 import { useHostMuteAll } from "./use-host-participant-actions";
+import { WaitingQueue, type WaitingQueueState } from "./waiting-queue";
 
 /** Above this many remote tiles the grid scrolls instead of shrinking. */
 const SCROLL_AFTER = 4;
@@ -82,6 +84,10 @@ type FloatingGridProps = {
   isHost: boolean;
   /** Extra footer content (the sharer's "people annotating" notice). */
   footerExtra?: ReactNode;
+  /** Host only: the room's one waiting-queue poller, shown as a strip. */
+  waitingQueue?: WaitingQueueState;
+  /** A whole-screen share captures this window: keep knockers' names hidden. */
+  isMonitorShare?: boolean;
 };
 
 /**
@@ -90,7 +96,13 @@ type FloatingGridProps = {
  * so the sharer never has to come back to the meeting tab to use them. The
  * host also gets per-person controls on each tile and "Mute all".
  */
-export function FloatingGrid({ code, isHost, footerExtra }: FloatingGridProps) {
+export function FloatingGrid({
+  code,
+  isHost,
+  footerExtra,
+  waitingQueue,
+  isMonitorShare = false,
+}: FloatingGridProps) {
   const { t } = useTranslation();
   // Re-render on attribute changes (raised hands reorder the grid).
   useParticipants();
@@ -107,9 +119,21 @@ export function FloatingGrid({ code, isHost, footerExtra }: FloatingGridProps) {
   const hands = remote.filter((track) =>
     isHandRaised(track.participant),
   ).length;
+  // Keys pressed in the floating window go to its own document.
+  const [root, setRoot] = useState<HTMLDivElement | null>(null);
 
   return (
-    <div className="meeting-room dark flex h-svh flex-col gap-1.5 bg-neutral-900 p-1.5 text-foreground">
+    <div
+      ref={setRoot}
+      className="meeting-room dark flex h-svh flex-col gap-1.5 bg-neutral-900 p-1.5 text-foreground"
+    >
+      {hostControls && waitingQueue && (
+        <WaitingQueue
+          {...waitingQueue}
+          variant="compact"
+          hideNames={isMonitorShare}
+        />
+      )}
       <div
         className={cn(
           "grid min-h-0 flex-1 grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-1.5",
@@ -151,25 +175,43 @@ export function FloatingGrid({ code, isHost, footerExtra }: FloatingGridProps) {
           );
         })}
       </div>
-      <div
-        className={cn(
-          "flex shrink-0 flex-wrap items-center gap-2 text-xs",
-          pause.isPaused ? "text-warning" : "text-primary",
+      <SelfMediaButtons pipDocument={root?.ownerDocument ?? null}>
+        {({ buttons, notice }) => (
+          <>
+            {notice}
+            {/* One row, three groups; flex order mirrors in RTL. */}
+            <div
+              className={cn(
+                "flex shrink-0 items-center gap-1.5 text-xs",
+                pause.isPaused ? "text-warning" : "text-primary",
+              )}
+            >
+              <span className="flex items-center gap-1">{buttons}</span>
+              <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                {hostControls && remote.length > 0 && (
+                  <MuteAllButton code={code} />
+                )}
+                {hostControls && hands > 0 && (
+                  <span
+                    className="flex items-center gap-1 text-warning"
+                    title={t("meetings.host.handCount", { count: hands })}
+                  >
+                    <HandIcon className="size-3.5" aria-hidden />
+                    <span className="max-[479px]:sr-only">
+                      {t("meetings.host.handCount", { count: hands })}
+                    </span>
+                  </span>
+                )}
+                {footerExtra}
+              </span>
+              <span className="flex items-center gap-1 border-s border-white/15 ps-1.5">
+                <PauseButton pause={pause} compact />
+                <StopButton compact />
+              </span>
+            </div>
+          </>
         )}
-      >
-        {hostControls && remote.length > 0 && <MuteAllButton code={code} />}
-        {hostControls && hands > 0 && (
-          <span className="flex items-center gap-1 text-warning">
-            <HandIcon className="size-3.5" aria-hidden />
-            {t("meetings.host.handCount", { count: hands })}
-          </span>
-        )}
-        {footerExtra}
-        <span className="ms-auto flex items-center gap-2">
-          <PauseButton pause={pause} />
-          <StopButton />
-        </span>
-      </div>
+      </SelfMediaButtons>
     </div>
   );
 }
@@ -178,10 +220,16 @@ function MuteAllButton({ code }: { code: string }) {
   const { t } = useTranslation();
   const muteAll = useHostMuteAll(code);
   return (
-    <span className="flex items-center gap-2 border-e border-white/15 pe-2 text-neutral-200">
-      <BannerButton onClick={muteAll.muteAll} disabled={muteAll.isPending}>
+    <span className="flex min-w-0 items-center gap-2 text-neutral-200">
+      <BannerButton
+        onClick={muteAll.muteAll}
+        disabled={muteAll.isPending}
+        title={t("meetings.host.muteAll")}
+      >
         <MicOffIcon className="size-3.5" aria-hidden />
-        {t("meetings.host.muteAll")}
+        <span className="max-[479px]:sr-only">
+          {t("meetings.host.muteAll")}
+        </span>
       </BannerButton>
       {muteAll.status && (
         <span role="status" className="text-warning">
