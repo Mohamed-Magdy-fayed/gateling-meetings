@@ -12,7 +12,7 @@ import { HandIcon, MicOffIcon, PenLineIcon, UsersIcon } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 
 import { useTranslation } from "@/features/core/i18n/client";
-import { meetingFlags } from "@/features/meetings/lib/meeting-flags";
+import { useMeetingFeatures } from "@/features/meetings/components/meeting-features";
 import { PARTICIPANT_ATTRIBUTE_HAND_RAISED } from "@/integrations/livekit/attributes";
 import { cn } from "@/lib/utils";
 import { FloatingTileActions } from "./floating-tile-actions";
@@ -116,14 +116,15 @@ export function FloatingGrid({
   const self = cameras.find((track) => track.participant.isLocal);
   const tracks = self ? [...remote, self] : remote;
   const pause = useSharePause();
-  const hostControls = isHost && meetingFlags.pipHostControls;
+  const features = useMeetingFeatures();
+  const hostControls = isHost && features.pipHostControls;
   const hands = remote.filter((track) =>
     isHandRaised(track.participant),
   ).length;
   // Keys pressed in the floating window go to its own document.
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const [view, setView] = useState<"people" | "annotate">("people");
-  const isAnnotating = meetingFlags.pipAnnotateAvailable && view === "annotate";
+  const isAnnotating = features.pipAnnotateAvailable && view === "annotate";
 
   return (
     <div
@@ -199,7 +200,7 @@ export function FloatingGrid({
             >
               <span className="flex items-center gap-1">{buttons}</span>
               <span className="flex min-w-0 flex-1 items-center gap-1.5">
-                {meetingFlags.pipAnnotateAvailable && (
+                {features.pipAnnotateAvailable && (
                   <ViewSwitch view={view} onChange={setView} hands={hands} />
                 )}
                 {hostControls && remote.length > 0 && (

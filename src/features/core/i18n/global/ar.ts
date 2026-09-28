@@ -32,6 +32,7 @@ export default {
       account: "الحساب",
       organization: "المؤسسة",
       billing: "الفوترة",
+      features: "الميزات",
       integrations: "التكاملات",
     },
   },

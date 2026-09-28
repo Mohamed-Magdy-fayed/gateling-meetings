@@ -6,7 +6,9 @@ import { notFound, redirect } from "next/navigation";
 import { env } from "@/data/env/server";
 import { getCurrentUser } from "@/features/core/auth/nextjs/currentUser";
 import { MeetingClient } from "@/features/meetings/components/meeting-client";
+import { MeetingFeaturesProvider } from "@/features/meetings/components/meeting-features";
 import { normalizeMeetingCode } from "@/features/meetings/lib/meeting-code";
+import { getMeetingFeatures } from "@/features/meetings/server/meeting-features";
 import {
   RETURN_COOKIE_NAME,
   readReturnTarget,
@@ -50,10 +52,12 @@ export default async function MeetingPage({
     params,
     searchParams,
   ]);
-  const [meeting, user, cookieStore] = await Promise.all([
+  const [meeting, user, cookieStore, features] = await Promise.all([
     loadMeeting(code),
     getCurrentUser(),
     cookies(),
+    // Platform switches (Settings → Features), read fresh on every load.
+    getMeetingFeatures(),
   ]);
   // Set by /sso/join when the sending system asked for the person back.
   const returnTarget = env.JWT_SECRET_KEY
@@ -65,19 +69,23 @@ export default async function MeetingPage({
     : null;
 
   return (
-    <MeetingClient
-      meeting={meeting}
-      viewer={{
-        defaultName: user?.name ?? "",
-        isSignedIn: user != null,
-        // `?name=` comes from a participant SSO link: the sending system
-        // already knows who this is, so the field is filled in for them.
-        presetName: typeof name === "string" ? name.slice(0, 64) : null,
-      }}
-      inviteToken={typeof invite === "string" ? invite : null}
-      returnTarget={
-        returnTarget ? { url: returnTarget.url, name: returnTarget.name } : null
-      }
-    />
+    <MeetingFeaturesProvider features={features}>
+      <MeetingClient
+        meeting={meeting}
+        viewer={{
+          defaultName: user?.name ?? "",
+          isSignedIn: user != null,
+          // `?name=` comes from a participant SSO link: the sending system
+          // already knows who this is, so the field is filled in for them.
+          presetName: typeof name === "string" ? name.slice(0, 64) : null,
+        }}
+        inviteToken={typeof invite === "string" ? invite : null}
+        returnTarget={
+          returnTarget
+            ? { url: returnTarget.url, name: returnTarget.name }
+            : null
+        }
+      />
+    </MeetingFeaturesProvider>
   );
 }

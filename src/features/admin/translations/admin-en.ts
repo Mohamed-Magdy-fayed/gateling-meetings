@@ -9,6 +9,27 @@ export const adminEn = {
     users: "Users",
   },
   search: "Search by name or email…",
+  features: {
+    title: "Meeting features",
+    lead: "Platform-wide switches for everyone's meetings. Changes apply to rooms opened after you flip them — people already in a meeting keep what they had until they rejoin.",
+    experimental: "Experimental",
+    saveFailed: "Couldn't save that change. It was switched back.",
+    annotations: {
+      label: "Screen-share annotations",
+      description:
+        "Laser pointer and pen on shared screens, inside the meeting page. Hosts can still turn it off per meeting.",
+    },
+    pipHostControls: {
+      label: "Host controls in the floating window",
+      description:
+        "Mute, remove and admit people from the floating window while presenting.",
+    },
+    pipAnnotate: {
+      label: "Annotate from the floating window",
+      description:
+        "Lets presenters point and draw on their own share from the floating window. The ink shows for viewers, not over your real screen — a browser can't draw on top of other apps.",
+    },
+  },
   organizations: {
     empty: "No organizations match.",
     name: "Organization",

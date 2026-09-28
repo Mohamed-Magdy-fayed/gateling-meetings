@@ -14,7 +14,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { meetingFlags } from "@/features/meetings/lib/meeting-flags";
 import { setMediaSessionAction } from "./media-session";
 
 /** Document Picture-in-Picture (Chromium 116+) isn't in TypeScript's DOM lib yet. */
@@ -38,8 +37,8 @@ declare global {
 export type PipMode = "document" | "video";
 
 // Chosen once, at open: bigger when the annotate view is available.
-const PIP_WIDTH = meetingFlags.pipAnnotateAvailable ? 480 : 360;
-const PIP_HEIGHT = meetingFlags.pipAnnotateAvailable ? 360 : 240;
+const PIP_SIZE = { width: 360, height: 240 };
+const PIP_SIZE_LARGE = { width: 480, height: 360 };
 
 function detectMode(): PipMode | null {
   if (window.documentPictureInPicture) return "document";
@@ -74,6 +73,8 @@ function adoptDocumentChrome(target: Document) {
 }
 
 type PictureInPictureOptions = {
+  /** Open at 480×360 instead of 360×240 (room for the annotate view). */
+  large?: boolean;
   /** While true the window may be open; when it flips false it is closed. */
   active: boolean;
 };
@@ -91,7 +92,10 @@ type PictureInPictureOptions = {
  *   away mid-call, which invokes the `enterpictureinpicture` media-session
  *   action (Chromium desktop) — that handler is allowed to open a window.
  */
-export function usePictureInPicture({ active }: PictureInPictureOptions) {
+export function usePictureInPicture({
+  active,
+  large = false,
+}: PictureInPictureOptions) {
   // Detected after mount: the server render has no `window`.
   const [mode, setMode] = useState<PipMode | null>(null);
   useEffect(() => setMode(detectMode()), []);
@@ -108,8 +112,7 @@ export function usePictureInPicture({ active }: PictureInPictureOptions) {
       const controller = window.documentPictureInPicture;
       if (!controller || controller.window) return;
       const win = await controller.requestWindow({
-        width: PIP_WIDTH,
-        height: PIP_HEIGHT,
+        ...(large ? PIP_SIZE_LARGE : PIP_SIZE),
       });
       adoptDocumentChrome(win.document);
       win.addEventListener("pagehide", () => setPipWindow(null), {
@@ -125,7 +128,7 @@ export function usePictureInPicture({ active }: PictureInPictureOptions) {
       if (document.pictureInPictureElement === video) return;
       await video.requestPictureInPicture();
     }
-  }, [mode, video]);
+  }, [mode, video, large]);
 
   const close = useCallback(() => {
     window.documentPictureInPicture?.window?.close();

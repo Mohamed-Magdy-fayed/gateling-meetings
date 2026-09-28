@@ -24,6 +24,8 @@ export default async function SettingsLayout({ children }: PropsWithChildren) {
     current.isAdmin || current.role === "owner" || current.role === "admin";
   const tabs: SettingsTabKey[] = ["account", "organization", "billing"];
   if (canManage) tabs.push("integrations");
+  // Platform-wide switches: the operator (ADMIN_EMAILS) only.
+  if (current.isAdmin) tabs.push("features");
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
