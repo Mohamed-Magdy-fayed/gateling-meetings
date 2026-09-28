@@ -26,7 +26,7 @@ import {
 import { toast } from "sonner";
 
 import { useTranslation } from "@/features/core/i18n/client";
-import { meetingFlags } from "@/features/meetings/lib/meeting-flags";
+import { useMeetingFeatures } from "@/features/meetings/components/meeting-features";
 import { useHostIdentity } from "../host-identity";
 import {
   ANNOTATION_TOPIC,
@@ -87,7 +87,8 @@ function useDropLogger() {
  * from it. With the kill switch off it renders only its children.
  */
 export function AnnotationsProvider({ children }: { children: ReactNode }) {
-  if (!meetingFlags.annotations) return children;
+  const { annotations } = useMeetingFeatures();
+  if (!annotations) return children;
   return <AnnotationsRoot>{children}</AnnotationsRoot>;
 }
 

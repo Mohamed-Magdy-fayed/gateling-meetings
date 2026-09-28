@@ -20,6 +20,7 @@ import { createPortal } from "react-dom";
 import { toast } from "sonner";
 
 import { useTranslation } from "@/features/core/i18n/client";
+import { useMeetingFeatures } from "@/features/meetings/components/meeting-features";
 import { cn } from "@/lib/utils";
 import {
   AnnotateToggle,
@@ -67,7 +68,11 @@ export function SharingBanner({
   )?.track;
   const isMonitorShare =
     shareTrack?.mediaStreamTrack.getSettings().displaySurface === "monitor";
-  const pip = usePictureInPicture({ active: isScreenShareEnabled });
+  const { pipAnnotateAvailable } = useMeetingFeatures();
+  const pip = usePictureInPicture({
+    active: isScreenShareEnabled,
+    large: pipAnnotateAvailable,
+  });
   const pause = useSharePause();
 
   if (!isScreenShareEnabled) return null;

@@ -32,6 +32,7 @@ export default {
       account: "Account",
       organization: "Organization",
       billing: "Billing",
+      features: "Features",
       integrations: "Integrations",
     },
   },

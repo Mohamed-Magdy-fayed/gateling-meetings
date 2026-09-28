@@ -10,7 +10,8 @@ export type SettingsTabKey =
   | "account"
   | "organization"
   | "billing"
-  | "integrations";
+  | "integrations"
+  | "features";
 
 type SettingsNavProps = {
   /** Which tabs this person may open; the layout decides from role + plan. */
@@ -22,6 +23,7 @@ const HREFS: Record<SettingsTabKey, string> = {
   organization: "/settings/organization",
   billing: "/settings/billing",
   integrations: "/settings/integrations",
+  features: "/settings/features",
 };
 
 /** Underline tabs across the settings pages, the same shape as the admin nav. */

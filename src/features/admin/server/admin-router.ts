@@ -12,6 +12,11 @@ import {
 } from "@/drizzle/schema";
 import { applyPlanGrant } from "@/features/billing/server/grants";
 import { normalizeEmail } from "@/features/core/auth/core/helpers";
+import { meetingFeaturesSchema } from "@/features/meetings/lib/meeting-flags";
+import {
+  getMeetingFeatures,
+  setMeetingFeatures,
+} from "@/features/meetings/server/meeting-features";
 import { adminProcedure, createTRPCRouter } from "@/integrations/trpc/init";
 import {
   grantIdSchema,
@@ -29,6 +34,16 @@ const RECENT_BILLING_EVENTS = 30;
  * an admin.
  */
 export const adminRouter = createTRPCRouter({
+  /** Platform-wide meeting switches (Settings → Features). */
+  features: createTRPCRouter({
+    get: adminProcedure.query(() => getMeetingFeatures()),
+    set: adminProcedure
+      .input(meetingFeaturesSchema)
+      .mutation(async ({ ctx, input }) => {
+        await setMeetingFeatures(input, ctx.session.user.email ?? "admin");
+        return input;
+      }),
+  }),
   organizations: createTRPCRouter({
     list: adminProcedure.input(searchSchema).query(async ({ ctx, input }) => {
       const q = input.query ? `%${input.query}%` : null;

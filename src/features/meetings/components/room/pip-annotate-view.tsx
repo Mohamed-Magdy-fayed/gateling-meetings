@@ -14,7 +14,7 @@ import { useSharePause } from "./share-controls";
 const hintSeen = new Set<string>();
 
 /**
- * Experimental (`meetingFlags.pipAnnotateAvailable`): the presenter's own
+ * Experimental (`pipAnnotateAvailable`, Settings → Features): the presenter's own
  * share inside the floating window, with the regular annotation layer on
  * top, so they can see everyone's ink and point or draw without going back
  * to the meeting tab. Drawing over the real desktop is not possible from a
