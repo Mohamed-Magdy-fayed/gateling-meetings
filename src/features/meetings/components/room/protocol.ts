@@ -63,6 +63,10 @@ export const STROKE_MAX_POINTS = 400;
 export const MESSAGE_MAX_BYTES = 12 * 1024;
 export const STROKES_PER_SENDER = 50;
 export const LASER_FADE_MS = 1_500;
+/** Pen input keeps a point only this far (normalized) from the last kept one. */
+export const THIN_MIN_DISTANCE = 0.002;
+/** Laser positions sampled between two flushes, replayed by the receiver. */
+export const LASER_SAMPLES_MAX = 8;
 /** Lossy kinds only: burst 2x and refill 1.5x the per-second flush rate. */
 export const BUCKET_REFILL_PER_SECOND = (1_000 / POINTS_FLUSH_MS) * 1.5;
 export const BUCKET_BURST = (1_000 / POINTS_FLUSH_MS) * 2;
@@ -100,8 +104,23 @@ export type Point = [number, number];
 const shareSid = z.string().min(1).max(64);
 const strokeId = z.string().min(1).max(64);
 
+/** `[x, y, dtMs]`: a laser position and its time after the batch's first sample. */
+const laserSample = z.tuple([
+  coordinate,
+  coordinate,
+  z.number().int().min(0).max(1_000),
+]);
+export type LaserSample = [number, number, number];
+
 export const annotationSchema = z.discriminatedUnion("kind", [
-  z.object({ v: version, kind: z.literal("laser"), shareSid, at: point }),
+  z.object({
+    v: version,
+    kind: z.literal("laser"),
+    shareSid,
+    at: point,
+    // Optional so older clients' single-point messages still decode.
+    samples: z.array(laserSample).min(1).max(LASER_SAMPLES_MAX).optional(),
+  }),
   z.object({
     v: version,
     kind: z.literal("points"),
@@ -222,8 +241,39 @@ export function simplify(points: Point[], tolerance = RDP_TOLERANCE): Point[] {
   return points.filter((_, i) => keep[i]);
 }
 
-/** The stroke as sent in `stroke-end`: simplified, then capped. */
+/**
+ * Appends to a stroke only the `next` points at least `THIN_MIN_DISTANCE`
+ * from the last kept one. Returns just the newly kept points, so the same
+ * list feeds the local echo, the `points` batches and `stroke-end`.
+ */
+export function thinPoints(
+  last: Point | undefined,
+  next: readonly Point[],
+  minDistance = THIN_MIN_DISTANCE,
+): Point[] {
+  const kept: Point[] = [];
+  let anchor = last;
+  for (const candidate of next) {
+    if (
+      anchor &&
+      Math.hypot(candidate[0] - anchor[0], candidate[1] - anchor[1]) <
+        minDistance
+    ) {
+      continue;
+    }
+    kept.push(candidate);
+    anchor = candidate;
+  }
+  return kept;
+}
+
+/**
+ * The stroke as sent in `stroke-end`. A stroke within the cap goes as drawn
+ * (already thinned), so the final shape equals the live one; a longer one is
+ * simplified, then capped.
+ */
 export function finishStroke(points: Point[]): Point[] {
+  if (points.length <= STROKE_MAX_POINTS) return points.slice();
   const simplified = simplify(points);
   if (simplified.length <= STROKE_MAX_POINTS) return simplified;
   // Still too long: keep evenly spaced points, always including the ends.

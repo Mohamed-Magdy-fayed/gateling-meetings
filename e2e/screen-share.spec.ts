@@ -284,6 +284,51 @@ test("guest annotates the share and the host sees it", async ({ newPage }) => {
   await expect.poll(() => strokeCount(guest), { timeout: 15_000 }).toBe(0);
 });
 
+/**
+ * The reported bug's setup: the host shares their entire screen (a real
+ * `getDisplayMedia` capture, auto-selected) and draws on it from their
+ * Annotate view. Ink must show while the pen is still down — locally and
+ * for the guest — and the laser must reach the guest.
+ */
+test("the sharer's pen and laser reach the guest during the drag", async ({
+  newPage,
+}) => {
+  const { host, guest } = await hostSharingWithGuest(newPage);
+  await host.getByRole("button", { name: /^annotate$/i }).click();
+  await host
+    .getByRole("button", { name: /draw on the shared screen/i })
+    .click(); // opens the tools with the pen selected
+
+  const stage = host.locator(".lk-focus-layout-stage");
+  await expect(stage.locator("svg[data-annotation-ink]")).toBeVisible({
+    timeout: 15_000,
+  });
+  const box = await stage.boundingBox();
+  if (!box) throw new Error("no share on the sharer's stage");
+  const y = box.y + box.height * 0.5;
+  await host.mouse.move(box.x + box.width * 0.3, y);
+  await host.mouse.down();
+  for (let i = 1; i <= 10; i++) {
+    await host.mouse.move(box.x + box.width * (0.3 + i * 0.03), y + i * 2);
+  }
+  // Pen still down: the stroke is drawn for the sharer and for the guest.
+  await expect.poll(() => strokeCount(host)).toBe(1);
+  await expect.poll(() => strokeCount(guest), { timeout: 15_000 }).toBe(1);
+  await host.mouse.up();
+  await expect.poll(() => strokeCount(guest)).toBe(1);
+
+  await host.getByRole("button", { name: /^laser pointer$/i }).click();
+  await host.mouse.move(box.x + box.width * 0.5, y);
+  await host.mouse.down();
+  for (let i = 1; i <= 8; i++) {
+    await host.mouse.move(box.x + box.width * (0.5 + i * 0.02), y);
+  }
+  await expect(
+    guest.locator(".lk-focus-layout-stage [data-annotation-laser]"),
+  ).toContainText("Test Host", { timeout: 15_000 });
+  await host.mouse.up();
+});
+
 test("turning annotations off hides the guest's tools and ink", async ({
   newPage,
 }) => {
