@@ -8,7 +8,7 @@ import {
   useTracks,
 } from "@livekit/components-react";
 import { type Participant, Track } from "livekit-client";
-import { HandIcon, MicOffIcon } from "lucide-react";
+import { HandIcon, MicOffIcon, PenLineIcon, UsersIcon } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 
 import { useTranslation } from "@/features/core/i18n/client";
@@ -17,6 +17,7 @@ import { PARTICIPANT_ATTRIBUTE_HAND_RAISED } from "@/integrations/livekit/attrib
 import { cn } from "@/lib/utils";
 import { FloatingTileActions } from "./floating-tile-actions";
 import { ParticipantTile } from "./participant-tile";
+import { PipAnnotateView } from "./pip-annotate-view";
 import { SelfMediaButtons } from "./self-media-buttons";
 import {
   BannerButton,
@@ -121,6 +122,8 @@ export function FloatingGrid({
   ).length;
   // Keys pressed in the floating window go to its own document.
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
+  const [view, setView] = useState<"people" | "annotate">("people");
+  const isAnnotating = meetingFlags.pipAnnotateAvailable && view === "annotate";
 
   return (
     <div
@@ -138,47 +141,51 @@ export function FloatingGrid({
           hideNames={isMonitorShare}
         />
       )}
-      <div
-        className={cn(
-          "grid min-h-0 flex-1 grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-1.5",
-          remote.length > SCROLL_AFTER
-            ? "auto-rows-[minmax(7rem,1fr)] overflow-y-auto"
-            : "auto-rows-fr",
-        )}
-      >
-        {remote.length === 0 && (
-          <p className="place-self-center text-center text-sm text-neutral-400">
-            {t("meetings.room.popOutEmpty")}
-          </p>
-        )}
-        {tracks.map((track) => {
-          const participant = track.participant;
-          const canAct = hostControls && !participant.isLocal;
-          return (
-            <TrackRefContext.Provider
-              key={`${participant.identity}-${track.source}`}
-              value={track}
-            >
-              <ParticipantTile
-                pinnable={false}
-                className={cn(
-                  isHandRaised(participant) &&
-                    !participant.isLocal &&
-                    "ring-warning",
-                )}
-                actions={
-                  canAct ? (
-                    <FloatingTileActions
-                      code={code}
-                      participant={participant}
-                    />
-                  ) : undefined
-                }
-              />
-            </TrackRefContext.Provider>
-          );
-        })}
-      </div>
+      {isAnnotating ? (
+        <PipAnnotateView isMonitorShare={isMonitorShare} />
+      ) : (
+        <div
+          className={cn(
+            "grid min-h-0 flex-1 grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-1.5",
+            remote.length > SCROLL_AFTER
+              ? "auto-rows-[minmax(7rem,1fr)] overflow-y-auto"
+              : "auto-rows-fr",
+          )}
+        >
+          {remote.length === 0 && (
+            <p className="place-self-center text-center text-sm text-neutral-400">
+              {t("meetings.room.popOutEmpty")}
+            </p>
+          )}
+          {tracks.map((track) => {
+            const participant = track.participant;
+            const canAct = hostControls && !participant.isLocal;
+            return (
+              <TrackRefContext.Provider
+                key={`${participant.identity}-${track.source}`}
+                value={track}
+              >
+                <ParticipantTile
+                  pinnable={false}
+                  className={cn(
+                    isHandRaised(participant) &&
+                      !participant.isLocal &&
+                      "ring-warning",
+                  )}
+                  actions={
+                    canAct ? (
+                      <FloatingTileActions
+                        code={code}
+                        participant={participant}
+                      />
+                    ) : undefined
+                  }
+                />
+              </TrackRefContext.Provider>
+            );
+          })}
+        </div>
+      )}
       <SelfMediaButtons pipDocument={root?.ownerDocument ?? null}>
         {({ buttons, notice }) => (
           <>
@@ -192,6 +199,9 @@ export function FloatingGrid({
             >
               <span className="flex items-center gap-1">{buttons}</span>
               <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                {meetingFlags.pipAnnotateAvailable && (
+                  <ViewSwitch view={view} onChange={setView} hands={hands} />
+                )}
                 {hostControls && remote.length > 0 && (
                   <MuteAllButton code={code} />
                 )}
@@ -217,6 +227,62 @@ export function FloatingGrid({
         )}
       </SelfMediaButtons>
     </div>
+  );
+}
+
+/** People | Annotate, a two-item segmented control; raised hands badge People. */
+function ViewSwitch({
+  view,
+  onChange,
+  hands,
+}: {
+  view: "people" | "annotate";
+  onChange: (view: "people" | "annotate") => void;
+  hands: number;
+}) {
+  const { t } = useTranslation();
+  const item = (
+    value: "people" | "annotate",
+    label: string,
+    icon: ReactNode,
+    badge?: number,
+  ) => (
+    <button
+      type="button"
+      aria-pressed={view === value}
+      aria-label={label}
+      title={label}
+      onClick={() => onChange(value)}
+      className={cn(
+        "relative flex min-h-8 items-center gap-1 rounded-md px-2 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-current [&_svg]:size-3.5",
+        view === value
+          ? "bg-primary text-primary-foreground"
+          : "hover:bg-current/15",
+      )}
+    >
+      {icon}
+      <span className="max-[479px]:sr-only">{label}</span>
+      {badge ? (
+        <span className="rounded-full bg-warning px-1 text-[0.625rem] leading-4 text-warning-foreground">
+          {badge}
+        </span>
+      ) : null}
+    </button>
+  );
+  return (
+    <span className="flex items-center gap-0.5 rounded-lg bg-muted/40 p-0.5">
+      {item(
+        "people",
+        t("meetings.pip.people"),
+        <UsersIcon aria-hidden />,
+        view === "annotate" ? hands : undefined,
+      )}
+      {item(
+        "annotate",
+        t("meetings.pip.annotate"),
+        <PenLineIcon aria-hidden />,
+      )}
+    </span>
   );
 }
 

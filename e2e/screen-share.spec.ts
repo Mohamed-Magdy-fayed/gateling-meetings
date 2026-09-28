@@ -9,6 +9,7 @@ import {
   keyInPip,
   pipPressed,
   pipText,
+  pointerDragInPip,
   routeTrpcError,
   setDocumentHidden,
   signIn,
@@ -453,4 +454,43 @@ test("turning annotations off hides the guest's tools and ink", async ({
     guest.getByRole("button", { name: /draw on the shared screen/i }),
   ).toHaveCount(0);
   await expect.poll(() => strokeCount(guest)).toBe(0);
+});
+
+/**
+ * Experimental floating-window annotate (NEXT_PUBLIC_MEETING_PIP_ANNOTATE):
+ * off unless "on", so this only runs where the flag is on (local, preview).
+ */
+test("the sharer annotates from the floating window", async ({ newPage }) => {
+  test.skip(
+    process.env.NEXT_PUBLIC_MEETING_PIP_ANNOTATE?.trim().toLowerCase() !== "on",
+    "floating-window annotate is off in this environment",
+  );
+  const { host, guest } = await hostSharingWithGuest(newPage);
+  // The in-tab preview too, to prove the floating view never blanks it.
+  await host.getByRole("button", { name: /^annotate$/i }).click();
+
+  await clickInPip(host, /^annotate$/i);
+  // Opens on the laser, not the pen (no accidental ink).
+  await expect
+    .poll(() => pipPressed(host, /^laser pointer$/i), { timeout: 15_000 })
+    .toBe("true");
+
+  await clickInPip(host, /^pen$/i);
+  await pointerDragInPip(host, [0.3, 0.5], [0.6, 0.55]);
+  await expect.poll(() => strokeCount(guest), { timeout: 15_000 }).toBe(1);
+
+  await clickInPip(host, /^undo$/i);
+  await expect.poll(() => strokeCount(guest), { timeout: 15_000 }).toBe(0);
+
+  // Back to People; the meeting tab's own-share preview still plays.
+  await clickInPip(host, /^people$/i);
+  await expect.poll(() => pipText(host)).toMatch(/Guest Gina/);
+  const preview = await host.evaluate(() => {
+    const video = document.querySelector<HTMLVideoElement>(
+      ".lk-focus-layout-stage video",
+    );
+    return video ? { paused: video.paused, ready: video.readyState } : null;
+  });
+  expect(preview?.paused).toBe(false);
+  expect(preview?.ready).toBeGreaterThanOrEqual(2);
 });

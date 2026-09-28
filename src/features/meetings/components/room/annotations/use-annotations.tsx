@@ -221,21 +221,25 @@ export function useAnnotations() {
 
 /**
  * Subscribes to store changes, re-rendering at most once per animation
- * frame however many messages arrive in between. While the meeting tab is
- * hidden (the presenter looking at what they share) it gets no animation
- * frames, but the floating window still renders from this store — so
- * batching falls back to a microtask then.
+ * frame of `win` — the window the ink renders in (the meeting tab or the
+ * floating window) — however many messages arrive in between. A hidden
+ * window gets no animation frames, so batching falls back to a microtask
+ * then. Re-subscribes when `win` changes (floating window reopened).
  */
-export function useAnnotationVersion(store: AnnotationStore | undefined) {
+export function useAnnotationVersion(
+  store: AnnotationStore | undefined,
+  win: Window = window,
+) {
   const subscribe = useCallback(
     (onChange: () => void) => {
       if (!store) return () => {};
+      const doc = win.document;
       let frame = 0;
       let queued = false;
       let active = true;
       const unsubscribe = store.subscribe(() => {
         if (frame || queued) return;
-        if (document.visibilityState === "hidden") {
+        if (doc.visibilityState === "hidden") {
           queued = true;
           queueMicrotask(() => {
             queued = false;
@@ -243,27 +247,27 @@ export function useAnnotationVersion(store: AnnotationStore | undefined) {
           });
           return;
         }
-        frame = requestAnimationFrame(() => {
+        frame = win.requestAnimationFrame(() => {
           frame = 0;
           onChange();
         });
       });
       // A frame requested just before the tab hid would never fire.
       const onVisibility = () => {
-        if (document.visibilityState !== "hidden" || !frame) return;
-        cancelAnimationFrame(frame);
+        if (doc.visibilityState !== "hidden" || !frame) return;
+        win.cancelAnimationFrame(frame);
         frame = 0;
         onChange();
       };
-      document.addEventListener("visibilitychange", onVisibility);
+      doc.addEventListener("visibilitychange", onVisibility);
       return () => {
         active = false;
         unsubscribe();
-        document.removeEventListener("visibilitychange", onVisibility);
-        if (frame) cancelAnimationFrame(frame);
+        doc.removeEventListener("visibilitychange", onVisibility);
+        if (frame) win.cancelAnimationFrame(frame);
       };
     },
-    [store],
+    [store, win],
   );
   return useSyncExternalStore(
     subscribe,

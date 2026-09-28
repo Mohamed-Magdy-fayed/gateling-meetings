@@ -14,12 +14,16 @@ export const env = createEnv({
     NEXT_PUBLIC_MEETING_ANNOTATIONS: z.string().optional(),
     /** Kill switch for host controls in the floating window; "0" turns them off. */
     NEXT_PUBLIC_MEETING_PIP_HOST_CONTROLS: z.string().optional(),
+    /** Experimental, off unless "on": annotate from the floating window. */
+    NEXT_PUBLIC_MEETING_PIP_ANNOTATE: z.string().optional(),
   },
   experimental__runtimeEnv: {
     NEXT_PUBLIC_MEETING_ANNOTATIONS:
       process.env.NEXT_PUBLIC_MEETING_ANNOTATIONS,
     NEXT_PUBLIC_MEETING_PIP_HOST_CONTROLS:
       process.env.NEXT_PUBLIC_MEETING_PIP_HOST_CONTROLS,
+    NEXT_PUBLIC_MEETING_PIP_ANNOTATE:
+      process.env.NEXT_PUBLIC_MEETING_PIP_ANNOTATE,
   },
   emptyStringAsUndefined: true,
 });

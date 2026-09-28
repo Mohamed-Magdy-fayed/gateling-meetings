@@ -178,3 +178,56 @@ export function setDocumentHidden(page: Page, hidden: boolean) {
     document.dispatchEvent(new Event("visibilitychange"));
   }, hidden);
 }
+
+/**
+ * Drags a mouse pointer across the floating window's drawing layer, from
+ * (x0, y) to (x1, y) in fractions of its box. Dispatched on the floating
+ * window's document, since Playwright cannot move the real mouse there.
+ */
+export async function pointerDragInPip(
+  page: Page,
+  from: [number, number],
+  to: [number, number],
+  steps = 10,
+) {
+  const drew = await page.evaluate(
+    ({ from, to, steps }) => {
+      const win = window.documentPictureInPicture?.window;
+      const layer = win?.document.querySelector<HTMLElement>(
+        "[data-annotation-input]",
+      );
+      if (!win || !layer) return false;
+      const rect = layer.getBoundingClientRect();
+      const at = (fx: number, fy: number) => ({
+        clientX: rect.left + rect.width * fx,
+        clientY: rect.top + rect.height * fy,
+      });
+      const fire = (type: string, fx: number, fy: number, buttons: number) =>
+        layer.dispatchEvent(
+          new (win as typeof window).PointerEvent(type, {
+            bubbles: true,
+            pointerId: 1,
+            pointerType: "mouse",
+            isPrimary: true,
+            button: type === "pointermove" ? -1 : 0,
+            buttons,
+            ...at(fx, fy),
+          }),
+        );
+      fire("pointerdown", from[0], from[1], 1);
+      for (let i = 1; i <= steps; i++) {
+        const f = i / steps;
+        fire(
+          "pointermove",
+          from[0] + (to[0] - from[0]) * f,
+          from[1] + (to[1] - from[1]) * f,
+          1,
+        );
+      }
+      fire("pointerup", to[0], to[1], 0);
+      return true;
+    },
+    { from, to, steps },
+  );
+  expect(drew, "no drawing layer in the floating window").toBe(true);
+}

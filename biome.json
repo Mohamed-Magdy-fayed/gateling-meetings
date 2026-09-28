@@ -47,6 +47,25 @@
           }
         }
       }
+    },
+    {
+      "includes": ["src/features/meetings/components/room/annotations/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": {
+                  "requestAnimationFrame": "Use the owner window (useOwnerWindow / ownerWindow): annotation layers also render in the floating window.",
+                  "cancelAnimationFrame": "Use the owner window (useOwnerWindow / ownerWindow): annotation layers also render in the floating window.",
+                  "ResizeObserver": "Use the owner window (useOwnerWindow / ownerWindow): annotation layers also render in the floating window."
+                }
+              }
+            }
+          }
+        }
+      }
     }
   ],
   "assist": {
