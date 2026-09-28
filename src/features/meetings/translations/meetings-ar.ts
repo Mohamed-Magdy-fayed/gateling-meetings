@@ -294,6 +294,21 @@ export const meetingsAr = {
     notHost: "المضيف وحده يمكنه قبول الأشخاص.",
     offline: "أنت غير متصل. تحقق من اتصالك وحاول مرة أخرى.",
     tabBadge: "({count})",
+    knockSound: "صوت طلب الانضمام",
+    admittedNotice: "تم قبول {name}",
+    declinedNotice: "تم رفض {name}",
+    admittedAllNotice: dt("{count:plural}", {
+      plural: {
+        count: {
+          zero: "لم يُقبل أحد",
+          one: "تم قبول شخص واحد",
+          two: "تم قبول شخصين",
+          few: "تم قبول {?} أشخاص",
+          many: "تم قبول {?} شخصًا",
+          other: "تم قبول {?} شخص",
+        },
+      },
+    }),
     queueTitle: dt("{count:plural}", {
       plural: {
         count: {

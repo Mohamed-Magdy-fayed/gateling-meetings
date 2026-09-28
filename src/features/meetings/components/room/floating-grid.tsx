@@ -127,6 +127,10 @@ export function FloatingGrid({
       ref={setRoot}
       className="meeting-room dark flex h-svh flex-col gap-1.5 bg-neutral-900 p-1.5 text-foreground"
     >
+      {/* One polite announcer: knocks and admit results, never moving focus. */}
+      <p aria-live="polite" className="sr-only">
+        {hostControls ? waitingQueue?.announcement : null}
+      </p>
       {hostControls && waitingQueue && (
         <WaitingQueue
           {...waitingQueue}

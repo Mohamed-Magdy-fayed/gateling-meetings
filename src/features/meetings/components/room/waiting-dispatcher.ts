@@ -83,15 +83,16 @@ export class WaitingDispatcher {
   }
 
   /**
-   * Runs one action; `ids` are the rows it resolves. Returns false when it
-   * was ignored because another action is in flight.
+   * Runs one action; `ids` are the rows it resolves. Resolves to "ignored"
+   * when another action was in flight, else whether it succeeded.
    */
   async run(
     target: { kind: "one"; id: string } | { kind: "all"; ids: string[] },
     call: () => Promise<unknown>,
     source: WaitingSource = "inline",
-  ): Promise<boolean> {
-    if (this.pending) return false;
+  ): Promise<"done" | "failed" | "ignored"> {
+    if (this.pending) return "ignored";
+    let outcome: "done" | "failed" = "done";
     const ids = target.kind === "one" ? [target.id] : target.ids;
     this.pending = target.kind === "one" ? target : { kind: "all" };
     this.error = null;
@@ -104,6 +105,7 @@ export class WaitingDispatcher {
     } catch (error) {
       const key = waitingErrorKey(error, this.deps.isOnline());
       if (key) {
+        outcome = "failed";
         for (const id of ids) this.hidden.delete(id);
         if (source === "toast") this.deps.onToastError(key);
         else this.error = key;
@@ -113,7 +115,7 @@ export class WaitingDispatcher {
       this.emit();
       this.deps.afterRun();
     }
-    return true;
+    return outcome;
   }
 
   private emit() {

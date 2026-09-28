@@ -274,6 +274,14 @@ export const meetingsEn = {
     notHost: "Only the host can let people in.",
     offline: "You're offline. Check your connection and try again.",
     tabBadge: "({count})",
+    knockSound: "Knock sound",
+    admittedNotice: "{name} admitted",
+    declinedNotice: "{name} declined",
+    admittedAllNotice: dt("{count:plural}", {
+      plural: {
+        count: { one: "{?} person admitted", other: "{?} people admitted" },
+      },
+    }),
     queueTitle: dt("{count:plural}", {
       plural: {
         count: { one: "{?} person waiting", other: "{?} people waiting" },

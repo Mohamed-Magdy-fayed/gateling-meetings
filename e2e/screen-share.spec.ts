@@ -242,7 +242,22 @@ async function knockWhileSharing(
   await expect
     .poll(() => pipText(host), { timeout: 15_000 })
     .toMatch(/1 person waiting/);
-  expect(await pipText(host)).not.toMatch(/Knocker Kim/);
+  // Visible strip: count only. Screen readers still hear who knocked.
+  const strip = () =>
+    host.evaluate(
+      () =>
+        window.documentPictureInPicture?.window?.document.querySelector(
+          "section[aria-label]",
+        )?.textContent ?? "",
+    );
+  expect(await strip()).not.toMatch(/Knocker Kim/);
+  const live = await host.evaluate(
+    () =>
+      window.documentPictureInPicture?.window?.document.querySelector(
+        "[aria-live=polite]",
+      )?.textContent ?? "",
+  );
+  expect(live).toBe("Knocker Kim wants to join");
   await clickInPip(host, /^review$/i);
   await expect.poll(() => pipText(host)).toMatch(/Knocker Kim/);
   return knocker;
@@ -253,8 +268,19 @@ test("host admits a knock from the floating window", async ({ newPage }) => {
   const knocker = await knockWhileSharing(newPage, host, guest);
 
   await clickInPip(host, /^admit$/i);
+  await expect.poll(() => pipText(host)).toMatch(/Knocker Kim admitted/);
   await expectInRoom(knocker);
-  await expect.poll(() => pipText(host)).not.toMatch(/Knocker Kim/);
+  // The notice collapses after a moment (the live region keeps its text).
+  await expect
+    .poll(() =>
+      host.evaluate(
+        () =>
+          window.documentPictureInPicture?.window?.document.querySelector(
+            "[role=status]",
+          )?.textContent ?? "",
+      ),
+    )
+    .not.toMatch(/Knocker Kim admitted/);
   // The opener's toast for that knock is gone too.
   await expect(host.getByText(/Knocker Kim wants to join/)).toHaveCount(0);
 });

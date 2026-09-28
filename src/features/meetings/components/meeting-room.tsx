@@ -72,7 +72,6 @@ import { RoomMediaCheck } from "./room/room-media-check";
 import { SharingBanner } from "./room/sharing-banner";
 import { Stage, type StageLayout } from "./room/stage";
 import { useKeepAlive } from "./room/use-keep-alive";
-import { useKnockCues } from "./room/use-knock-cues";
 import { useWaitingQueue } from "./room/waiting-queue";
 
 type MeetingRoomProps = {
@@ -282,7 +281,6 @@ function RoomShell({
   useKeepAlive({ title: meeting.title, appName: t("appName"), onLeave });
   const isHost = session.role === "host";
   const waitingQueue = useWaitingQueue(meeting.code, isHost);
-  useKnockCues({ isHost, waitingCount: waitingQueue.waiting.length });
 
   const [panel, setPanel] = useState<SidePanel>(null);
   const [layout, setLayout] = useState<StageLayout>("grid");
