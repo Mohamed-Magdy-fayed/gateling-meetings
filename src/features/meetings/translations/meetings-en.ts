@@ -293,6 +293,11 @@ export const meetingsEn = {
     backToTab: "Back to the meeting",
     actionFailed: "That didn't work. Try again.",
     dismiss: "Dismiss",
+    people: "People",
+    annotate: "Annotate",
+    annotateHint: "Viewers see your ink on the shared screen.",
+    monitorNote:
+      "You're sharing your whole screen, so viewers also see this window. Share a window or tab to hide it.",
   },
   host: {
     settings: "Settings",

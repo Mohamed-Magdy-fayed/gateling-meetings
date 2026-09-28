@@ -22,6 +22,11 @@ type ToolbarProps = {
   onClearMine: () => void;
   /** Host only. */
   onClearAll?: () => void;
+  /**
+   * `rail`: the floating window's compact column on the video's
+   * inline-end edge (32px buttons; the window is small and mouse-driven).
+   */
+  variant?: "default" | "rail";
 };
 
 /**
@@ -37,7 +42,10 @@ export function AnnotationToolbar({
   onUndo,
   onClearMine,
   onClearAll,
+  variant = "default",
 }: ToolbarProps) {
+  const isRail = variant === "rail";
+  const corner = isRail ? "top-1 end-1" : "top-2 start-2";
   const { t } = useTranslation();
   const [isConfirmingClearAll, setIsConfirmingClearAll] = useState(false);
   const clearAllRef = useRef<HTMLButtonElement>(null);
@@ -58,8 +66,9 @@ export function AnnotationToolbar({
 
   if (tool === "none") {
     return (
-      <div className="absolute top-2 start-2 z-20">
+      <div className={cn("absolute z-20", corner)}>
         <ToolButton
+          compact={isRail}
           label={t("meetings.annotate.open")}
           onClick={() => onToolChange("pen")}
         >
@@ -73,9 +82,14 @@ export function AnnotationToolbar({
     <div
       role="toolbar"
       aria-label={t("meetings.annotate.tools")}
-      className="absolute top-2 start-2 z-20 flex flex-col gap-1 rounded-lg bg-black/60 p-1 backdrop-blur motion-safe:animate-in motion-safe:fade-in sm:flex-row"
+      className={cn(
+        "absolute z-20 flex flex-col gap-1 rounded-lg bg-black/60 p-1 backdrop-blur motion-safe:animate-in motion-safe:fade-in",
+        corner,
+        !isRail && "sm:flex-row",
+      )}
     >
       <ToolButton
+        compact={isRail}
         label={t("meetings.annotate.laser")}
         pressed={tool === "laser"}
         onClick={() => select("laser")}
@@ -83,6 +97,7 @@ export function AnnotationToolbar({
         <PointerIcon />
       </ToolButton>
       <ToolButton
+        compact={isRail}
         label={t("meetings.annotate.pen")}
         pressed={tool === "pen"}
         onClick={() => select("pen")}
@@ -90,6 +105,7 @@ export function AnnotationToolbar({
         <PenLineIcon />
       </ToolButton>
       <ToolButton
+        compact={isRail}
         label={t("meetings.annotate.undo")}
         disabled={!canUndo || tool === "laser"}
         onClick={onUndo}
@@ -97,6 +113,7 @@ export function AnnotationToolbar({
         <Undo2Icon className="rtl:-scale-x-100" />
       </ToolButton>
       <ToolButton
+        compact={isRail}
         label={t("meetings.annotate.clearMine")}
         onClick={onClearMine}
       >
@@ -106,7 +123,10 @@ export function AnnotationToolbar({
         (isConfirmingClearAll ? (
           // biome-ignore lint/a11y/noStaticElementInteractions: Esc inside the inline confirm cancels it.
           <div
-            className="flex items-center gap-1 rounded-md bg-black/60 px-1 text-xs text-white"
+            className={cn(
+              "flex items-center gap-1 rounded-md bg-black/60 px-1 text-xs text-white",
+              isRail && "flex-col py-1",
+            )}
             onKeyDown={(event) => {
               if (event.key !== "Escape") return;
               event.stopPropagation();
@@ -137,6 +157,7 @@ export function AnnotationToolbar({
           </div>
         ) : (
           <ToolButton
+            compact={isRail}
             ref={clearAllRef}
             label={t("meetings.annotate.clearAll")}
             onClick={() => setIsConfirmingClearAll(true)}
@@ -152,12 +173,15 @@ export function AnnotationToolbar({
 function ToolButton({
   label,
   pressed,
+  compact,
   className,
   children,
   ...props
 }: Omit<React.ComponentProps<"button">, "aria-label" | "aria-pressed"> & {
   label: string;
   pressed?: boolean;
+  /** 32px at every width (the floating window's rail). */
+  compact?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -170,6 +194,7 @@ function ToolButton({
       className={cn(
         "grid size-11 place-items-center rounded-md bg-black/40 text-white backdrop-blur transition-colors hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40 sm:size-8 [&_svg]:size-4",
         pressed && "bg-primary text-primary-foreground hover:bg-primary/90",
+        compact && "size-8",
         className,
       )}
     >

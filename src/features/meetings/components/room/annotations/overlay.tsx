@@ -15,6 +15,7 @@ import { InkRecorder } from "./ink-recorder";
 import { type Laser, laserFrame, type Stroke } from "./store";
 import { AnnotationToolbar, type Tool } from "./toolbar";
 import { useAnnotations, useAnnotationVersion } from "./use-annotations";
+import { ownerWindow, useOwnerWindow } from "./use-owner-window";
 
 type AnnotationsApi = NonNullable<ReturnType<typeof useAnnotations>>;
 
@@ -24,6 +25,10 @@ type AnnotationLayerProps = {
   shareSid: string;
   /** The local user's own share (the sharer's Annotate view). */
   isOwnShare: boolean;
+  /** The tool selected on mount (the floating window starts on the laser). */
+  initialTool?: Tool;
+  /** `rail`: a compact vertical toolbar for the floating window. */
+  toolbarVariant?: "default" | "rail";
 };
 
 /** The frame's box inside the video element, kept current on resize. */
@@ -47,7 +52,7 @@ function useContentBox(video: HTMLVideoElement | null): Box | null {
     // Captured windows change size mid-share: `resize` fires on the video.
     video.addEventListener("resize", measure);
     video.addEventListener("loadedmetadata", measure);
-    const observer = new ResizeObserver(measure);
+    const observer = new (ownerWindow(video).ResizeObserver)(measure);
     observer.observe(video);
     return () => {
       video.removeEventListener("resize", measure);
@@ -59,8 +64,11 @@ function useContentBox(video: HTMLVideoElement | null): Box | null {
 }
 
 function isEditable(target: EventTarget | null) {
+  // Not `instanceof HTMLElement`: the floating window has its own globals.
   return (
-    target instanceof HTMLElement &&
+    target != null &&
+    "closest" in target &&
+    typeof target.closest === "function" &&
     target.closest("input, textarea, select, [contenteditable=true]") != null
   );
 }
@@ -75,12 +83,15 @@ export function AnnotationLayer({
   video,
   shareSid,
   isOwnShare,
+  initialTool = "none",
+  toolbarVariant = "default",
 }: AnnotationLayerProps) {
   const { t } = useTranslation();
   const annotations = useAnnotations();
-  useAnnotationVersion(annotations?.store);
+  const win = useOwnerWindow(video);
+  useAnnotationVersion(annotations?.store, win);
   const box = useContentBox(video);
-  const [tool, setTool] = useState<Tool>("none");
+  const [tool, setTool] = useState<Tool>(initialTool);
   const canDraw = annotations?.canDraw ?? false;
   const activeTool: Tool = canDraw && video ? tool : "none";
 
@@ -90,14 +101,17 @@ export function AnnotationLayer({
   }, [canDraw, video]);
 
   // Keep the sharer's own preview from decoding frames nobody is looking at.
+  // Keyed off the video's own document: the floating window's copy keeps
+  // playing while the meeting tab is hidden.
   useEffect(() => {
     if (!isOwnShare || !video) return;
+    const doc = video.ownerDocument;
     const sync = () => {
-      if (document.visibilityState === "hidden") video.pause();
+      if (doc.visibilityState === "hidden") video.pause();
       else void video.play().catch(() => {});
     };
-    document.addEventListener("visibilitychange", sync);
-    return () => document.removeEventListener("visibilitychange", sync);
+    doc.addEventListener("visibilitychange", sync);
+    return () => doc.removeEventListener("visibilitychange", sync);
   }, [isOwnShare, video]);
 
   const store = annotations?.store;
@@ -127,9 +141,9 @@ export function AnnotationLayer({
         undo();
       }
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeTool, undo]);
+    win.addEventListener("keydown", onKeyDown);
+    return () => win.removeEventListener("keydown", onKeyDown);
+  }, [activeTool, undo, win]);
 
   if (!annotations || !snapshot) return null;
 
@@ -163,7 +177,7 @@ export function AnnotationLayer({
           }}
         >
           <Ink strokes={snapshot.strokes} />
-          <Lasers lasers={snapshot.lasers} store={store} box={box} />
+          <Lasers lasers={snapshot.lasers} store={store} box={box} win={win} />
           {activeTool !== "none" && send && (
             <PointerInput
               key={shareSid}
@@ -171,6 +185,7 @@ export function AnnotationLayer({
               shareSid={shareSid}
               send={send}
               echo={annotations.echo}
+              win={win}
             />
           )}
         </div>
@@ -180,6 +195,7 @@ export function AnnotationLayer({
       )}
       {canDraw ? (
         <AnnotationToolbar
+          variant={toolbarVariant}
           tool={activeTool}
           onToolChange={setTool}
           canUndo={lastOwnStroke != null}
@@ -263,22 +279,24 @@ function Lasers({
   lasers,
   store,
   box,
+  win,
 }: {
   lasers: readonly Laser[];
   store: { expireLasers: (now: number) => boolean } | undefined;
   box: Box;
+  win: Window;
 }) {
   const [now, setNow] = useState(() => performance.now());
   const hasLasers = lasers.length > 0;
   // Animate only while a pointer is visible.
   useEffect(() => {
     if (!hasLasers || !store) return;
-    let frame = requestAnimationFrame(function tick(time) {
+    let frame = win.requestAnimationFrame(function tick(time) {
       setNow(time);
-      if (store.expireLasers(time)) frame = requestAnimationFrame(tick);
+      if (store.expireLasers(time)) frame = win.requestAnimationFrame(tick);
     });
-    return () => cancelAnimationFrame(frame);
-  }, [hasLasers, store]);
+    return () => win.cancelAnimationFrame(frame);
+  }, [hasLasers, store, win]);
 
   return (
     <div className="pointer-events-none absolute inset-0">
@@ -353,11 +371,13 @@ function PointerInput({
   shareSid,
   send,
   echo,
+  win,
 }: {
   tool: Exclude<Tool, "none">;
   shareSid: string;
   send: AnnotationsApi["send"];
   echo: AnnotationsApi["echo"];
+  win: Window;
 }) {
   // The recorder lives as long as the tool; it reads the latest callbacks.
   const outRef = useRef({ send, echo });
@@ -374,13 +394,15 @@ function PointerInput({
   );
 
   useEffect(() => {
-    const id = setInterval(() => recorder.flush(), POINTS_FLUSH_MS);
+    // The owner window's timer: the meeting tab's timers are throttled
+    // while it is hidden behind the shared screen.
+    const id = win.setInterval(() => recorder.flush(), POINTS_FLUSH_MS);
     return () => {
-      clearInterval(id);
+      win.clearInterval(id);
       recorder.penUp();
       recorder.flush();
     };
-  }, [recorder]);
+  }, [recorder, win]);
 
   /** The move's coalesced samples (high-rate mice), in frame space. */
   function samplesOf(event: React.PointerEvent<HTMLDivElement>) {
@@ -398,10 +420,16 @@ function PointerInput({
 
   return (
     <div
+      data-annotation-input
       className="absolute inset-0"
       onPointerDown={(event) => {
         if (event.button !== 0) return;
-        event.currentTarget.setPointerCapture(event.pointerId);
+        try {
+          event.currentTarget.setPointerCapture(event.pointerId);
+        } catch {
+          // Pointer not active in this document (floating window edge cases):
+          // draw without capture rather than dropping the stroke.
+        }
         const samples = samplesOf(event);
         const at = samples.at(-1)?.at;
         if (!at) return;

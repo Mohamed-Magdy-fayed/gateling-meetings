@@ -1,7 +1,20 @@
 "use client";
 
+/**
+ * Rules for anything rendered into the floating window (Document PiP) —
+ * it is a separate `window` and document:
+ * - listeners, `requestAnimationFrame`, `ResizeObserver` and timers come
+ *   from the element's owner window (`annotations/use-owner-window.ts`);
+ *   the meeting tab is hidden, frameless and throttled while it is open;
+ * - no Base UI popovers, menus, dialogs or tooltips: they portal into the
+ *   meeting tab's document. Keep controls inline; use `title` for hints;
+ * - no toasts: they render in the hidden tab. Use inline error slots;
+ * - keyboard listeners bind to `pipWindow.document`.
+ */
+
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { meetingFlags } from "@/features/meetings/lib/meeting-flags";
 import { setMediaSessionAction } from "./media-session";
 
 /** Document Picture-in-Picture (Chromium 116+) isn't in TypeScript's DOM lib yet. */
@@ -24,8 +37,9 @@ declare global {
  */
 export type PipMode = "document" | "video";
 
-const PIP_WIDTH = 360;
-const PIP_HEIGHT = 240;
+// Chosen once, at open: bigger when the annotate view is available.
+const PIP_WIDTH = meetingFlags.pipAnnotateAvailable ? 480 : 360;
+const PIP_HEIGHT = meetingFlags.pipAnnotateAvailable ? 360 : 240;
 
 function detectMode(): PipMode | null {
   if (window.documentPictureInPicture) return "document";
