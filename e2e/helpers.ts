@@ -135,3 +135,46 @@ export async function routeTrpcError(
       }),
   );
 }
+
+/** Dispatches a keydown on the floating window's document. */
+export function keyInPip(
+  page: Page,
+  key: string,
+  modifiers: { ctrlKey?: boolean } = {},
+) {
+  return page.evaluate(
+    ({ key, modifiers }) => {
+      const doc = window.documentPictureInPicture?.window?.document;
+      doc?.dispatchEvent(
+        new KeyboardEvent("keydown", { key, bubbles: true, ...modifiers }),
+      );
+    },
+    { key, modifiers },
+  );
+}
+
+/** `aria-pressed` of the floating window's button whose label matches. */
+export function pipPressed(page: Page, label: RegExp) {
+  return page.evaluate(
+    ({ source, flags }) => {
+      const pattern = new RegExp(source, flags);
+      const doc = window.documentPictureInPicture?.window?.document;
+      const button = [...(doc?.querySelectorAll("button") ?? [])].find(
+        (candidate) => pattern.test(candidate.getAttribute("aria-label") ?? ""),
+      );
+      return button?.getAttribute("aria-pressed") ?? null;
+    },
+    { source: label.source, flags: label.flags },
+  );
+}
+
+/** Pretends the tab went to the background (`visibilityState` + event). */
+export function setDocumentHidden(page: Page, hidden: boolean) {
+  return page.evaluate((isHidden) => {
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      get: () => (isHidden ? "hidden" : "visible"),
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+  }, hidden);
+}

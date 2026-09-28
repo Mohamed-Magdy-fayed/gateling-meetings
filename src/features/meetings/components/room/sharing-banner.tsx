@@ -34,6 +34,7 @@ import {
   useSharePause,
 } from "./share-controls";
 import { usePictureInPicture } from "./use-picture-in-picture";
+import type { WaitingQueueState } from "./waiting-queue";
 
 type SharingBannerProps = {
   code: string;
@@ -41,6 +42,8 @@ type SharingBannerProps = {
   /** The sharer's Annotate view (their own share on their stage, with ink). */
   isAnnotating: boolean;
   onAnnotatingChange: (next: boolean) => void;
+  /** Host only: the room's waiting queue, for the floating window's strip. */
+  waitingQueue?: WaitingQueueState;
 };
 
 /**
@@ -55,9 +58,15 @@ export function SharingBanner({
   isHost,
   isAnnotating,
   onAnnotatingChange,
+  waitingQueue,
 }: SharingBannerProps) {
   const { t } = useTranslation();
-  const { isScreenShareEnabled } = useLocalParticipant();
+  const { isScreenShareEnabled, localParticipant } = useLocalParticipant();
+  const shareTrack = localParticipant.getTrackPublication(
+    Track.Source.ScreenShare,
+  )?.track;
+  const isMonitorShare =
+    shareTrack?.mediaStreamTrack.getSettings().displaySurface === "monitor";
   const pip = usePictureInPicture({ active: isScreenShareEnabled });
   const pause = useSharePause();
 
@@ -120,6 +129,8 @@ export function SharingBanner({
           <FloatingGrid
             code={code}
             isHost={isHost}
+            waitingQueue={waitingQueue}
+            isMonitorShare={isMonitorShare}
             footerExtra={
               <AnnotatingNotice
                 isAnnotating={isAnnotating}

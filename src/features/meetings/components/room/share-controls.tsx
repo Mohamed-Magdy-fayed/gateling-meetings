@@ -65,36 +65,58 @@ export function BannerButton({
   );
 }
 
+/** In a narrow floating window (under 480px) the label is for screen readers only. */
+function Label({ compact, children }: { compact?: boolean; children: string }) {
+  return compact ? (
+    <span className="max-[479px]:sr-only">{children}</span>
+  ) : (
+    children
+  );
+}
+
 export function PauseButton({
   pause,
+  compact,
 }: {
   pause: ReturnType<typeof useSharePause>;
+  compact?: boolean;
 }) {
   const { t } = useTranslation();
+  const label = pause.isPaused
+    ? t("meetings.room.resumeSharing")
+    : t("meetings.room.pauseSharing");
   return (
-    <BannerButton onClick={() => void pause.toggle()} disabled={pause.pending}>
+    <BannerButton
+      onClick={() => void pause.toggle()}
+      disabled={pause.pending}
+      title={compact ? label : undefined}
+      className={cn(compact && "min-h-8")}
+    >
       {pause.isPaused ? (
         <PlayIcon className="size-3.5" aria-hidden />
       ) : (
         <PauseIcon className="size-3.5" aria-hidden />
       )}
-      {pause.isPaused
-        ? t("meetings.room.resumeSharing")
-        : t("meetings.room.pauseSharing")}
+      <Label compact={compact}>{label}</Label>
     </BannerButton>
   );
 }
 
-export function StopButton() {
+export function StopButton({ compact }: { compact?: boolean }) {
   const { t } = useTranslation();
   const { localParticipant } = useLocalParticipant();
+  const label = t("meetings.room.stopSharing");
   return (
     <BannerButton
       onClick={() => void localParticipant.setScreenShareEnabled(false)}
-      className="text-destructive hover:bg-destructive/15"
+      title={compact ? label : undefined}
+      className={cn(
+        "text-destructive hover:bg-destructive/15",
+        compact && "min-h-8",
+      )}
     >
       <ScreenShareOffIcon className="size-3.5" aria-hidden />
-      {t("meetings.room.stopSharing")}
+      <Label compact={compact}>{label}</Label>
     </BannerButton>
   );
 }
