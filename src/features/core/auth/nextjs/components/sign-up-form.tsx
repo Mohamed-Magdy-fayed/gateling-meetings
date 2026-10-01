@@ -22,6 +22,7 @@ import { authErrorMessageKey } from "@/features/core/auth/nextjs/lib/error-codes
 import { buildCrossAuthLink } from "@/features/core/auth/nextjs/lib/post-auth-redirect";
 import { signUpSchema } from "@/features/core/auth/schemas";
 import { useTranslation } from "@/features/core/i18n/client";
+import { LegalConsent } from "@/features/legal/components/legal-consent";
 
 function isNextRedirectError(error: unknown): boolean {
   return (
@@ -166,6 +167,8 @@ export function SignUpForm() {
           )}
         </form.Subscribe>
       </FieldSet>
+
+      <LegalConsent messageKey="auth.signUp.consent" className="text-center" />
 
       <FieldDescription className="text-center">
         {t("auth.signIn.hasAccount")}{" "}

@@ -86,4 +86,39 @@ test.describe("billing checkout (Paymob test mode)", () => {
     await page.waitForURL(/\/welcome/, { timeout: 90_000 });
     await expect(page.getByText("Welcome aboard!")).toBeVisible();
   });
+
+  /**
+   * Paymob agreement 3.2.3 / 3.2.11: the final amount, the renewal terms
+   * and the policies are on screen before the buyer leaves for Paymob.
+   * Stops before "Continue to payment", so no intention is created.
+   */
+  test("the checkout dialog shows the total, renewal terms and policy links", async ({
+    page,
+  }) => {
+    await signInAs(page, MEMBER);
+    await page.goto("/pricing");
+    const unitPrice = await page
+      .getByTestId("tier-price")
+      .first()
+      .textContent();
+
+    await page.getByRole("button", { name: "Subscribe" }).first().click();
+    const dialog = page.getByRole("dialog");
+    // One seat: the total is the per-seat price shown on the card.
+    await expect(dialog.getByTestId("checkout-total")).toHaveText(
+      unitPrice ?? "",
+    );
+    await expect(dialog).toContainText("Renews automatically every 30 days");
+    await expect(dialog).toContainText("No fees or card surcharges");
+    for (const [name, href] of [
+      ["Terms of Service", "/terms"],
+      ["Refund & Cancellation Policy", "/refund-policy"],
+      ["Privacy Policy", "/privacy"],
+    ]) {
+      await expect(dialog.getByRole("link", { name })).toHaveAttribute(
+        "href",
+        href,
+      );
+    }
+  });
 });

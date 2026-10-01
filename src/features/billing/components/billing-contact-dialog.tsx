@@ -22,6 +22,8 @@ import {
 import { FieldGroup } from "@/components/ui/field";
 import { useTranslation } from "@/features/core/i18n/client";
 import { translationKey } from "@/features/core/i18n/global";
+import { LegalConsent } from "@/features/legal/components/legal-consent";
+import { PaymentBrands } from "./payment-brands";
 
 /** What the provider's payment page needs to know about the buyer. */
 export type BillingContact = { name: string | null; phone: string | null };
@@ -46,6 +48,8 @@ type BillingContactDialogProps = {
   children: ReactNode;
   title: string;
   lead: ReactNode;
+  /** What the buyer is about to be charged, shown above the consent line. */
+  summary?: ReactNode;
   submitLabel: string;
   /** Prefills the form for an org that has paid before. */
   contact?: BillingContact | null;
@@ -64,6 +68,7 @@ export function BillingContactDialog({
   children,
   title,
   lead,
+  summary,
   submitLabel,
   contact,
   isPending,
@@ -119,9 +124,15 @@ export function BillingContactDialog({
               )}
             </form.AppField>
           </FieldGroup>
-          <p className="pt-3 text-xs text-muted-foreground">
-            {t("billing.checkout.redirectNote")}
-          </p>
+          {summary && <div className="pt-4">{summary}</div>}
+          <div className="space-y-2 pt-3">
+            <p className="text-xs text-muted-foreground">
+              {t("billing.checkout.redirectNote")}
+            </p>
+            <PaymentBrands />
+            {/* Directly above the pay button: agreeing is continuing. */}
+            <LegalConsent />
+          </div>
         </OverlayFormBody>
         <DialogFooter>
           <OverlayFormFooterActions>

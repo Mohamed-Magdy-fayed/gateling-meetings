@@ -175,6 +175,8 @@ export default {
       submitting: "Creating account…",
       submit: "Create account",
       toSignIn: "Sign in",
+      consent:
+        "By creating an account you agree to the {terms} and confirm you have read the {privacy}.",
       error: {
         duplicate: "An account with this email already exists.",
         generic: "Could not create your account. Please try again.",

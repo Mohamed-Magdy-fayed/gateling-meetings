@@ -11,6 +11,7 @@ import {
   type BillingContact,
   BillingContactDialog,
 } from "./billing-contact-dialog";
+import { CheckoutSummary } from "./checkout-summary";
 
 type CheckoutButtonProps = {
   plan: PaidPlanId;
@@ -57,6 +58,9 @@ export function CheckoutButton({
         plan: t(`billing.plans.${plan}.name`),
         seats,
       })}
+      summary={
+        <CheckoutSummary plan={plan} interval={interval} seats={seats} />
+      }
       submitLabel={t("billing.checkout.continue")}
       contact={contact}
       isPending={createCheckout.isPending || createCheckout.isSuccess}

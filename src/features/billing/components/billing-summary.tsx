@@ -276,6 +276,11 @@ export function BillingSummary({
               trigger={<Button variant="outline" />}
               title={t("billing.settings.updateCard")}
               lead={t("billing.settings.updateCardLead")}
+              summary={
+                <p className="rounded-lg bg-muted px-4 py-3 text-sm">
+                  {t("billing.checkout.cardUpdateCharge")}
+                </p>
+              }
               submitLabel={t("billing.checkout.continue")}
               contact={data.billingContact}
               isPending={updateCard.isPending || updateCard.isSuccess}

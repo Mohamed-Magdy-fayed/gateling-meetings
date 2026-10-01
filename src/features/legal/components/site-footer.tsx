@@ -2,6 +2,7 @@ import { MailIcon, MapPinIcon, PhoneIcon } from "lucide-react";
 import Link from "next/link";
 
 import { BuiltByGateling } from "@/components/brand/built-by-gateling";
+import { PaymentBrands } from "@/features/billing/components/payment-brands";
 import { getT } from "@/features/core/i18n/server";
 import { cn } from "@/lib/utils";
 
@@ -68,6 +69,7 @@ export async function SiteFooter({ className }: { className?: string }) {
           <MapPinIcon aria-hidden className="size-3.5 shrink-0" />
           {t("legal.footer.location")}
         </span>
+        <PaymentBrands className="ms-auto" />
       </address>
     </footer>
   );
