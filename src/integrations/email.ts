@@ -21,6 +21,11 @@ export type SendMailOptions = {
 
 let cachedTransporter: nodemailer.Transporter | null = null;
 
+/** Whether `sendMail` would actually send, rather than log and no-op. */
+export function isMailConfigured(): boolean {
+  return Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD);
+}
+
 function getTransporter() {
   if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASSWORD) return null;
   if (cachedTransporter) return cachedTransporter;

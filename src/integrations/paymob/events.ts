@@ -35,6 +35,20 @@ const transactionObjSchema = z
     created_at: z.string(),
     is_refunded: z.boolean().optional(),
     is_voided: z.boolean().optional(),
+    // Set on the transaction Paymob creates *for* a refund or void; the
+    // original payment is named by `parent_transaction`.
+    is_refund: z.boolean().optional(),
+    is_void: z.boolean().optional(),
+    parent_transaction: idSchema.nullish(),
+    source_data: z
+      .object({
+        // Masked by Paymob (last four digits); never a full card number.
+        pan: z.string().nullish(),
+        sub_type: z.string().nullish(),
+        type: z.string().nullish(),
+      })
+      .passthrough()
+      .nullish(),
     order: z
       .object({
         id: idSchema,
@@ -216,6 +230,34 @@ export function subscriptionToFacts(
   };
 }
 
+/**
+ * Paymob reports a transaction once per state; the state is part of the
+ * id so a pending → final pair is two events, and so is a later "this
+ * payment was refunded / voided" update about the same transaction —
+ * otherwise that update would be dropped as a replay of the payment.
+ */
+export function transactionEventId(txn: {
+  id: string;
+  pending: boolean;
+  success: boolean;
+  is_refunded?: boolean;
+  is_voided?: boolean;
+}): string {
+  const state = txn.pending ? "pending" : txn.success ? "ok" : "failed";
+  const reversal = txn.is_voided
+    ? ":voided"
+    : txn.is_refunded
+      ? ":refunded"
+      : "";
+  return `txn:${txn.id}:${state}${reversal}`;
+}
+
+/** The last four digits of Paymob's masked PAN, or null when it has none. */
+export function lastFour(pan: string | null | undefined): string | null {
+  const digits = pan?.replace(/\D/g, "") ?? "";
+  return digits.length >= 4 ? digits.slice(-4) : null;
+}
+
 /** A parsed callback; `other` for anything the app does not act on. */
 export function parsePaymobEvent(
   eventType: string,
@@ -230,8 +272,25 @@ export function parsePaymobEvent(
       obj.order.subscription?.id ??
       obj.data?.subscription_id ??
       null;
+    const transactionKind = obj.is_void
+      ? "void"
+      : obj.is_refund
+        ? "refund"
+        : "payment";
     return {
       kind: "transaction",
+      transactionKind,
+      parentTransactionId: obj.parent_transaction ?? null,
+      // A payment Paymob reports as already refunded or voided is a status
+      // update about money that went back — never something to grant on.
+      reversed:
+        transactionKind === "payment" &&
+        Boolean(obj.is_refunded || obj.is_voided),
+      card: {
+        brand: obj.source_data?.sub_type ?? null,
+        last4: lastFour(obj.source_data?.pan),
+        type: obj.source_data?.type ?? null,
+      },
       transactionId: obj.id,
       providerOrderId: obj.order.id,
       reference: obj.order.merchant_order_id ?? null,

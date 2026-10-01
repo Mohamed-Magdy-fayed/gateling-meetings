@@ -131,6 +131,59 @@ export const billingEn = {
     redirectNote:
       "You will be sent to Paymob, our payment provider, to pay by card. Cards only — recurring charges cannot run on a mobile wallet.",
     continue: "Continue to payment",
+    summaryTitle: "Order summary",
+    summaryLine: "{plan} · {seats:number} seat(s) × {unit}",
+    total: "Total charged today",
+    // DRAFT – needs owner review (billing terms shown at the point of payment).
+    renewal: {
+      month: "Renews automatically every 30 days at {amount} until you cancel.",
+      year: "Renews automatically every 360 days at {amount} until you cancel.",
+    },
+    cancelAnytime:
+      "Cancel anytime from Settings → Billing — you keep the plan until the end of the period you paid for.",
+    noFees:
+      "This is the full amount in Egyptian pounds. No fees or card surcharges are added.",
+    consent:
+      "By continuing to payment you agree to the {terms} and the {refunds}, and confirm you have read the {privacy}.",
+    termsLink: "Terms of Service",
+    refundsLink: "Refund & Cancellation Policy",
+    privacyLink: "Privacy Policy",
+    cardUpdateCharge:
+      "To save a new card, Paymob charges EGP 1.00 to verify it. This is the only charge on this page.",
+  },
+  receipt: {
+    subject: {
+      payment: "Your Gateling receipt — {amount}",
+      refund: "Refund issued — {amount}",
+    },
+    heading: {
+      payment: "Payment receipt",
+      refund: "Refund confirmation",
+    },
+    intro: {
+      payment: "Thank you. We received your payment for {product}.",
+      refund:
+        "We have refunded the amount below through Paymob to the original card. Your bank may take up to 14 business days to show it.",
+    },
+    merchant: "Merchant",
+    transactionId: "Transaction ID",
+    originalTransaction: "Original transaction",
+    date: "Date",
+    amount: "Amount",
+    description: "Description",
+    paymentMethod: "Payment method",
+    organization: "Organization",
+    planLine: "{plan} plan · {seats} seat(s) · billed every {period}",
+    planPeriod: { month: "30 days", year: "360 days" },
+    cardUpdate: "Card verification charge (saving a new card)",
+    refundOf: "Refund of a previous payment",
+    voidOf: "Cancelled (voided) payment",
+    card: "{brand} •••• {last4}",
+    cardUnknown: "Card",
+    renewalNote:
+      "Your subscription renews automatically until you cancel. You can cancel at any time from Settings → Billing: {url}",
+    contact: "Questions about this charge? Contact {email}.",
+    footer: "{merchant} · {site}",
   },
   validation: {
     name: "Enter your full name.",

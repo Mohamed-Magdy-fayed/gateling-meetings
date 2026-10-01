@@ -3,6 +3,7 @@ export * from "./billing-customers-table";
 export * from "./billing-events-table";
 export * from "./billing-provider";
 export * from "./billing-subscriptions-table";
+export * from "./billing-transactions-table";
 export * from "./organization-memberships-table";
 export * from "./organizations-table";
 export * from "./plan-grants-table";

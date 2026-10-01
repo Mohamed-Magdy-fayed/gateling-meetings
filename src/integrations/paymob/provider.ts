@@ -25,6 +25,7 @@ import {
   subscriptionToFacts,
   tokenCallbackSchema,
   transactionCallbackSchema,
+  transactionEventId,
 } from "./events";
 import { verifyTokenHmac, verifyTransactionHmac } from "./hmac";
 
@@ -369,9 +370,7 @@ export const paymobProvider: BillingProvider = {
       }
       const { obj: txn } = transactionCallbackSchema.parse(payload);
       return {
-        // Paymob reports a transaction once per final state; the state is
-        // part of the id so a pending → final pair is two events.
-        providerEventId: `txn:${txn.id}:${txn.pending ? "pending" : txn.success ? "ok" : "failed"}`,
+        providerEventId: transactionEventId(txn),
         eventType: PAYMOB_EVENT_TYPES.transaction,
         occurredAt: new Date(txn.created_at),
         payload,

@@ -134,6 +134,59 @@ export const billingAr = {
     redirectNote:
       "سيتم تحويلك إلى Paymob، مزوّد الدفع لدينا، للدفع بالبطاقة. البطاقات فقط — لا يمكن تشغيل الخصم المتكرر على محفظة إلكترونية.",
     continue: "المتابعة إلى الدفع",
+    summaryTitle: "ملخص الطلب",
+    summaryLine: "{plan} · {seats:number} مقعد × {unit}",
+    total: "الإجمالي المخصوم اليوم",
+    // DRAFT – needs owner review (billing terms shown at the point of payment).
+    renewal: {
+      month: "يتجدد تلقائيًا كل 30 يومًا بمبلغ {amount} حتى تقوم بالإلغاء.",
+      year: "يتجدد تلقائيًا كل 360 يومًا بمبلغ {amount} حتى تقوم بالإلغاء.",
+    },
+    cancelAnytime:
+      "يمكنك الإلغاء في أي وقت من الإعدادات ← الفوترة — وتحتفظ بالخطة حتى نهاية الفترة التي دفعت مقابلها.",
+    noFees:
+      "هذا هو المبلغ الكامل بالجنيه المصري. لا تُضاف أي رسوم أو رسوم إضافية على الدفع بالبطاقة.",
+    consent:
+      "بالمتابعة إلى الدفع فإنك توافق على {terms} و{refunds}، وتؤكد أنك قرأت {privacy}.",
+    termsLink: "شروط الخدمة",
+    refundsLink: "سياسة الاسترداد والإلغاء",
+    privacyLink: "سياسة الخصوصية",
+    cardUpdateCharge:
+      "لحفظ بطاقة جديدة، تخصم Paymob مبلغ 1.00 جنيه مصري للتحقق منها. هذا هو الخصم الوحيد في هذه الصفحة.",
+  },
+  receipt: {
+    subject: {
+      payment: "إيصال Gateling الخاص بك — {amount}",
+      refund: "تم إصدار استرداد — {amount}",
+    },
+    heading: {
+      payment: "إيصال دفع",
+      refund: "تأكيد الاسترداد",
+    },
+    intro: {
+      payment: "شكرًا لك. استلمنا دفعتك مقابل {product}.",
+      refund:
+        "استرددنا المبلغ أدناه عبر Paymob إلى البطاقة الأصلية. قد يستغرق بنكك حتى 14 يوم عمل لإظهاره.",
+    },
+    merchant: "التاجر",
+    transactionId: "رقم المعاملة",
+    originalTransaction: "المعاملة الأصلية",
+    date: "التاريخ",
+    amount: "المبلغ",
+    description: "الوصف",
+    paymentMethod: "وسيلة الدفع",
+    organization: "المؤسسة",
+    planLine: "خطة {plan} · {seats} مقعد · تُحاسب كل {period}",
+    planPeriod: { month: "30 يومًا", year: "360 يومًا" },
+    cardUpdate: "رسوم التحقق من البطاقة (حفظ بطاقة جديدة)",
+    refundOf: "استرداد دفعة سابقة",
+    voidOf: "دفعة ملغاة",
+    card: "{brand} •••• {last4}",
+    cardUnknown: "بطاقة",
+    renewalNote:
+      "يتجدد اشتراكك تلقائيًا حتى تقوم بالإلغاء. يمكنك الإلغاء في أي وقت من الإعدادات ← الفوترة: {url}",
+    contact: "لديك أسئلة حول هذا الخصم؟ تواصل معنا على {email}.",
+    footer: "{merchant} · {site}",
   },
   validation: {
     name: "أدخل اسمك الكامل.",

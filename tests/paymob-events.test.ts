@@ -413,6 +413,10 @@ describe("parsePaymobEvent", () => {
       parsePaymobEvent(PAYMOB_EVENT_TYPES.transaction, transaction),
     ).toEqual({
       kind: "transaction",
+      transactionKind: "payment",
+      parentTransactionId: null,
+      reversed: false,
+      card: { brand: "MasterCard", last4: "2346", type: "card" },
       transactionId: "123456",
       providerOrderId: "987",
       reference: "bc_abc",

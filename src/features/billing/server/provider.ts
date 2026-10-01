@@ -84,8 +84,18 @@ export type ParsedBillingEvent =
       subscriptionId: string;
     }
   | {
-      /** A payment attempt: the initial checkout or a recurring deduction. */
+      /**
+       * Money moving: a payment attempt (the initial checkout or a
+       * recurring deduction), or a refund / void of an earlier payment.
+       */
       kind: "transaction";
+      transactionKind: "payment" | "refund" | "void";
+      /** For a refund / void: the provider id of the payment it reverses. */
+      parentTransactionId: string | null;
+      /** A payment the provider already reports as refunded or voided. */
+      reversed: boolean;
+      /** As the provider reports it; never more than brand and last four. */
+      card: { brand: string | null; last4: string | null; type: string | null };
       transactionId: string;
       providerOrderId: string | null;
       /** Our checkout reference, when the provider echoes it. */

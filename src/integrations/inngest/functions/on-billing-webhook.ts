@@ -16,9 +16,11 @@ import {
   type PaidPlanId,
   planToCatalogId,
 } from "@/features/billing/catalog";
+import { chargeMatches } from "@/features/billing/ledger";
 import {
   completeCheckout,
   findCheckout,
+  findCheckoutBySubscription,
   linkCheckoutSubscription,
 } from "@/features/billing/server/checkouts";
 import {
@@ -33,6 +35,7 @@ import {
   billingProviderFor,
   type ParsedBillingEvent,
 } from "@/features/billing/server/provider";
+import { sendReceiptsForEvent } from "@/features/billing/server/receipts";
 import {
   type PlanChange,
   type SubscriptionFacts,
@@ -42,6 +45,13 @@ import {
   applyBillingSubscription,
   findOrganizationForBilling,
 } from "@/features/billing/server/subscriptions";
+import {
+  applyReversalToPayment,
+  findTransaction,
+  organizationOwnerEmail,
+  recordTransaction,
+  userEmail,
+} from "@/features/billing/server/transactions";
 import { PaymobApiError } from "@/integrations/paymob/client";
 import { inngest } from "../client";
 import { billingWebhookReceivedEvent } from "./billing-events";
@@ -59,8 +69,11 @@ type PendingLink = {
   providerTransactionId: string | null;
 };
 
-/** Paymob bills every N days; the periods we grant match its `frequency`. */
-const INTERVAL_DAYS: Record<BillingInterval, number> = { month: 30, year: 365 };
+/**
+ * Paymob bills every N days; the periods we grant match its `frequency`
+ * (`scripts/seed-paymob-plans.ts` creates the plans with 30 and 360).
+ */
+const INTERVAL_DAYS: Record<BillingInterval, number> = { month: 30, year: 360 };
 
 function addInterval(from: Date, interval: BillingInterval): Date {
   return new Date(
@@ -123,6 +136,14 @@ export const onBillingWebhook = inngest.createFunction(
 
     await step.run("mark-processed", () =>
       markProcessed(billingEventId, outcome),
+    );
+
+    // A receipt for every successful payment, renewal, refund and void the
+    // event recorded — whatever the outcome for the plan (an org on a
+    // hand-granted plan that still paid gets one too). Its own step so an
+    // SMTP hiccup retries the email, not the payment.
+    await step.run("send-receipts", () =>
+      sendReceiptsForEvent(db, billingEventId),
     );
 
     // A paid checkout whose subscription the provider has not named yet:
@@ -223,12 +244,127 @@ async function applyTransaction(
   row: BillingEvent,
   parsed: Extract<ParsedBillingEvent, { kind: "transaction" }>,
 ): Promise<BillingEventOutcome> {
+  // Refunds and voids arrive on the same callback as payments, often with
+  // the same order (and so the same checkout). They must never reach the
+  // payment paths below, which would grant or extend a plan.
+  if (parsed.transactionKind !== "payment") {
+    return applyReversal(provider, row, parsed);
+  }
+  if (parsed.reversed) return applyReversedPaymentUpdate(provider, parsed);
+
   const checkout = await findCheckout(db, provider.id, {
     providerOrderId: parsed.providerOrderId,
     reference: parsed.reference,
   });
   if (checkout) return applyInitialPayment(provider, row, parsed, checkout);
   return applyRecurringPayment(provider, row, parsed);
+}
+
+type TransactionEvent = Extract<ParsedBillingEvent, { kind: "transaction" }>;
+
+/** The ledger columns every recorded transaction shares. */
+function ledgerValues(
+  provider: BillingProvider,
+  row: BillingEvent,
+  parsed: TransactionEvent,
+) {
+  return {
+    provider: provider.id,
+    providerTransactionId: parsed.transactionId,
+    kind: parsed.transactionKind,
+    status: parsed.success ? ("succeeded" as const) : ("failed" as const),
+    parentTransactionId: parsed.parentTransactionId,
+    billingEventId: row.id,
+    providerOrderId: parsed.providerOrderId,
+    providerSubscriptionId: parsed.subscriptionId,
+    amountCents: parsed.amountCents,
+    currency: parsed.currency.toUpperCase(),
+    cardBrand: parsed.card.brand?.slice(0, 32) ?? null,
+    cardLast4: parsed.card.last4,
+    occurredAt: row.occurredAt,
+  };
+}
+
+/**
+ * A refund or void of an earlier payment: recorded against the payment
+ * it reverses, never granted on. Access is deliberately not cut here — a
+ * partial or goodwill refund must not end a subscription; cancelling is
+ * the admin's separate, explicit step (see docs/payments.md).
+ */
+async function applyReversal(
+  provider: BillingProvider,
+  row: BillingEvent,
+  parsed: TransactionEvent,
+): Promise<BillingEventOutcome> {
+  if (parsed.pending) return "skipped_unhandled";
+  const payment = parsed.parentTransactionId
+    ? await findTransaction(db, provider.id, parsed.parentTransactionId)
+    : null;
+  const checkout = payment
+    ? null
+    : await findCheckout(db, provider.id, {
+        providerOrderId: parsed.providerOrderId,
+        reference: parsed.reference,
+      });
+  const organizationId =
+    payment?.organizationId ??
+    checkout?.organizationId ??
+    row.organizationId ??
+    null;
+
+  await recordTransaction(db, {
+    ...ledgerValues(provider, row, parsed),
+    organizationId,
+    checkoutId: payment?.checkoutId ?? checkout?.id ?? null,
+    providerSubscriptionId:
+      parsed.subscriptionId ?? payment?.providerSubscriptionId ?? null,
+    plan: payment?.plan ?? null,
+    interval: payment?.interval ?? null,
+    seats: payment?.seats ?? null,
+    cardBrand: parsed.card.brand ?? payment?.cardBrand ?? null,
+    cardLast4: parsed.card.last4 ?? payment?.cardLast4 ?? null,
+    customerEmail: payment?.customerEmail ?? null,
+  });
+  if (payment && parsed.success && parsed.transactionKind !== "payment") {
+    await applyReversalToPayment(db, payment, {
+      kind: parsed.transactionKind,
+      amountCents: parsed.amountCents,
+      at: row.occurredAt,
+    });
+  }
+  if (organizationId) await setEventOrganization(row.id, organizationId);
+  console.warn(
+    `[billing] ${parsed.transactionKind} ${parsed.transactionId} of ${parsed.parentTransactionId ?? "unknown payment"} recorded (${parsed.success ? "succeeded" : "failed"})`,
+  );
+  return "applied";
+}
+
+/**
+ * Paymob re-reporting a payment as refunded or voided. The refund / void
+ * transaction's own callback is what gets recorded (it carries the
+ * amount); this update only has to not be mistaken for a fresh payment.
+ */
+function applyReversedPaymentUpdate(
+  provider: BillingProvider,
+  parsed: TransactionEvent,
+): BillingEventOutcome {
+  console.warn(
+    `[billing:${provider.id}] payment ${parsed.transactionId} reported as refunded/voided; nothing granted`,
+  );
+  return "skipped_unhandled";
+}
+
+/** Buyer named on the payment, else whoever opened the checkout, else the org owner. */
+async function receiptEmail(
+  parsed: TransactionEvent,
+  checkout: BillingCheckout | null,
+  organizationId: string | null,
+): Promise<string | null> {
+  return (
+    parsed.email ??
+    (await userEmail(db, checkout?.createdByUserId ?? null)) ??
+    (organizationId ? await organizationOwnerEmail(db, organizationId) : null)
+  );
 }
 
 async function applyInitialPayment(
@@ -239,6 +375,40 @@ async function applyInitialPayment(
 ): Promise<BillingEventOutcome> {
   await setEventOrganization(row.id, checkout.organizationId);
   if (parsed.pending) return "skipped_unhandled";
+
+  const isSubscribe = checkout.kind === "subscribe";
+  await recordTransaction(db, {
+    ...ledgerValues(provider, row, parsed),
+    organizationId: checkout.organizationId,
+    checkoutId: checkout.id,
+    plan: isSubscribe ? checkout.plan : null,
+    interval: isSubscribe ? checkout.interval : null,
+    seats: isSubscribe ? checkout.seats : null,
+    customerEmail: await receiptEmail(
+      parsed,
+      checkout,
+      checkout.organizationId,
+    ),
+  });
+
+  // The intention was created server-side with the checkout's amount, so a
+  // mismatch means something is wrong upstream: record the money, grant
+  // nothing, and leave it on the admin page as an error to resolve.
+  if (
+    isSubscribe &&
+    parsed.success &&
+    !chargeMatches(parsed, {
+      amountCents: checkout.amountCents,
+      currency: checkout.currency,
+    })
+  ) {
+    console.error(
+      `[billing] checkout ${checkout.id} charged ${parsed.amountCents} ${parsed.currency}, expected ${checkout.amountCents} ${checkout.currency}; plan not granted`,
+    );
+    throw new NonRetriableError(
+      `amount mismatch: charged ${parsed.amountCents} ${parsed.currency}, checkout was ${checkout.amountCents} ${checkout.currency}`,
+    );
+  }
 
   await completeCheckout(db, checkout.id, {
     status: parsed.success ? "paid" : "failed",
@@ -314,15 +484,37 @@ async function applyRecurringPayment(
 ): Promise<BillingEventOutcome> {
   if (parsed.pending) return "skipped_unhandled";
   const subscriptionId = parsed.subscriptionId;
-  if (!subscriptionId) return "skipped_no_org";
-  const organizationId = await findOrganizationForBilling(db, provider.id, {
-    organizationId: row.organizationId,
-    subscriptionId,
+  const organizationId = subscriptionId
+    ? await findOrganizationForBilling(db, provider.id, {
+        organizationId: row.organizationId,
+        subscriptionId,
+      })
+    : null;
+
+  // Money moved whether or not we can place it: the ledger always gets it.
+  const catalog = getPlanCatalog();
+  const mirroredForLedger = subscriptionId
+    ? await findMirroredSubscription(db, subscriptionId)
+    : null;
+  const entry = catalog
+    ? catalogIdToPlanAndInterval(catalog, mirroredForLedger?.planId)
+    : null;
+  const originalCheckout = subscriptionId
+    ? await findCheckoutBySubscription(db, provider.id, subscriptionId)
+    : null;
+  await recordTransaction(db, {
+    ...ledgerValues(provider, row, parsed),
+    organizationId,
+    checkoutId: originalCheckout?.id ?? null,
+    plan: entry?.plan ?? null,
+    interval: entry?.interval ?? null,
+    seats: mirroredForLedger?.quantity ?? null,
+    customerEmail: await receiptEmail(parsed, originalCheckout, organizationId),
   });
-  if (!organizationId) return "skipped_no_org";
+
+  if (!subscriptionId || !organizationId) return "skipped_no_org";
   await setEventOrganization(row.id, organizationId);
 
-  const catalog = getPlanCatalog();
   if (!catalog) throw new NonRetriableError("billing catalog not configured");
 
   const fetched = await bestEffort("subscription re-read", () =>
