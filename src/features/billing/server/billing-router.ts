@@ -13,6 +13,10 @@ import {
   OrganizationsTable,
 } from "@/drizzle/schema";
 import {
+  billingCheckoutRatelimit,
+  isRateLimited,
+} from "@/integrations/ratelimit";
+import {
   createTRPCRouter,
   type OrgContext,
   orgAdminProcedure,
@@ -77,6 +81,15 @@ async function withProvider<T>(
       code: "BAD_GATEWAY",
       message: ctx.t("billing.errors.providerUnavailable"),
       cause: error,
+    });
+  }
+}
+
+async function requireCheckoutBudget(ctx: OrgContext) {
+  if (await isRateLimited(billingCheckoutRatelimit, ctx.session.user.id)) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: ctx.t("billing.errors.rateLimited"),
     });
   }
 }
@@ -267,6 +280,7 @@ export const billingRouter = createTRPCRouter({
         });
       }
       await requireSeats(ctx, input.seats);
+      await requireCheckoutBudget(ctx);
       const live = await provider(ctx);
       const buyer = await buyerFor(ctx, input);
       const amountCents = subscriptionAmountCents(
@@ -319,6 +333,7 @@ export const billingRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       requireBillable(ctx);
       const subscriptionId = requireSubscription(ctx);
+      await requireCheckoutBudget(ctx);
       const live = await provider(ctx);
       const buyer = await buyerFor(ctx, input);
       const checkout = await openCheckout(ctx.db, {

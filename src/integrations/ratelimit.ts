@@ -63,6 +63,17 @@ export const companionRatelimit = new Ratelimit({
   prefix: "ratelimit:companion",
 });
 
+/**
+ * Opening a Paymob payment page (checkout or card update), per signed-in
+ * user. Each one creates an intention at Paymob, so a loop must not be
+ * able to mint them; a real buyer retrying a declined card needs a few.
+ */
+export const billingCheckoutRatelimit = new Ratelimit({
+  redis: redisClient,
+  limiter: Ratelimit.slidingWindow(10, "10 m"),
+  prefix: "ratelimit:billing-checkout",
+});
+
 export const meetingJoinRatelimit = new Ratelimit({
   redis: redisClient,
   limiter: Ratelimit.slidingWindow(30, "10 m"),

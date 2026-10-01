@@ -118,6 +118,8 @@ export const billingEn = {
     checkoutUnavailable: "Checkout is not available right now.",
     emailRequired:
       "Your account needs a verified email address before you can subscribe.",
+    rateLimited:
+      "Too many payment attempts. Please wait a few minutes and try again.",
     providerUnavailable:
       "Our payment provider did not respond. Nothing was charged — please try again in a moment.",
   },
