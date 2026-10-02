@@ -69,7 +69,7 @@ export async function SiteFooter({ className }: { className?: string }) {
           <MapPinIcon aria-hidden className="size-3.5 shrink-0" />
           {t("legal.footer.location")}
         </span>
-        <PaymentBrands className="ms-auto" />
+        <PaymentBrands className="sm:ms-auto" />
       </address>
     </footer>
   );
