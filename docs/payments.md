@@ -100,8 +100,11 @@ transfer or to another card.
   (no payload). Processing failures are stored on `billing_events.error`
   and shown on the org's admin page.
 - Amount mismatches log `[billing] checkout ... charged ... expected ...`.
-- **To do (owner):** add a Vercel log alert on `[billing` warnings/errors
-  and enable Inngest failure notifications for `on-billing-webhook`.
+- **Alerts:** every address in `ADMIN_EMAILS` is emailed when a billing
+  event fails (incl. an amount mismatch), when callbacks are rejected, or
+  when a callback arrives with billing misconfigured
+  (`src/features/billing/server/alerts.ts`). Rejection/config alerts are
+  throttled to one per hour.
 
 ## Incident response
 
