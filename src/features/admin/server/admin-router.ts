@@ -4,12 +4,14 @@ import { z } from "zod";
 
 import {
   BillingEventsTable,
+  BillingTransactionsTable,
   MeetingsTable,
   OrganizationMembershipsTable,
   OrganizationsTable,
   PlanGrantsTable,
   UsersTable,
 } from "@/drizzle/schema";
+import { isPastRefundWindow, refundDeadline } from "@/features/billing/ledger";
 import { applyPlanGrant } from "@/features/billing/server/grants";
 import { normalizeEmail } from "@/features/core/auth/core/helpers";
 import { meetingFeaturesSchema } from "@/features/meetings/lib/meeting-flags";
@@ -251,6 +253,59 @@ export const adminRouter = createTRPCRouter({
           .returning({ id: PlanGrantsTable.id });
         if (!deleted) throw new TRPCError({ code: "NOT_FOUND" });
         return deleted;
+      }),
+  }),
+
+  /** The money ledger, newest first — all orgs, or one. */
+  transactions: createTRPCRouter({
+    list: adminProcedure
+      .input(
+        z.object({
+          organizationId: z.uuid().optional(),
+          limit: z.number().int().min(1).max(200).default(50),
+        }),
+      )
+      .query(async ({ ctx, input }) => {
+        const rows = await ctx.db
+          .select({
+            id: BillingTransactionsTable.id,
+            providerTransactionId:
+              BillingTransactionsTable.providerTransactionId,
+            kind: BillingTransactionsTable.kind,
+            status: BillingTransactionsTable.status,
+            parentTransactionId: BillingTransactionsTable.parentTransactionId,
+            organizationId: BillingTransactionsTable.organizationId,
+            organizationName: OrganizationsTable.name,
+            amountCents: BillingTransactionsTable.amountCents,
+            currency: BillingTransactionsTable.currency,
+            refundedAmountCents: BillingTransactionsTable.refundedAmountCents,
+            voidedAt: BillingTransactionsTable.voidedAt,
+            cardBrand: BillingTransactionsTable.cardBrand,
+            cardLast4: BillingTransactionsTable.cardLast4,
+            occurredAt: BillingTransactionsTable.occurredAt,
+            receiptSentAt: BillingTransactionsTable.receiptSentAt,
+          })
+          .from(BillingTransactionsTable)
+          .leftJoin(
+            OrganizationsTable,
+            eq(OrganizationsTable.id, BillingTransactionsTable.organizationId),
+          )
+          .where(
+            input.organizationId
+              ? eq(
+                  BillingTransactionsTable.organizationId,
+                  input.organizationId,
+                )
+              : undefined,
+          )
+          .orderBy(desc(BillingTransactionsTable.occurredAt))
+          .limit(input.limit);
+        const now = new Date();
+        return rows.map((row) => ({
+          ...row,
+          refundDeadline: refundDeadline(row.occurredAt),
+          refundWindowClosed: isPastRefundWindow(row.occurredAt, now),
+        }));
       }),
   }),
 

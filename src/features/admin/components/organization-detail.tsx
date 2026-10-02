@@ -2,14 +2,17 @@
 
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ArrowLeftIcon } from "lucide-react";
+import { Suspense } from "react";
 
 import { LinkButton } from "@/components/general/link-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PlanBadge } from "@/features/billing/components/plan-badge";
 import { useTranslation } from "@/features/core/i18n/client";
 import { useTRPC } from "@/integrations/trpc/client";
 import { OrganizationPlanForm } from "./organization-plan-form";
+import { TransactionsList } from "./transactions-list";
 
 const STATUS_VARIANT = {
   scheduled: "info",
@@ -51,6 +54,17 @@ export function OrganizationDetail({ id }: { id: string }) {
       </div>
 
       <OrganizationPlanForm organization={org} />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("admin.transactions.title")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Suspense fallback={<Skeleton className="h-24 w-full" />}>
+            <TransactionsList organizationId={org.id} />
+          </Suspense>
+        </CardContent>
+      </Card>
 
       {org.billingEvents.length > 0 && (
         <Card>

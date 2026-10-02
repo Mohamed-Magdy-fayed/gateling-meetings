@@ -7,6 +7,7 @@ export const adminEn = {
     organizations: "Organizations",
     grants: "Plan grants",
     users: "Users",
+    transactions: "Transactions",
   },
   search: "Search by name or email…",
   features: {
@@ -109,5 +110,24 @@ export const adminEn = {
   validation: {
     seats: "Seats must be between 1 and 10,000.",
     unlimitedSource: "The Unlimited plan can only be granted by hand.",
+  },
+  transactions: {
+    title: "Transactions",
+    lead: "Every payment, refund and void Paymob reported through a verified callback. Refunds are issued in the Paymob dashboard, to the original card only, within 90 days of the charge.",
+    empty: "No transactions recorded yet.",
+    date: "{when:date}",
+    kind: { payment: "Payment", refund: "Refund", void: "Void" },
+    failed: "Failed",
+    refunded: "Refunded {amount}",
+    voided: "Voided",
+    refundBy: "Refundable until {when:date}",
+    refundClosed: "Refund window closed",
+    noReceipt: "No receipt sent",
+    exportTitle: "Export (CSV)",
+    exportLead:
+      "Transactions in a date range (UTC), with estimated Paymob fees and net — for inspection requests and settlement reconciliation.",
+    from: "From",
+    to: "To",
+    download: "Download CSV",
   },
 } as const;

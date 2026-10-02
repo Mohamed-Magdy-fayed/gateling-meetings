@@ -7,6 +7,7 @@ export const adminAr = {
     organizations: "المؤسسات",
     grants: "منح الخطط",
     users: "المستخدمون",
+    transactions: "المعاملات",
   },
   features: {
     title: "ميزات الاجتماعات",
@@ -117,5 +118,24 @@ export const adminAr = {
   validation: {
     seats: "يجب أن يكون عدد المقاعد بين 1 و10,000.",
     unlimitedSource: "لا يمكن منح الخطة غير المحدودة إلا يدويًا.",
+  },
+  transactions: {
+    title: "المعاملات",
+    lead: "كل دفعة واسترداد وإلغاء أبلغت عنه Paymob عبر إشعار موثَّق. تُصدر المبالغ المستردة من لوحة تحكم Paymob، إلى البطاقة الأصلية فقط، خلال 90 يومًا من الخصم.",
+    empty: "لم تُسجَّل أي معاملات بعد.",
+    date: "{when:date}",
+    kind: { payment: "دفعة", refund: "استرداد", void: "إلغاء" },
+    failed: "فشلت",
+    refunded: "مُسترد {amount}",
+    voided: "ملغاة",
+    refundBy: "قابلة للاسترداد حتى {when:date}",
+    refundClosed: "انتهت مهلة الاسترداد",
+    noReceipt: "لم يُرسل إيصال",
+    exportTitle: "تصدير (CSV)",
+    exportLead:
+      "المعاملات في نطاق زمني (UTC)، مع رسوم Paymob التقديرية والصافي — لطلبات التفتيش ومطابقة التسويات.",
+    from: "من",
+    to: "إلى",
+    download: "تنزيل CSV",
   },
 } as const;
