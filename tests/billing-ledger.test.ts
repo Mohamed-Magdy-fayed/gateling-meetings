@@ -222,6 +222,7 @@ describe("receipt email", () => {
       "Visa •••• 2346",
       "Pro plan · 3 seat(s) · billed every 30 days",
       "info@gateling.com",
+      "The amount includes VAT.",
       "Settings → Billing",
       "إيصال دفع",
     ]) {

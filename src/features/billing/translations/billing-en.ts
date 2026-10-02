@@ -136,7 +136,7 @@ export const billingEn = {
     summaryTitle: "Order summary",
     summaryLine: "{plan} · {seats:number} seat(s) × {unit}",
     total: "Total charged today",
-    // DRAFT – needs owner review (billing terms shown at the point of payment).
+    // Billing terms shown at the point of payment (Paymob 3.2.3 / 3.2.11).
     renewal: {
       month: "Renews automatically every 30 days at {amount} until you cancel.",
       year: "Renews automatically every 360 days at {amount} until you cancel.",
@@ -144,7 +144,7 @@ export const billingEn = {
     cancelAnytime:
       "Cancel anytime from Settings → Billing — you keep the plan until the end of the period you paid for.",
     noFees:
-      "This is the full amount in Egyptian pounds. No fees or card surcharges are added.",
+      "This is the full amount in Egyptian pounds, VAT included. No fees or card surcharges are added.",
     consent:
       "By continuing to payment you agree to the {terms} and the {refunds}, and confirm you have read the {privacy}.",
     termsLink: "Terms of Service",
@@ -184,6 +184,7 @@ export const billingEn = {
     cardUnknown: "Card",
     renewalNote:
       "Your subscription renews automatically until you cancel. You can cancel at any time from Settings → Billing: {url}",
+    vatIncluded: "The amount includes VAT.",
     contact: "Questions about this charge? Contact {email}.",
     footer: "{merchant} · {site}",
   },
@@ -224,7 +225,7 @@ export const billingEn = {
     testMode:
       "Payments are in test mode while our merchant account is being verified — checkout takes no real money yet.",
     currencyNote:
-      "Prices are in Egyptian pounds and charged by card through Paymob. Seats are billed together; changes apply from the next billing date.",
+      "Prices are in Egyptian pounds, VAT included, and charged by card through Paymob. Seats are billed together; changes apply from the next billing date.",
     freeNote:
       "The Free plan needs no card — just sign up. It allows 5 participants, 40-minute meetings, and 600 participant-minutes a month (about ten 30-minute calls with one other person). Paid plans have no monthly allowance.",
     contact: "Talk to us",

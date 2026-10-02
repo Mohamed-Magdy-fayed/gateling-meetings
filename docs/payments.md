@@ -105,8 +105,6 @@ transfer or to another card.
 
 ## Incident response
 
-> DRAFT – needs owner review (contact details and timings).
-
 A suspected or confirmed leak of payment data or credentials — e.g. a
 Paymob key in a commit, a log or a screenshot; unexpected admin access;
 callbacks with a valid HMAC that we did not cause:

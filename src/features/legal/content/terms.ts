@@ -41,7 +41,6 @@ export const termsDocuments: LegalDocuments = {
       {
         heading: "4. Fees, billing and renewals",
         paragraphs: [
-          // DRAFT – needs owner review: confirm whether VAT applies at all (no tax registration); if not, drop the VAT clause.
           "Prices are shown on our pricing page and at checkout in Egyptian pounds and include Egyptian value-added tax where it applies. Subscriptions renew automatically at the end of each billing period (every 30 days for monthly plans, every 360 days for yearly plans) by charging the card saved with Paymob, at the then-current price, until cancelled.",
           "Adding seats makes them available immediately; the new seat total is charged from your next renewal — there is no prorated charge mid-period. Reducing seats also takes effect at the next renewal. Cancelling stops all future charges at once; the organization keeps its plan until the end of the period already paid for. Refunds are governed by our Refund and Cancellation Policy.",
           "If a renewal payment fails, Paymob retries it over the following days and you are notified. If it is not settled within seven days of the period end, the organization returns to the Free plan and its limits apply immediately. Your data is not deleted; you can resubscribe at any time.",

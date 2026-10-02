@@ -108,6 +108,7 @@ function section(input: ReceiptInput, locale: ReceiptLocale): Section {
       }),
     );
   }
+  if (isPayment) notes.push(t("billing.receipt.vatIncluded"));
   notes.push(t("billing.receipt.contact", { email: LEGAL_ENTITY.email }));
 
   const variant = isPayment ? "payment" : "refund";

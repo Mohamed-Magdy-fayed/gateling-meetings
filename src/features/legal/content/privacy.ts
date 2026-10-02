@@ -84,9 +84,9 @@ export const privacyDocuments: LegalDocuments = {
         paragraphs: [],
         bullets: [
           "Account and organization data: until you delete your account, then removed within 30 days except as noted below;",
-          "Meetings and participant records: until you delete the meeting or your account;",
+          "Meetings and participant records: until you delete the meeting or your account — except that, for organizations that have paid for a plan, attendance records (who joined which meeting, when and for how long) are kept for 5 years as evidence that the paid service was delivered, in case a payment is disputed;",
           "Server logs: up to 30 days;",
-          // DRAFT – needs owner review: 5 years is the Paymob agreement (clause 4.21) minimum.
+          // 5 years: the Paymob agreement (clause 4.21) minimum.
           "Billing records — payments, refunds, receipts and payment callbacks from Paymob — at least 5 years from the transaction, as our payment processor agreement requires, and longer where tax or accounting law requires it. They are kept even if you delete your account.",
         ],
       },
@@ -200,9 +200,9 @@ export const privacyDocuments: LegalDocuments = {
         paragraphs: [],
         bullets: [
           "بيانات الحساب والمؤسسة: حتى تحذف حسابك، ثم تُزال خلال 30 يومًا باستثناء ما هو مذكور أدناه؛",
-          "الاجتماعات وسجلات المشاركين: حتى تحذف الاجتماع أو حسابك؛",
+          "الاجتماعات وسجلات المشاركين: حتى تحذف الاجتماع أو حسابك — باستثناء أنه بالنسبة للمؤسسات التي دفعت مقابل خطة، تُحفظ سجلات الحضور (من انضم إلى أي اجتماع، ومتى، ولأي مدة) لمدة 5 سنوات كدليل على تقديم الخدمة المدفوعة في حال الاعتراض على أي دفعة؛",
           "سجلات الخادم: حتى 30 يومًا؛",
-          // DRAFT – needs owner review: 5 years is the Paymob agreement (clause 4.21) minimum.
+          // 5 years: the Paymob agreement (clause 4.21) minimum.
           "سجلات الفوترة — المدفوعات والمبالغ المستردة والإيصالات وإشعارات الدفع من Paymob — لمدة 5 سنوات على الأقل من تاريخ المعاملة، كما تقتضي اتفاقيتنا مع معالج الدفع، ولمدة أطول حيث يقتضي القانون الضريبي أو المحاسبي ذلك. ونحتفظ بها حتى إذا حذفت حسابك.",
         ],
       },
