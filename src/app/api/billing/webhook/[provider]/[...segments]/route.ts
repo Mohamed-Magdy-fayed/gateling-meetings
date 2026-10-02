@@ -1,7 +1,9 @@
 import { and, eq } from "drizzle-orm";
+import { after } from "next/server";
 
 import { db } from "@/drizzle";
 import { BillingEventsTable, billingProviderValues } from "@/drizzle/schema";
+import { sendBillingAlert } from "@/features/billing/server/alerts";
 import {
   type BillingProvider,
   billingProviderFor,
@@ -40,6 +42,12 @@ export async function POST(
   try {
     provider = await billingProviderFor(providerId);
   } catch {
+    after(() =>
+      sendBillingAlert({
+        kind: "not_configured",
+        details: { Provider: providerId, Endpoint: kind },
+      }),
+    );
     return new Response("billing not configured", { status: 503 });
   }
 
@@ -59,10 +67,23 @@ export async function POST(
         `[billing:${providerId}] rejected ${kind} webhook`,
         error.message,
       );
+      // Throttled to one email an hour: a probe must not flood the inbox.
+      after(() =>
+        sendBillingAlert({
+          kind: "webhook_rejected",
+          details: { Endpoint: kind, Reason: error.message },
+        }),
+      );
       return new Response("unauthorized", { status: 401 });
     }
     // The adapter's own prerequisites are missing (no secret configured).
     console.error(`[billing:${providerId}] webhook verification failed`, error);
+    after(() =>
+      sendBillingAlert({
+        kind: "not_configured",
+        details: { Provider: providerId, Endpoint: kind },
+      }),
+    );
     return new Response("billing not configured", { status: 503 });
   }
 

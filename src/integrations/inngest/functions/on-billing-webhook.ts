@@ -17,6 +17,7 @@ import {
   planToCatalogId,
 } from "@/features/billing/catalog";
 import { chargeMatches } from "@/features/billing/ledger";
+import { sendBillingAlert } from "@/features/billing/server/alerts";
 import {
   completeCheckout,
   findCheckout,
@@ -105,8 +106,17 @@ export const onBillingWebhook = inngest.createFunction(
     triggers: [billingWebhookReceivedEvent],
     concurrency: [{ key: "event.data.organizationId", limit: 1 }],
     onFailure: async ({ event, error }) => {
-      const { billingEventId } = event.data.event.data;
+      const { billingEventId, organizationId } = event.data.event.data;
       await markProcessed(billingEventId, "error", error.message);
+      await sendBillingAlert({
+        kind: "event_failed",
+        throttleKey: billingEventId,
+        details: {
+          "Billing event": billingEventId,
+          Organization: organizationId,
+          Error: error.message.slice(0, ERROR_TEXT_LIMIT),
+        },
+      });
     },
   },
   async ({ event, step }) => {
