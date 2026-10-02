@@ -60,6 +60,8 @@ export const refundsDocuments: LegalDocuments = {
         heading: "8. How to request a refund",
         paragraphs: [
           `Email ${E.email} from the address on the account, with the organization name and the receipt or invoice number. Approved refunds are issued through Paymob within 5–10 business days to the original card; your bank may take up to 14 business days to show it.`,
+          // DRAFT – needs owner review: Paymob refunds a card payment only within 90 days (agreement 3.2.6 / 6.x).
+          "Refunds are made only to the card used for the original payment — never in cash, by bank transfer or to another card. Our payment processor can refund a card payment only within 90 days of the charge, so please contact us well within that time.",
         ],
       },
       {
@@ -123,6 +125,8 @@ export const refundsDocuments: LegalDocuments = {
         heading: "8. كيفية طلب الاسترداد",
         paragraphs: [
           `راسلنا على ${E.email} من البريد الإلكتروني المسجَّل في الحساب، مع ذكر اسم المؤسسة ورقم الإيصال أو الفاتورة. تُصدر المبالغ المستردة الموافَق عليها عبر Paymob خلال 5–10 أيام عمل إلى البطاقة الأصلية؛ وقد يستغرق بنكك حتى 14 يوم عمل لإظهارها.`,
+          // DRAFT – needs owner review: Paymob refunds a card payment only within 90 days (agreement 3.2.6 / 6.x).
+          "تُرد المبالغ فقط إلى البطاقة المستخدمة في الدفع الأصلي — وليس نقدًا أو بتحويل بنكي أو إلى بطاقة أخرى. لا يستطيع معالج الدفع لدينا رد مبلغ دفعة بالبطاقة إلا خلال 90 يومًا من الخصم، لذا يُرجى التواصل معنا قبل انقضاء هذه المدة بوقت كافٍ.",
         ],
       },
       {

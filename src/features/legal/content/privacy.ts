@@ -85,9 +85,9 @@ export const privacyDocuments: LegalDocuments = {
         bullets: [
           "Account and organization data: until you delete your account, then removed within 30 days except as noted below;",
           "Meetings and participant records: until you delete the meeting or your account;",
-          "Billing records: as long as tax and accounting law requires;",
           "Server logs: up to 30 days;",
-          "Billing records and payment callbacks from Paymob: as long as needed to handle disputes and meet accounting and tax obligations.",
+          // DRAFT – needs owner review: 5 years is the Paymob agreement (clause 4.21) minimum.
+          "Billing records — payments, refunds, receipts and payment callbacks from Paymob — at least 5 years from the transaction, as our payment processor agreement requires, and longer where tax or accounting law requires it. They are kept even if you delete your account.",
         ],
       },
       {
@@ -201,9 +201,9 @@ export const privacyDocuments: LegalDocuments = {
         bullets: [
           "بيانات الحساب والمؤسسة: حتى تحذف حسابك، ثم تُزال خلال 30 يومًا باستثناء ما هو مذكور أدناه؛",
           "الاجتماعات وسجلات المشاركين: حتى تحذف الاجتماع أو حسابك؛",
-          "سجلات الفوترة: طوال المدة التي يقتضيها القانون الضريبي والمحاسبي؛",
           "سجلات الخادم: حتى 30 يومًا؛",
-          "سجلات الفوترة وإشعارات الدفع من Paymob: طوال المدة اللازمة لمعالجة النزاعات والوفاء بالالتزامات المحاسبية والضريبية.",
+          // DRAFT – needs owner review: 5 years is the Paymob agreement (clause 4.21) minimum.
+          "سجلات الفوترة — المدفوعات والمبالغ المستردة والإيصالات وإشعارات الدفع من Paymob — لمدة 5 سنوات على الأقل من تاريخ المعاملة، كما تقتضي اتفاقيتنا مع معالج الدفع، ولمدة أطول حيث يقتضي القانون الضريبي أو المحاسبي ذلك. ونحتفظ بها حتى إذا حذفت حسابك.",
         ],
       },
       {
