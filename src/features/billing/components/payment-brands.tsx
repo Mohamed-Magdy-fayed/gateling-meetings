@@ -16,8 +16,9 @@ export function PaymentBrands({ className }: { className?: string }) {
           <img
             src={brand.src}
             alt={brand.name}
-            height={20}
-            className="h-5 w-auto"
+            width={38}
+            height={24}
+            className="h-6 w-auto"
           />
         </li>
       ))}
