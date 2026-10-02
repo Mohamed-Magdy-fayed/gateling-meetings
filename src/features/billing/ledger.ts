@@ -51,6 +51,40 @@ export function chargeMatches(
   );
 }
 
+/**
+ * Paymob reports refunds by re-sending the original payment with a running
+ * `refunded_amount_cents` (and `is_voided` for a void). Compared with what
+ * the ledger already holds, this is the new money that went back — or
+ * `null` when the report adds nothing (a redelivery, an older update).
+ * A report that says "refunded" without an amount is taken as in full.
+ */
+export function reversalFromReport(
+  payment: {
+    amountCents: number;
+    refundedAmountCents: number;
+    voided: boolean;
+  },
+  report: { refundedAmountCents: number | null; voided: boolean },
+): {
+  kind: "refund" | "void";
+  amountCents: number;
+  refundedTotal: number;
+} | null {
+  if (report.voided) {
+    if (payment.voided) return null;
+    const amountCents = payment.amountCents - payment.refundedAmountCents;
+    return amountCents > 0
+      ? { kind: "void", amountCents, refundedTotal: payment.amountCents }
+      : null;
+  }
+  const reported = report.refundedAmountCents ?? payment.amountCents;
+  const refundedTotal = Math.min(payment.amountCents, Math.max(0, reported));
+  const amountCents = refundedTotal - payment.refundedAmountCents;
+  return amountCents > 0
+    ? { kind: "refund", amountCents, refundedTotal }
+    : null;
+}
+
 export type LedgerCsvRow = {
   occurredAt: Date;
   providerTransactionId: string;

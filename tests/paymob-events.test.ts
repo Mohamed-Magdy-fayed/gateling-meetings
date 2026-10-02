@@ -416,6 +416,8 @@ describe("parsePaymobEvent", () => {
       transactionKind: "payment",
       parentTransactionId: null,
       reversed: false,
+      voided: false,
+      refundedAmountCents: null,
       card: { brand: "MasterCard", last4: "2346", type: "card" },
       transactionId: "123456",
       providerOrderId: "987",

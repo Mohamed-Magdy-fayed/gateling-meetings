@@ -37,6 +37,9 @@ const transactionObjSchema = z
     is_voided: z.boolean().optional(),
     // Set on the transaction Paymob creates *for* a refund or void; the
     // original payment is named by `parent_transaction`.
+    // Paymob reports a refund by re-sending the *original* payment with
+    // `is_refunded` and this running total — not as a callback of its own.
+    refunded_amount_cents: z.number().nullish(),
     is_refund: z.boolean().optional(),
     is_void: z.boolean().optional(),
     parent_transaction: idSchema.nullish(),
@@ -286,6 +289,8 @@ export function parsePaymobEvent(
       reversed:
         transactionKind === "payment" &&
         Boolean(obj.is_refunded || obj.is_voided),
+      voided: Boolean(obj.is_voided),
+      refundedAmountCents: obj.refunded_amount_cents ?? null,
       card: {
         brand: obj.source_data?.sub_type ?? null,
         last4: lastFour(obj.source_data?.pan),

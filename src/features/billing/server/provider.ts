@@ -92,8 +92,12 @@ export type ParsedBillingEvent =
       transactionKind: "payment" | "refund" | "void";
       /** For a refund / void: the provider id of the payment it reverses. */
       parentTransactionId: string | null;
-      /** A payment the provider already reports as refunded or voided. */
+      /** A payment the provider re-reports as refunded or voided. */
       reversed: boolean;
+      /** That re-report is a void (the whole amount, before settlement). */
+      voided: boolean;
+      /** Running total refunded on this payment, as the provider reports it. */
+      refundedAmountCents: number | null;
       /** As the provider reports it; never more than brand and last four. */
       card: { brand: string | null; last4: string | null; type: string | null };
       transactionId: string;

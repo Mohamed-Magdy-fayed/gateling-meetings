@@ -1,11 +1,17 @@
 "use client";
 
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { ArrowLeftIcon } from "lucide-react";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
+import { ArrowLeftIcon, RotateCwIcon } from "lucide-react";
 import { Suspense } from "react";
+import { toast } from "sonner";
 
 import { LinkButton } from "@/components/general/link-button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PlanBadge } from "@/features/billing/components/plan-badge";
@@ -25,6 +31,17 @@ export function OrganizationDetail({ id }: { id: string }) {
   const trpc = useTRPC();
   const { data: org } = useSuspenseQuery(
     trpc.admin.organizations.get.queryOptions({ id }),
+  );
+  const queryClient = useQueryClient();
+  const reprocess = useMutation(
+    trpc.admin.billingEvents.reprocess.mutationOptions({
+      onSuccess: () => {
+        toast.success(t("admin.organizations.reprocessQueued"));
+        // The function runs in the background; refresh once it has had time.
+        setTimeout(() => queryClient.invalidateQueries(), 4000);
+      },
+      onError: (error) => toast.error(error.message),
+    }),
   );
 
   return (
@@ -89,17 +106,30 @@ export function OrganizationDetail({ id }: { id: string }) {
                       {event.error ? ` · ${event.error}` : ""}
                     </div>
                   </div>
-                  <Badge
-                    variant={
-                      event.outcome === "applied"
-                        ? "success"
-                        : event.outcome === "error"
-                          ? "destructive"
-                          : "outline"
-                    }
-                  >
-                    {event.outcome ?? t("admin.organizations.pending")}
-                  </Badge>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {event.outcome !== "applied" && event.outcome != null && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={reprocess.isPending}
+                        onClick={() => reprocess.mutate({ id: event.id })}
+                      >
+                        <RotateCwIcon data-icon="inline-start" />
+                        {t("admin.organizations.reprocess")}
+                      </Button>
+                    )}
+                    <Badge
+                      variant={
+                        event.outcome === "applied"
+                          ? "success"
+                          : event.outcome === "error"
+                            ? "destructive"
+                            : "outline"
+                      }
+                    >
+                      {event.outcome ?? t("admin.organizations.pending")}
+                    </Badge>
+                  </div>
                 </li>
               ))}
             </ul>

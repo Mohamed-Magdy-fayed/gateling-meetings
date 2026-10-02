@@ -54,6 +54,8 @@ export const adminEn = {
     billingEvents: "Billing events",
     occurred: "{when:date}",
     pending: "Pending",
+    reprocess: "Re-process",
+    reprocessQueued: "Queued — the result shows here in a few seconds.",
     joined: "Joined {when:date}",
   },
   setPlan: {

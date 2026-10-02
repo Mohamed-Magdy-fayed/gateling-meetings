@@ -76,7 +76,7 @@ were committed. Evidence is `path:line` at the time of the audit.
 |---|---|---|---|---|
 | G1 | Refunds only through Paymob, to the original card | PASS | PASS | No code path issues money back in any form; refunds are done in the Paymob dashboard (procedure in `docs/payments.md`). |
 | G2 | 90-day refund limit enforced/warned in admin UI | FAIL | PASS | New admin "Transactions" card per org shows each payment's refund deadline and flags ones past 90 days. |
-| G3 | Refunds/voids recorded, linked to the original, update subscription status | FAIL | PARTIAL | Previously a refund callback was mis-applied as a payment (A4). Fixed: refund/void callbacks are recorded in `billing_transactions` with `parent_transaction_id`, the parent is marked refunded/voided, and nothing is granted or extended. **Not automatic:** cancelling the subscription after a refund stays a deliberate admin action (Settings → Billing → Cancel, or the Paymob dashboard), because a partial or goodwill refund must not cut access. Documented in the refund procedure. |
+| G3 | Refunds/voids recorded, linked to the original, update subscription status | FAIL | PASS | Previously a refund callback was mis-applied as a payment (A4). Fixed: refund/void callbacks are recorded in `billing_transactions` with `parent_transaction_id`, the parent is marked refunded/voided, and nothing is granted or extended. Verified on production 2026-10-02: Paymob reports a refund by re-sending the original payment with `is_refunded` + `refunded_amount_cents` (no callback for the refund itself); that is what is recorded. A full refund/void of the latest payment cancels at Paymob and ends the plan; partial refunds are recorded only. Admins can re-process a skipped/failed event. |
 | G4 | Chargeback evidence (account creation, logins, usage with timestamps/IP) | PARTIAL | PARTIAL | Available: `users.created_at`, `users.last_sign_in_at`, `meeting_participants` join/leave timestamps (written from LiveKit webhooks), checkout row (who, when, what was agreed), plan activation in `billing_events`. **Missing:** a sign-in history with IP. Adding it means storing IPs — a privacy-policy change — so it's left as an owner decision. |
 | G5 | Self-serve cancel | PASS | PASS | Settings → Billing → "Cancel subscription" (`billing-summary.tsx:381-395`). |
 
@@ -138,6 +138,6 @@ Legal text reviewed (DRAFT markers removed) · prices VAT-inclusive · "Cairo, E
 
 ### Still open
 
-1. **One end-to-end test-mode refund on preview** — the only part not yet proven against real Paymob. See `docs/payments.md` → Refund procedure.
+1. **Re-run the refund test** after this deploy: press Re-process on the skipped event, or refund a fresh test payment.
 2. **Go-live switch:** live keys on Production only, `PAYMOB_MODE=live`, remove `PAYMOB_ALLOW_TEST_IN_PRODUCTION`, re-seed the live plans, declare only `meetings.gateling.com` to Paymob.
 3. **Optional:** a sign-in history with IP addresses for stronger chargeback evidence (needs a privacy-policy line).

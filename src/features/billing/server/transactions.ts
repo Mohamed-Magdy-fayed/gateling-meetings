@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 
 import type { Database } from "@/drizzle";
 import {
@@ -74,6 +74,41 @@ export async function applyReversalToPayment(
       refundedAmountCents: sql`least(${BillingTransactionsTable.amountCents}, ${BillingTransactionsTable.refundedAmountCents} + ${reversal.amountCents})`,
     })
     .where(eq(BillingTransactionsTable.id, payment.id));
+}
+
+/**
+ * Sets a payment's refunded total to what the provider reports. Only ever
+ * moves forward, so an older update arriving late cannot undo a newer one.
+ */
+export async function setPaymentRefundedTotal(
+  db: Database,
+  paymentId: string,
+  refundedTotal: number,
+  voidedAt: Date | null,
+): Promise<void> {
+  await db
+    .update(BillingTransactionsTable)
+    .set({
+      refundedAmountCents: sql`greatest(${BillingTransactionsTable.refundedAmountCents}, ${refundedTotal})`,
+      ...(voidedAt ? { voidedAt } : {}),
+    })
+    .where(eq(BillingTransactionsTable.id, paymentId));
+}
+
+/** The org's most recent successful payment — the one paying for today. */
+export async function latestPayment(
+  db: Database,
+  organizationId: string,
+): Promise<BillingTransaction | null> {
+  const row = await db.query.BillingTransactionsTable.findFirst({
+    where: and(
+      eq(BillingTransactionsTable.organizationId, organizationId),
+      eq(BillingTransactionsTable.kind, "payment"),
+      eq(BillingTransactionsTable.status, "succeeded"),
+    ),
+    orderBy: [desc(BillingTransactionsTable.occurredAt)],
+  });
+  return row ?? null;
 }
 
 /** Ledger rows a billing event produced, oldest first. */

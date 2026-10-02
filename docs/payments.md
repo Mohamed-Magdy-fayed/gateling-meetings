@@ -75,12 +75,17 @@ transfer or to another card.
    Policy](../src/features/legal/content/refunds.ts).
 3. Refund in the **Paymob dashboard** → Transactions → the transaction id
    → Refund (full or partial amount).
-4. Paymob sends a refund callback; the app records it in the ledger
-   against the payment and emails the customer a refund confirmation.
-   Check it appears under Admin → Transactions.
-5. Refunding does **not** cancel the subscription. If the refund ends the
-   relationship, cancel it too (Settings → Billing → Cancel as the org's
-   admin, or in the Paymob dashboard) so the card is not charged again.
+4. Paymob reports it by re-sending the *original* payment with
+   `is_refunded` and a running `refunded_amount_cents` (there is no
+   callback for the refund transaction itself). The app records the new
+   part of that total as a **Refund** row against the payment and emails
+   the customer a refund confirmation. Check Admin → Transactions.
+5. A **full** refund (or void) of the org's most recent payment ends the
+   subscription: it is cancelled at Paymob and the org drops to Free at
+   once. A partial refund is recorded only — access stays. Hand-granted and
+   trial plans are never touched.
+6. If an event shows `skipped_unhandled` or `error` on the org's admin
+   page, fix the cause and press **Re-process** on it.
 
 ## Records and exports
 

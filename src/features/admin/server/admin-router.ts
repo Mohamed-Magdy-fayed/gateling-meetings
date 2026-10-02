@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, ilike, inArray, isNull, or } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, isNull, ne, or } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -19,6 +19,8 @@ import {
   getMeetingFeatures,
   setMeetingFeatures,
 } from "@/features/meetings/server/meeting-features";
+import { inngest } from "@/integrations/inngest/client";
+import { billingWebhookReceivedEvent } from "@/integrations/inngest/functions/billing-events";
 import { adminProcedure, createTRPCRouter } from "@/integrations/trpc/init";
 import {
   grantIdSchema,
@@ -253,6 +255,46 @@ export const adminRouter = createTRPCRouter({
           .returning({ id: PlanGrantsTable.id });
         if (!deleted) throw new TRPCError({ code: "NOT_FOUND" });
         return deleted;
+      }),
+  }),
+
+  billingEvents: createTRPCRouter({
+    /**
+     * Runs a stored provider callback through the processor again — for an
+     * event that was skipped or failed before a fix shipped. Applied
+     * events are refused: re-applying them is never needed.
+     */
+    reprocess: adminProcedure
+      .input(z.object({ id: z.uuid() }))
+      .mutation(async ({ ctx, input }) => {
+        const [event] = await ctx.db
+          .update(BillingEventsTable)
+          .set({ processedAt: null, outcome: null, error: null })
+          .where(
+            and(
+              eq(BillingEventsTable.id, input.id),
+              or(
+                isNull(BillingEventsTable.outcome),
+                ne(BillingEventsTable.outcome, "applied"),
+              ),
+            ),
+          )
+          .returning({
+            id: BillingEventsTable.id,
+            provider: BillingEventsTable.provider,
+            providerEventId: BillingEventsTable.providerEventId,
+            organizationId: BillingEventsTable.organizationId,
+          });
+        if (!event) throw new TRPCError({ code: "PRECONDITION_FAILED" });
+        await inngest.send({
+          ...billingWebhookReceivedEvent.create({
+            billingEventId: event.id,
+            organizationId: event.organizationId,
+          }),
+          // Fresh id: the original delivery's id is deduped by Inngest.
+          id: `${event.provider}:${event.providerEventId}:reprocess:${Date.now()}`,
+        });
+        return { ok: true };
       }),
   }),
 

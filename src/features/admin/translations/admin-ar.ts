@@ -63,6 +63,8 @@ export const adminAr = {
     billingEvents: "أحداث الفوترة",
     occurred: "{when:date}",
     pending: "قيد المعالجة",
+    reprocess: "إعادة المعالجة",
+    reprocessQueued: "تمت الجدولة — تظهر النتيجة هنا خلال ثوانٍ.",
     joined: "انضم في {when:date}",
   },
   setPlan: {

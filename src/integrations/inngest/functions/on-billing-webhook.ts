@@ -8,6 +8,8 @@ import {
   type BillingEventOutcome,
   BillingEventsTable,
   type BillingProviderId,
+  BillingSubscriptionsTable,
+  type BillingTransaction,
   OrganizationsTable,
 } from "@/drizzle/schema";
 import {
@@ -16,7 +18,7 @@ import {
   type PaidPlanId,
   planToCatalogId,
 } from "@/features/billing/catalog";
-import { chargeMatches } from "@/features/billing/ledger";
+import { chargeMatches, reversalFromReport } from "@/features/billing/ledger";
 import { sendBillingAlert } from "@/features/billing/server/alerts";
 import {
   completeCheckout,
@@ -49,8 +51,10 @@ import {
 import {
   applyReversalToPayment,
   findTransaction,
+  latestPayment,
   organizationOwnerEmail,
   recordTransaction,
+  setPaymentRefundedTotal,
   userEmail,
 } from "@/features/billing/server/transactions";
 import { PaymobApiError } from "@/integrations/paymob/client";
@@ -260,7 +264,7 @@ async function applyTransaction(
   if (parsed.transactionKind !== "payment") {
     return applyReversal(provider, row, parsed);
   }
-  if (parsed.reversed) return applyReversedPaymentUpdate(provider, parsed);
+  if (parsed.reversed) return applyReversedPaymentUpdate(provider, row, parsed);
 
   const checkout = await findCheckout(db, provider.id, {
     providerOrderId: parsed.providerOrderId,
@@ -350,18 +354,136 @@ async function applyReversal(
 }
 
 /**
- * Paymob re-reporting a payment as refunded or voided. The refund / void
- * transaction's own callback is what gets recorded (it carries the
- * amount); this update only has to not be mistaken for a fresh payment.
+ * Paymob re-reporting a payment as refunded or voided — which is how it
+ * reports refunds: the original payment is re-sent with `is_refunded` and a
+ * running `refunded_amount_cents`; the refund transaction itself gets no
+ * callback. The new part of that total is recorded as a refund row (which
+ * the customer gets a confirmation for), never granted on; when the
+ * payment paying for the current period comes back in full, the
+ * subscription ends.
  */
-function applyReversedPaymentUpdate(
+async function applyReversedPaymentUpdate(
   provider: BillingProvider,
+  row: BillingEvent,
   parsed: TransactionEvent,
-): BillingEventOutcome {
-  console.warn(
-    `[billing:${provider.id}] payment ${parsed.transactionId} reported as refunded/voided; nothing granted`,
+): Promise<BillingEventOutcome> {
+  const payment = await findTransaction(db, provider.id, parsed.transactionId);
+  if (!payment) {
+    console.warn(
+      `[billing:${provider.id}] refund reported for unknown payment ${parsed.transactionId}`,
+    );
+    return "skipped_unhandled";
+  }
+  const reversal = reversalFromReport(
+    {
+      amountCents: payment.amountCents,
+      refundedAmountCents: payment.refundedAmountCents,
+      voided: payment.voidedAt != null,
+    },
+    { refundedAmountCents: parsed.refundedAmountCents, voided: parsed.voided },
   );
-  return "skipped_unhandled";
+  if (!reversal) return "skipped_stale";
+
+  await recordTransaction(db, {
+    provider: provider.id,
+    // Paymob does not send the refund's own id here; this one is stable
+    // per refunded total, so a redelivery is the same row.
+    providerTransactionId: `${payment.providerTransactionId}:${reversal.kind}:${reversal.refundedTotal}`,
+    kind: reversal.kind,
+    status: "succeeded",
+    parentTransactionId: payment.providerTransactionId,
+    organizationId: payment.organizationId,
+    checkoutId: payment.checkoutId,
+    billingEventId: row.id,
+    providerOrderId: payment.providerOrderId,
+    providerSubscriptionId: payment.providerSubscriptionId,
+    amountCents: reversal.amountCents,
+    currency: payment.currency,
+    plan: payment.plan,
+    interval: payment.interval,
+    seats: payment.seats,
+    cardBrand: payment.cardBrand,
+    cardLast4: payment.cardLast4,
+    customerEmail: payment.customerEmail,
+    occurredAt: row.receivedAt,
+  });
+  await setPaymentRefundedTotal(
+    db,
+    payment.id,
+    reversal.refundedTotal,
+    reversal.kind === "void" ? row.receivedAt : null,
+  );
+  if (payment.organizationId) {
+    await setEventOrganization(row.id, payment.organizationId);
+  }
+
+  const isFull = reversal.refundedTotal >= payment.amountCents;
+  if (isFull && payment.organizationId) {
+    await endSubscriptionAfterFullRefund(provider, payment);
+  }
+  return "applied";
+}
+
+/**
+ * The money for the current period went back in full: stop future charges
+ * and end the plan now. Only for the org's most recent payment (refunding
+ * an old renewal does not cut a newer paid period) and only for a plan the
+ * subscription owns — a hand-granted or trial plan is never touched.
+ */
+async function endSubscriptionAfterFullRefund(
+  provider: BillingProvider,
+  payment: BillingTransaction,
+): Promise<void> {
+  const organizationId = payment.organizationId;
+  if (!organizationId) return;
+  const latest = await latestPayment(db, organizationId);
+  if (latest?.id !== payment.id) return;
+  const org = await db.query.OrganizationsTable.findFirst({
+    where: eq(OrganizationsTable.id, organizationId),
+  });
+  if (org?.planSource !== "subscription") return;
+
+  const subscriptionId =
+    org.billingSubscriptionId ?? payment.providerSubscriptionId;
+  if (subscriptionId) {
+    // Best effort: the plan ends either way; a failed cancel is alerted.
+    try {
+      await provider.cancel(subscriptionId);
+    } catch (error) {
+      console.error("[billing] cancel after full refund failed", error);
+      await sendBillingAlert({
+        kind: "event_failed",
+        throttleKey: `cancel:${subscriptionId}`,
+        details: {
+          Problem:
+            "Full refund recorded but the subscription could not be cancelled at Paymob — cancel it in the dashboard so the card is not charged again.",
+          Subscription: subscriptionId,
+          Organization: organizationId,
+        },
+      });
+    }
+  }
+  const now = new Date();
+  await db.transaction(async (trx) => {
+    if (subscriptionId) {
+      await trx
+        .update(BillingSubscriptionsTable)
+        .set({ status: "canceled", canceledAt: now, syncedAt: now })
+        .where(eq(BillingSubscriptionsTable.id, subscriptionId));
+    }
+    await trx
+      .update(OrganizationsTable)
+      .set({
+        billingSubscriptionStatus: "canceled",
+        planExpiresAt: now,
+        billingSyncedAt: now,
+        updatedBy: "billing",
+      })
+      .where(eq(OrganizationsTable.id, organizationId));
+  });
+  console.warn(
+    `[billing] org ${organizationId}: payment ${payment.providerTransactionId} refunded in full; subscription ended`,
+  );
 }
 
 /** Buyer named on the payment, else whoever opened the checkout, else the org owner. */

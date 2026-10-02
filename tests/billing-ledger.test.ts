@@ -9,6 +9,7 @@ import {
   ledgerToCsv,
   REFUND_WINDOW_DAYS,
   refundDeadline,
+  reversalFromReport,
 } from "@/features/billing/ledger";
 import { buildReceiptEmail } from "@/features/billing/receipt-content";
 import {
@@ -261,5 +262,95 @@ describe("receipt email", () => {
       amountCents: 100,
     });
     expect(email.text).toContain("Card verification charge");
+  });
+});
+
+describe("Paymob's refund report (the original payment re-sent)", () => {
+  // The shape Paymob actually sent on 2026-10-02 when a test payment was
+  // refunded from the dashboard: no callback for the refund transaction,
+  // only the original payment again with `is_refunded` and a running total.
+  const refundedUpdate = {
+    ...payment,
+    obj: {
+      ...payment.obj,
+      id: 546058421,
+      amount_cents: 299_00,
+      is_refunded: true,
+      refunded_amount_cents: 299_00,
+      is_refund: false,
+      has_parent_transaction: false,
+      parent_transaction: null,
+    },
+  };
+
+  it("parses as a reversed payment carrying the refunded total", () => {
+    expect(
+      parsePaymobEvent(PAYMOB_EVENT_TYPES.transaction, refundedUpdate),
+    ).toMatchObject({
+      transactionKind: "payment",
+      reversed: true,
+      voided: false,
+      refundedAmountCents: 299_00,
+      transactionId: "546058421",
+    });
+  });
+
+  it("turns a running total into the new refund since the last report", () => {
+    const paid = { amountCents: 299_00, refundedAmountCents: 0, voided: false };
+    expect(
+      reversalFromReport(paid, { refundedAmountCents: 299_00, voided: false }),
+    ).toEqual({ kind: "refund", amountCents: 299_00, refundedTotal: 299_00 });
+    // Partial, then the rest.
+    expect(
+      reversalFromReport(paid, { refundedAmountCents: 100_00, voided: false }),
+    ).toEqual({ kind: "refund", amountCents: 100_00, refundedTotal: 100_00 });
+    expect(
+      reversalFromReport(
+        { ...paid, refundedAmountCents: 100_00 },
+        { refundedAmountCents: 299_00, voided: false },
+      ),
+    ).toEqual({ kind: "refund", amountCents: 199_00, refundedTotal: 299_00 });
+  });
+
+  it("ignores a redelivered or older report", () => {
+    const refunded = {
+      amountCents: 299_00,
+      refundedAmountCents: 299_00,
+      voided: false,
+    };
+    expect(
+      reversalFromReport(refunded, {
+        refundedAmountCents: 299_00,
+        voided: false,
+      }),
+    ).toBeNull();
+    expect(
+      reversalFromReport(refunded, {
+        refundedAmountCents: 100_00,
+        voided: false,
+      }),
+    ).toBeNull();
+  });
+
+  it("never records more than was charged", () => {
+    expect(
+      reversalFromReport(
+        { amountCents: 299_00, refundedAmountCents: 0, voided: false },
+        { refundedAmountCents: 999_00, voided: false },
+      ),
+    ).toEqual({ kind: "refund", amountCents: 299_00, refundedTotal: 299_00 });
+  });
+
+  it("treats a void as the whole remaining amount, once", () => {
+    const paid = { amountCents: 299_00, refundedAmountCents: 0, voided: false };
+    expect(
+      reversalFromReport(paid, { refundedAmountCents: null, voided: true }),
+    ).toEqual({ kind: "void", amountCents: 299_00, refundedTotal: 299_00 });
+    expect(
+      reversalFromReport(
+        { ...paid, voided: true, refundedAmountCents: 299_00 },
+        { refundedAmountCents: null, voided: true },
+      ),
+    ).toBeNull();
   });
 });
