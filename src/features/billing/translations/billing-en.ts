@@ -125,26 +125,24 @@ export const billingEn = {
   },
   checkout: {
     title: "Billing details",
-    lead: "{plan} · {seats:number} seat(s). Our payment provider needs a name and a phone number for the receipt.",
+    lead: "Paymob, our payment provider, needs a name and a phone number for the receipt.",
     name: "Full name",
     namePlaceholder: "As it should appear on the receipt",
     phone: "Phone number",
     phoneHint: "International format, e.g. +201001234567.",
     redirectNote:
-      "You will be sent to Paymob, our payment provider, to pay by card. Cards only — recurring charges cannot run on a mobile wallet.",
+      "You pay by card on Paymob's secure page. Cards only — renewals can't run on a mobile wallet.",
     continue: "Continue to payment",
     summaryTitle: "Order summary",
     summaryLine: "{plan} · {seats:number} seat(s) × {unit}",
     total: "Total charged today",
     // Billing terms shown at the point of payment (Paymob 3.2.3 / 3.2.11).
     renewal: {
-      month: "Renews automatically every 30 days at {amount} until you cancel.",
-      year: "Renews automatically every 360 days at {amount} until you cancel.",
+      month:
+        "Renews every 30 days at {amount}. Cancel anytime in Settings → Billing; you keep the plan until the paid period ends.",
+      year: "Renews every 360 days at {amount}. Cancel anytime in Settings → Billing; you keep the plan until the paid period ends.",
     },
-    cancelAnytime:
-      "Cancel anytime from Settings → Billing — you keep the plan until the end of the period you paid for.",
-    noFees:
-      "This is the full amount in Egyptian pounds, VAT included. No fees or card surcharges are added.",
+    noFees: "VAT included. No fees or card surcharges are added.",
     consent:
       "By continuing to payment you agree to the {terms} and the {refunds}, and confirm you have read the {privacy}.",
     termsLink: "Terms of Service",
@@ -152,6 +150,25 @@ export const billingEn = {
     privacyLink: "Privacy Policy",
     cardUpdateCharge:
       "To save a new card, Paymob charges EGP 1.00 to verify it. This is the only charge on this page.",
+  },
+  alerts: {
+    subject: {
+      event_failed: "[Gateling billing] A payment event failed to process",
+      webhook_rejected:
+        "[Gateling billing] Paymob callbacks are being rejected",
+      not_configured:
+        "[Gateling billing] A Paymob callback arrived but billing is not configured",
+    },
+    body: {
+      event_failed:
+        "A billing event could not be applied. If money moved, the customer may not have their plan (or a mismatch was blocked on purpose). Check it and fix it by hand.",
+      webhook_rejected:
+        "A callback to the Paymob webhook failed verification (bad HMAC or token) and was rejected. One-off rejections can be noise; repeated ones mean a wrong HMAC secret or someone probing the endpoint.",
+      not_configured:
+        "Paymob sent a callback but the app is missing billing configuration, so it was answered 503 and not stored. Check the Paymob environment variables on this deployment.",
+    },
+    where:
+      "Details: Admin → Organizations (billing events) and Admin → Transactions. Further alerts of this kind are paused for an hour.",
   },
   receipt: {
     subject: {

@@ -41,7 +41,7 @@ export function CheckoutSummary({
   return (
     <section
       aria-label={t("billing.checkout.summaryTitle")}
-      className="space-y-3 rounded-lg bg-muted px-4 py-3"
+      className="space-y-2 rounded-lg bg-muted px-4 py-3"
     >
       <p className="text-sm text-muted-foreground">
         {t("billing.checkout.summaryLine", {
@@ -64,7 +64,6 @@ export function CheckoutSummary({
       </dl>
       <ul className="space-y-1 text-xs text-muted-foreground">
         <li>{t(`billing.checkout.renewal.${interval}`, { amount: total })}</li>
-        <li>{t("billing.checkout.cancelAnytime")}</li>
         <li>{t("billing.checkout.noFees")}</li>
       </ul>
     </section>

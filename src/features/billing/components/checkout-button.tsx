@@ -54,10 +54,7 @@ export function CheckoutButton({
     <BillingContactDialog
       trigger={<Button variant={variant} className={className} />}
       title={t("billing.checkout.title")}
-      lead={t("billing.checkout.lead", {
-        plan: t(`billing.plans.${plan}.name`),
-        seats,
-      })}
+      lead={t("billing.checkout.lead")}
       summary={
         <CheckoutSummary plan={plan} interval={interval} seats={seats} />
       }

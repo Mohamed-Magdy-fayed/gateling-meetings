@@ -126,10 +126,12 @@ export function BillingContactDialog({
           </FieldGroup>
           {summary && <div className="pt-4">{summary}</div>}
           <div className="space-y-2 pt-3">
-            <p className="text-xs text-muted-foreground">
-              {t("billing.checkout.redirectNote")}
-            </p>
-            <PaymentBrands />
+            <div className="flex items-center gap-3">
+              <PaymentBrands size="sm" className="shrink-0 flex-nowrap" />
+              <p className="text-xs text-muted-foreground">
+                {t("billing.checkout.redirectNote")}
+              </p>
+            </div>
             {/* Directly above the pay button: agreeing is continuing. */}
             <LegalConsent />
           </div>

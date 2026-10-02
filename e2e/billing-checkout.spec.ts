@@ -108,7 +108,7 @@ test.describe("billing checkout (Paymob test mode)", () => {
     await expect(dialog.getByTestId("checkout-total")).toHaveText(
       unitPrice ?? "",
     );
-    await expect(dialog).toContainText("Renews automatically every 30 days");
+    await expect(dialog).toContainText("Renews every 30 days");
     await expect(dialog).toContainText("No fees or card surcharges");
     for (const [name, href] of [
       ["Terms of Service", "/terms"],
