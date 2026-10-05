@@ -46,6 +46,8 @@ export type WaitingQueueState = {
   announcement: string;
   /** The viewer's "Knock sound" setting. */
   sound: KnockSound;
+  /** Changes on every new knock and reminder: the strip flashes. */
+  flashKey: number;
 };
 
 /**
@@ -60,6 +62,8 @@ export type WaitingQueueState = {
 export function useWaitingQueue(
   code: string,
   enabled: boolean,
+  /** The floating window is open (no system notification needed). */
+  isPopOutOpen = false,
 ): WaitingQueueState {
   const { t } = useTranslation();
   const trpc = useTRPC();
@@ -101,9 +105,10 @@ export function useWaitingQueue(
       }),
   );
   const waiting = dispatcher.visible(data);
-  const sound = useKnockCues({
+  const { sound, flashKey } = useKnockCues({
     isHost: enabled,
     waitingIds: waiting.map((request) => request.id),
+    isPopOutOpen,
   });
 
   const [notice, setNotice] = useState<string | null>(null);
@@ -183,6 +188,7 @@ export function useWaitingQueue(
     notice,
     announcement,
     sound,
+    flashKey,
   };
 }
 
@@ -282,6 +288,7 @@ function CompactQueue({
   hideNames = false,
   notice,
   sound,
+  flashKey,
   isReviewing,
   onReviewingChange: setIsReviewing,
 }: Omit<WaitingQueueProps, "variant"> & {
@@ -298,10 +305,17 @@ function CompactQueue({
   return (
     <section
       aria-label={t("meetings.waiting.queueTitle", { count: waiting.length })}
-      className="shrink-0 rounded-md bg-primary/15 px-2 py-1 text-xs text-primary"
+      className="relative shrink-0 rounded-md bg-primary/15 px-2 py-1 text-xs text-primary"
     >
+      {/* Restarts on every knock and reminder; the live region says why. */}
+      <span
+        key={flashKey}
+        aria-hidden
+        className="knock-flash pointer-events-none absolute inset-0 rounded-md"
+      />
       {single ? (
         <div className="flex items-center gap-1">
+          <WaitingDot />
           <ul className="min-w-0 flex-1">
             <RequestRow
               request={single}
@@ -317,6 +331,7 @@ function CompactQueue({
         </div>
       ) : (
         <div className="flex min-h-8 items-center gap-1">
+          <WaitingDot />
           <span className="min-w-0 flex-1 truncate font-medium">
             {t("meetings.waiting.queueTitle", { count: waiting.length })}
           </span>
@@ -367,6 +382,16 @@ function CompactQueue({
         </p>
       )}
     </section>
+  );
+}
+
+/** Someone is waiting: a steady pulse for as long as they do. */
+function WaitingDot() {
+  return (
+    <span aria-hidden className="relative flex size-2 shrink-0">
+      <span className="absolute inset-0 rounded-full bg-warning motion-safe:animate-ping" />
+      <span className="relative size-2 rounded-full bg-warning" />
+    </span>
   );
 }
 

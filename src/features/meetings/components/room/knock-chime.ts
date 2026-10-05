@@ -1,31 +1,67 @@
 import { PIP_TIMINGS } from "./pip-timings";
 
+/** `knock`: someone new is waiting. `reminder`: they are still waiting. */
+export type KnockCue = "knock" | "reminder" | null;
+
 /**
- * Decides when a knock chimes. Pure (time injected) so it is unit-tested:
- * - only a request id seen for the first time while `armed` (floating
- *   window open, or meeting tab hidden) chimes — people already waiting
- *   when that began do not, and a re-poll never chimes again;
- * - at most one chime per `CHIME_MIN_INTERVAL_MS`, however many knock.
+ * Decides when a knock chimes. Pure (time injected) so it is unit-tested,
+ * and fed on every poll and on a steady tick while anyone waits:
+ * - only a request id seen for the first time while `armed` (the host is
+ *   away: floating window open, tab hidden or unfocused) is "unseen" —
+ *   people already waiting when that began do not chime;
+ * - at most one chime per `CHIME_MIN_INTERVAL_MS`: a burst is one chime,
+ *   and a knock that lands inside the gap is owed, not dropped;
+ * - while unseen people still wait, a `reminder` every `KNOCK_REMINDER_MS`;
+ * - the host looking back at the room (`armed` false) marks everyone seen.
  */
 export class KnockTracker {
   private readonly seen = new Set<string>();
+  private unseen = new Set<string>();
+  private isOwed = false;
   private lastChime = Number.NEGATIVE_INFINITY;
 
   constructor(
-    private readonly minInterval = PIP_TIMINGS.CHIME_MIN_INTERVAL_MS,
+    private readonly minInterval: number = PIP_TIMINGS.CHIME_MIN_INTERVAL_MS,
+    private readonly reminderInterval: number = PIP_TIMINGS.KNOCK_REMINDER_MS,
   ) {}
 
-  /** Feeds the current waiting ids; returns whether to chime now. */
-  update(ids: readonly string[], armed: boolean, now: number): boolean {
-    let isFresh = false;
+  /**
+   * Feeds the current waiting ids. `hasNew`: an id never seen before (the
+   * waiting strip flashes for it, chime or not).
+   */
+  update(
+    ids: readonly string[],
+    armed: boolean,
+    now: number,
+  ): { cue: KnockCue; hasNew: boolean } {
+    let hasNew = false;
     for (const id of ids) {
       if (this.seen.has(id)) continue;
       this.seen.add(id);
-      if (armed) isFresh = true;
+      hasNew = true;
+      if (armed) {
+        this.unseen.add(id);
+        this.isOwed = true;
+      }
     }
-    if (!isFresh || now - this.lastChime < this.minInterval) return false;
-    this.lastChime = now;
-    return true;
+    // Admitted, denied or gone: nobody to chime for any more.
+    this.unseen = armed
+      ? new Set(ids.filter((id) => this.unseen.has(id)))
+      : new Set();
+    if (this.unseen.size === 0) this.isOwed = false;
+    if (this.unseen.size === 0) return { cue: null, hasNew };
+
+    const sinceChime = now - this.lastChime;
+    if (this.isOwed && sinceChime >= this.minInterval) {
+      this.isOwed = false;
+      this.lastChime = now;
+      return { cue: "knock", hasNew };
+    }
+    if (!this.isOwed && sinceChime >= this.reminderInterval) {
+      this.lastChime = now;
+      return { cue: "reminder", hasNew };
+    }
+    return { cue: null, hasNew };
   }
 }
 

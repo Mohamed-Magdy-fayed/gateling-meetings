@@ -67,6 +67,7 @@ import {
 import { HostSettings } from "./room/host-settings";
 import { MicHealthBanner } from "./room/mic-health-banner";
 import { ParticipantsPanel } from "./room/participants-panel";
+import { PopOutButton, PopOutWindow, usePopOut } from "./room/pop-out-window";
 import { ReactionsOverlay, useReactions } from "./room/reactions";
 import { RoomMediaCheck } from "./room/room-media-check";
 import { SharingBanner } from "./room/sharing-banner";
@@ -280,7 +281,8 @@ function RoomShell({
   const { canPlayAudio, startAudio } = useAudioPlayback();
   useKeepAlive({ title: meeting.title, appName: t("appName"), onLeave });
   const isHost = session.role === "host";
-  const waitingQueue = useWaitingQueue(meeting.code, isHost);
+  const popOut = usePopOut({ isHost });
+  const waitingQueue = useWaitingQueue(meeting.code, isHost, popOut.isOpen);
 
   const [panel, setPanel] = useState<SidePanel>(null);
   const [layout, setLayout] = useState<StageLayout>("grid");
@@ -368,6 +370,7 @@ function RoomShell({
           <HostSettings code={meeting.code} initial={meeting.settings} />
         )}
         <span className="ms-auto flex items-center gap-2 text-xs text-neutral-400">
+          <PopOutButton popOut={popOut} />
           <button
             type="button"
             onClick={() =>
@@ -421,6 +424,12 @@ function RoomShell({
       <BreakoutBanner code={meeting.code} session={session} />
       <DurationBanner code={meeting.code} isHost={isHost} />
       <SharingBanner
+        popOut={popOut}
+        isAnnotating={isAnnotating}
+        onAnnotatingChange={setIsAnnotating}
+      />
+      <PopOutWindow
+        popOut={popOut}
         code={meeting.code}
         isHost={isHost}
         isAnnotating={isAnnotating}

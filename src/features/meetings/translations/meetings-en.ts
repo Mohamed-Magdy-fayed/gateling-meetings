@@ -143,6 +143,8 @@ export const meetingsEn = {
     popIn: "Close floating window",
     popOutHint:
       "Keep seeing everyone in a small window that stays on top while you share.",
+    popOutIdleHint:
+      "Keep seeing everyone — and who is waiting to join — in a small window that stays on top of other tabs and apps.",
     popOutEmpty: "Nobody else is here yet.",
     popOutUnavailable: "Nothing to show yet — nobody has their camera on.",
     chatPlaceholder: "Send a message…",
@@ -275,6 +277,7 @@ export const meetingsEn = {
     offline: "You're offline. Check your connection and try again.",
     tabBadge: "({count})",
     knockSound: "Knock sound",
+    notifyBody: "Open the meeting to let them in.",
     admittedNotice: "{name} admitted",
     declinedNotice: "{name} declined",
     admittedAllNotice: dt("{count:plural}", {

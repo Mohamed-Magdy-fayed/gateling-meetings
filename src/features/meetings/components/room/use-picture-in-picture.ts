@@ -75,14 +75,25 @@ function adoptDocumentChrome(target: Document) {
 type PictureInPictureOptions = {
   /** Open at 480×360 instead of 360×240 (room for the annotate view). */
   large?: boolean;
-  /** While true the window may be open; when it flips false it is closed. */
+  /**
+   * The viewer is sharing: the window opens when this turns true and
+   * closes when it turns false — unless it was already open before.
+   */
   active: boolean;
+  /**
+   * The window may also be open without a share (the host watching the
+   * room from other tabs or apps), so the browser may pop it out by itself
+   * whenever they switch away, not only while sharing.
+   */
+  allowIdle?: boolean;
 };
 
 /**
  * A floating view of the other participants for whoever is sharing their
  * screen — the moment you share, the browser is behind the thing you are
- * showing, and this is the only way to keep seeing faces.
+ * showing, and this is the only way to keep seeing faces. The host may
+ * also open it without sharing, to watch the room and the waiting queue
+ * while working elsewhere.
  *
  * Opening needs a user gesture, so there are three ways in:
  * - `open()` from a button (always works);
@@ -95,6 +106,7 @@ type PictureInPictureOptions = {
 export function usePictureInPicture({
   active,
   large = false,
+  allowIdle = false,
 }: PictureInPictureOptions) {
   // Detected after mount: the server render has no `window`.
   const [mode, setMode] = useState<PipMode | null>(null);
@@ -150,28 +162,34 @@ export function usePictureInPicture({
     };
   }, [mode, video]);
 
-  // Auto-open when the share starts; close when it stops (or we unmount).
+  // Auto-open when the share starts; close when it stops (or we unmount),
+  // leaving a window that was already open before the share alone.
   const wasActiveRef = useRef(false);
+  const openedForShareRef = useRef(false);
+  const isOpenRef = useRef(isOpen);
+  isOpenRef.current = isOpen;
   useEffect(() => {
     if (mode == null) return;
     if (active && !wasActiveRef.current) {
+      openedForShareRef.current = !isOpenRef.current;
       // Not a gesture in the browser's eyes if the picker was slow — the
       // banner's button is there for that case.
-      open().catch(() => {});
+      if (!isOpenRef.current) open().catch(() => {});
     }
-    if (!active && wasActiveRef.current) close();
+    if (!active && wasActiveRef.current && openedForShareRef.current) close();
     wasActiveRef.current = active;
   }, [active, mode, open, close]);
   useEffect(() => close, [close]);
 
   // Let the browser pop us out by itself when the user switches away.
+  const canAutoOpen = active || allowIdle;
   useEffect(() => {
-    if (!active || mode == null) return;
+    if (!canAutoOpen || mode == null) return;
     setMediaSessionAction("enterpictureinpicture", () => {
       open().catch(() => {});
     });
     return () => setMediaSessionAction("enterpictureinpicture", null);
-  }, [active, mode, open]);
+  }, [canAutoOpen, mode, open]);
 
   return { mode, isOpen, open, close, pipWindow, videoRef };
 }

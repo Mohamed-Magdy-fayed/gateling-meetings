@@ -51,6 +51,33 @@
   transform: scaleX(-1);
 }
 
+/* The floating window's waiting strip: blinks a few times per knock (and
+   reminder) so a host glancing at it notices; reduced motion fades once. */
+.knock-flash {
+  opacity: 0;
+  background: color-mix(in oklab, var(--warning) 22%, transparent);
+  box-shadow: inset 0 0 0 2px var(--warning);
+  animation: knock-flash 0.7s ease-in-out 5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .knock-flash {
+    animation: knock-fade 4s ease-out 1;
+  }
+}
+
+@keyframes knock-flash {
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes knock-fade {
+  0% {
+    opacity: 1;
+  }
+}
+
 @keyframes reaction-float {
   0% {
     opacity: 0;

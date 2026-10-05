@@ -156,6 +156,8 @@ export const meetingsAr = {
     popIn: "إغلاق النافذة العائمة",
     popOutHint:
       "استمر في رؤية الجميع في نافذة صغيرة تبقى في المقدمة أثناء المشاركة.",
+    popOutIdleHint:
+      "استمر في رؤية الجميع — ومن ينتظر الانضمام — في نافذة صغيرة تبقى فوق علامات التبويب والتطبيقات الأخرى.",
     popOutEmpty: "لا يوجد أحد غيرك بعد.",
     popOutUnavailable: "لا يوجد ما يُعرض بعد — لم يشغّل أحد كاميرته.",
     chatPlaceholder: "أرسل رسالة…",
@@ -295,6 +297,7 @@ export const meetingsAr = {
     offline: "أنت غير متصل. تحقق من اتصالك وحاول مرة أخرى.",
     tabBadge: "({count})",
     knockSound: "صوت طلب الانضمام",
+    notifyBody: "افتح الاجتماع للسماح لهم بالدخول.",
     admittedNotice: "تم قبول {name}",
     declinedNotice: "تم رفض {name}",
     admittedAllNotice: dt("{count:plural}", {

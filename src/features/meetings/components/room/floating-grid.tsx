@@ -83,6 +83,11 @@ export function orderFloatingTiles(
 type FloatingGridProps = {
   code: string;
   isHost: boolean;
+  /**
+   * The viewer is presenting. Off when the host popped the window out just
+   * to watch the room: no pause / stop, no annotate view.
+   */
+  isSharing?: boolean;
   /** Extra footer content (the sharer's "people annotating" notice). */
   footerExtra?: ReactNode;
   /** Host only: the room's one waiting-queue poller, shown as a strip. */
@@ -100,6 +105,7 @@ type FloatingGridProps = {
 export function FloatingGrid({
   code,
   isHost,
+  isSharing = true,
   footerExtra,
   waitingQueue,
   isMonitorShare = false,
@@ -124,7 +130,8 @@ export function FloatingGrid({
   // Keys pressed in the floating window go to its own document.
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const [view, setView] = useState<"people" | "annotate">("people");
-  const isAnnotating = features.pipAnnotateAvailable && view === "annotate";
+  const canAnnotate = features.pipAnnotateAvailable && isSharing;
+  const isAnnotating = canAnnotate && view === "annotate";
 
   return (
     <div
@@ -200,7 +207,7 @@ export function FloatingGrid({
             >
               <span className="flex items-center gap-1">{buttons}</span>
               <span className="flex min-w-0 flex-1 items-center gap-1.5">
-                {features.pipAnnotateAvailable && (
+                {canAnnotate && (
                   <ViewSwitch view={view} onChange={setView} hands={hands} />
                 )}
                 {hostControls && remote.length > 0 && (
@@ -219,10 +226,12 @@ export function FloatingGrid({
                 )}
                 {footerExtra}
               </span>
-              <span className="flex items-center gap-1 border-s border-white/15 ps-1.5">
-                <PauseButton pause={pause} compact />
-                <StopButton compact />
-              </span>
+              {isSharing && (
+                <span className="flex items-center gap-1 border-s border-white/15 ps-1.5">
+                  <PauseButton pause={pause} compact />
+                  <StopButton compact />
+                </span>
+              )}
             </div>
           </>
         )}
