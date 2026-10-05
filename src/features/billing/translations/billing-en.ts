@@ -10,6 +10,7 @@ export const billingEn = {
       tagline: "No limits at all — granted by hand, never sold.",
     },
   },
+  planEnded: "{plan} ended",
   sources: {
     free: "Free",
     subscription: "Subscription",

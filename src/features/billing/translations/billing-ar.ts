@@ -10,6 +10,7 @@ export const billingAr = {
       tagline: "بلا حدود على الإطلاق — يُمنح يدويًا ولا يُباع.",
     },
   },
+  planEnded: "انتهت خطة {plan}",
   sources: {
     free: "مجاني",
     subscription: "اشتراك",
