@@ -1,4 +1,3 @@
-export { MIC_CAPTURE_OPTIONS } from "./capture-options";
 export { deviceLabel, resolveDeviceId } from "./device-store";
 export {
   useDevicesOfKind,

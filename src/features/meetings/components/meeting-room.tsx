@@ -43,7 +43,6 @@ import { useTranslation } from "@/features/core/i18n/client";
 import {
   classifyMediaError,
   isMediaError,
-  MIC_CAPTURE_OPTIONS,
 } from "@/features/meetings/lib/media";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTRPC } from "@/integrations/trpc/client";
@@ -120,8 +119,9 @@ export function MeetingRoom({
           resolution: VideoPresets.h720.resolution,
         },
         audioCaptureDefaults: {
-          ...MIC_CAPTURE_OPTIONS,
           deviceId: choices.audioDeviceId || undefined,
+          echoCancellation: true,
+          noiseSuppression: true,
         },
         publishDefaults: {
           videoSimulcastLayers: [VideoPresets.h180, VideoPresets.h360],

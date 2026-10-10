@@ -9,7 +9,6 @@ import {
 } from "livekit-client";
 import { useEffect, useRef, useState } from "react";
 
-import { MIC_CAPTURE_OPTIONS } from "./capture-options";
 import { useDevicesOfKind, useMediaPermission } from "./hooks";
 import { classifyMediaError, type MediaFailure } from "./media-failure";
 
@@ -36,8 +35,9 @@ async function create<K extends Kind>(
   const id = deviceId || undefined;
   if (kind === "audioinput") {
     return (await createLocalAudioTrack({
-      ...MIC_CAPTURE_OPTIONS,
       deviceId: id,
+      echoCancellation: true,
+      noiseSuppression: true,
     })) as TrackFor<K>;
   }
   return (await createLocalVideoTrack({
