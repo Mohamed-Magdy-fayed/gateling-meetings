@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1920" width="1920" height="1920" role="img" aria-label="Gateling Meetings logo">
+  <title>Gateling Meetings</title>
+  <g fill="#FF6105">
+    <path d="M519,1342 L999,576 L1143,804 L1331,804 L998,268 L245,1497 L817,1497 L817,1342 Z"/>
+    <rect x="1354" y="717" width="86" height="87"/>
+    <path d="M1508,1092 L1440,982 L1028,982 L955,1094 L1334,1094 L1334,1224 L1508,1128 Z"/>
+  </g>
+  <g fill="#35BFAE">
+    <polygon points="898,1117 1311,1117 1311,1497 840,1497 840,1206"/>
+    <polygon points="1334,1250 1620,1092 1620,1497 1334,1380"/>
+  </g>
+</svg>

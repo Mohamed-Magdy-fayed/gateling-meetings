@@ -11,8 +11,8 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#fffaf6",
     theme_color: "#0e8078",
     icons: [
-      { src: "/icon.png", sizes: "192x192", type: "image/png" },
-      { src: "/brand/gateling-mark.png", sizes: "512x512", type: "image/png" },
+      { src: "/icon.svg", sizes: "any", type: "image/svg+xml" },
+      { src: "/apple-icon.png", sizes: "180x180", type: "image/png" },
     ],
   };
 }

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getT } from "@/features/core/i18n/server";
 import { cn } from "@/lib/utils";
 
-import { GatelingMark } from "./gateling-mark";
+import { MeetingsMark } from "./meetings-mark";
 
 type BrandLockupProps = {
   /** `header` is compact; `hero` is the larger stacked version for auth and empty pages. */
@@ -32,8 +32,8 @@ export async function BrandLockup({
         className,
       )}
     >
-      <GatelingMark
-        size={isHero ? 44 : 30}
+      <MeetingsMark
+        size={isHero ? 96 : 48}
         className="transition-transform duration-300 ease-spring group-hover/brand:-rotate-6"
       />
       <span
