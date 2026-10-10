@@ -71,7 +71,13 @@ export function SharingBanner({
       {popOut.mode && (
         <BannerButton
           onClick={popOut.toggle}
-          title={popOut.isOpen ? undefined : t("meetings.room.popOutHint")}
+          title={
+            popOut.isOpen
+              ? undefined
+              : popOut.isMonitorShare
+                ? t("meetings.room.popOutMonitorHint")
+                : t("meetings.room.popOutHint")
+          }
         >
           <PictureInPicture2Icon className="size-3.5" aria-hidden />
           {popOut.isOpen ? t("meetings.room.popIn") : t("meetings.room.popOut")}

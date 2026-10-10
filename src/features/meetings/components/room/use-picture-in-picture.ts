@@ -86,6 +86,12 @@ type PictureInPictureOptions = {
    * whenever they switch away, not only while sharing.
    */
   allowIdle?: boolean;
+  /**
+   * Off while the window would be caught by the capture (a whole-screen
+   * share): no opening on share start and no browser auto pop-out.
+   * `open()` from a button still works.
+   */
+  autoOpen?: boolean;
 };
 
 /**
@@ -107,6 +113,7 @@ export function usePictureInPicture({
   active,
   large = false,
   allowIdle = false,
+  autoOpen = true,
 }: PictureInPictureOptions) {
   // Detected after mount: the server render has no `window`.
   const [mode, setMode] = useState<PipMode | null>(null);
@@ -174,15 +181,15 @@ export function usePictureInPicture({
       openedForShareRef.current = !isOpenRef.current;
       // Not a gesture in the browser's eyes if the picker was slow — the
       // banner's button is there for that case.
-      if (!isOpenRef.current) open().catch(() => {});
+      if (!isOpenRef.current && autoOpen) open().catch(() => {});
     }
     if (!active && wasActiveRef.current && openedForShareRef.current) close();
     wasActiveRef.current = active;
-  }, [active, mode, open, close]);
+  }, [active, autoOpen, mode, open, close]);
   useEffect(() => close, [close]);
 
   // Let the browser pop us out by itself when the user switches away.
-  const canAutoOpen = active || allowIdle;
+  const canAutoOpen = autoOpen && (active || allowIdle);
   useEffect(() => {
     if (!canAutoOpen || mode == null) return;
     setMediaSessionAction("enterpictureinpicture", () => {

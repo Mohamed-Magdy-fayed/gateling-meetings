@@ -32,14 +32,34 @@ export type PopOut = ReturnType<typeof usePopOut>;
  */
 export function usePopOut({ isHost }: { isHost: boolean }) {
   const { t } = useTranslation();
-  const { isScreenShareEnabled } = useLocalParticipant();
+  const { isScreenShareEnabled, localParticipant } = useLocalParticipant();
   const { pipAnnotateAvailable } = useMeetingFeatures();
+  // A whole-screen share captures every window on it, the floating one
+  // included — and no browser lets a page leave its own window out. So it
+  // never opens by itself then (opening it is the sharer's call).
+  const isMonitorShare =
+    isScreenShareEnabled &&
+    localParticipant
+      .getTrackPublication(Track.Source.ScreenShare)
+      ?.track?.mediaStreamTrack.getSettings().displaySurface === "monitor";
   const pip = usePictureInPicture({
     active: isScreenShareEnabled,
     allowIdle: isHost,
+    autoOpen: !isMonitorShare,
     // The host's window also carries the admit strip: give it room.
     large: pipAnnotateAvailable || isHost,
   });
+
+  // Already open (the host watching the room) when a whole-screen share
+  // starts: close it before it shows up in everyone's view of the share.
+  const { isOpen, close } = pip;
+  const isOpenRef = useRef(isOpen);
+  isOpenRef.current = isOpen;
+  useEffect(() => {
+    if (!isMonitorShare) return;
+    if (isOpenRef.current) close();
+    toast.info(t("meetings.room.popOutMonitorShare"));
+  }, [isMonitorShare, close, t]);
 
   async function toggle() {
     if (pip.isOpen) {
@@ -56,6 +76,8 @@ export function usePopOut({ isHost }: { isHost: boolean }) {
   return {
     ...pip,
     isSharing: isScreenShareEnabled,
+    /** The share is the whole screen: the floating window would be in it. */
+    isMonitorShare,
     /** Host or sharer: the only people the floating window is for. */
     isAvailable: pip.mode != null && (isHost || isScreenShareEnabled),
     toggle,
@@ -101,14 +123,8 @@ export function PopOutWindow({
   /** Host only: the room's waiting queue, for the floating window's strip. */
   waitingQueue?: WaitingQueueState;
 }) {
-  const { localParticipant } = useLocalParticipant();
   if (!popOut.isAvailable) return null;
-  const shareTrack = localParticipant.getTrackPublication(
-    Track.Source.ScreenShare,
-  )?.track;
-  const isMonitorShare =
-    popOut.isSharing &&
-    shareTrack?.mediaStreamTrack.getSettings().displaySurface === "monitor";
+  const { isMonitorShare } = popOut;
 
   if (popOut.mode === "video") return <SpeakerVideo ref={popOut.videoRef} />;
   if (!popOut.pipWindow) return null;

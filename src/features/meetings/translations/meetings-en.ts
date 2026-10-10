@@ -145,6 +145,10 @@ export const meetingsEn = {
       "Keep seeing everyone in a small window that stays on top while you share.",
     popOutIdleHint:
       "Keep seeing everyone — and who is waiting to join — in a small window that stays on top of other tabs and apps.",
+    popOutMonitorShare:
+      "You're sharing your whole screen, so the floating window stays closed — everyone would see it in your share.",
+    popOutMonitorHint:
+      "Everyone will see this window in your share. Share a window or tab instead to keep it private.",
     popOutEmpty: "Nobody else is here yet.",
     popOutUnavailable: "Nothing to show yet — nobody has their camera on.",
     chatPlaceholder: "Send a message…",
