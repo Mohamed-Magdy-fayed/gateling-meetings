@@ -29,11 +29,93 @@
   grid-template-rows: minmax(0, 1fr);
 }
 
+/* Phones: the speaker / share takes the room, everyone else is a strip of
+   square thumbnails under it (squares keep a face in frame whether the
+   camera is portrait or landscape; the strip scrolls sideways). */
 @media (max-width: 767px) {
   .meeting-room .lk-focus-layout {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) 6rem;
+    grid-template-rows: minmax(0, 1fr) 6.5rem;
   }
+
+  .meeting-room .lk-focus-layout[data-solo="true"] {
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .meeting-room .lk-carousel[data-lk-orientation="horizontal"] > * {
+    width: auto;
+    height: 100%;
+    aspect-ratio: 1;
+  }
+
+  /* The big tile shows the whole camera picture, never a cropped band. */
+  .meeting-room .lk-focus-layout-stage video {
+    object-fit: contain;
+  }
+}
+
+/* Desktop grid pager. Only LiveKit's layout CSS is imported, so the
+   control would otherwise sit unstyled in the page flow with both arrows
+   pointing the same way. */
+.meeting-room .lk-grid-layout {
+  position: relative;
+}
+
+.meeting-room .lk-pagination-control {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  z-index: 10;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  transform: translateX(-50%);
+  border-radius: var(--radius-md, 0.5rem);
+  background: color-mix(in oklab, black 70%, transparent);
+  color: white;
+  font-size: 0.75rem;
+  backdrop-filter: blur(8px);
+}
+
+.meeting-room .lk-pagination-control > button {
+  display: grid;
+  place-items: center;
+  padding: 0.375rem 0.625rem;
+}
+
+.meeting-room .lk-pagination-control > button:hover:not(:disabled) {
+  background: color-mix(in oklab, white 12%, transparent);
+}
+
+.meeting-room .lk-pagination-control > button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+.meeting-room .lk-pagination-control > button:disabled {
+  opacity: 0.35;
+}
+
+.meeting-room .lk-pagination-control > button:first-child > svg {
+  transform: rotate(180deg);
+}
+
+/* RTL: "previous" sits on the right and points right; "next" points left. */
+.meeting-room .lk-pagination-control:dir(rtl) > button:first-child > svg {
+  transform: none;
+}
+
+.meeting-room .lk-pagination-control:dir(rtl) > button:last-child > svg {
+  transform: rotate(180deg);
+}
+
+.meeting-room .lk-pagination-count {
+  padding: 0.375rem 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.meeting-room .lk-pagination-indicator {
+  display: none;
 }
 
 .meeting-room .lk-carousel {

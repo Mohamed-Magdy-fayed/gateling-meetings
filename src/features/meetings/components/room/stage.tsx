@@ -19,6 +19,7 @@ import {
 import { RoomEvent, Track } from "livekit-client";
 import { useEffect, useRef, useState } from "react";
 
+import { useIsMobile } from "@/hooks/use-mobile";
 import { AnnotationLayer } from "./annotations/overlay";
 import { ParticipantTile } from "./participant-tile";
 
@@ -29,7 +30,9 @@ export type StageLayout = "grid" | "speaker";
  * pinned and the layout switches to focus + rail, and un-pins when the share
  * stops. A person can also pin any tile by hand (see `ParticipantTile`).
  * "Speaker" layout keeps the focus slot on whoever spoke last (a manual pin
- * or a screen share still wins). Mirrors the decision logic of LiveKit's
+ * or a screen share still wins). Phones are always "speaker": a grid of
+ * wide slices on a portrait screen crops everyone to their forehead, so they
+ * get one big tile plus a strip of square thumbnails. Mirrors the decision logic of LiveKit's
  * `VideoConference` prefab, minus the prefab's chrome.
  */
 type StageProps = {
@@ -40,6 +43,8 @@ type StageProps = {
 
 export function Stage({ layout, showOwnShare = false }: StageProps) {
   const layoutContext = useCreateLayoutContext();
+  const isMobile = useIsMobile();
+  const effectiveLayout: StageLayout = isMobile ? "speaker" : layout;
 
   const allTracks = useTracks(
     [
@@ -77,7 +82,7 @@ export function Stage({ layout, showOwnShare = false }: StageProps) {
   }, [speaking]);
 
   const speakerTrack =
-    layout === "speaker"
+    effectiveLayout === "speaker"
       ? (tracks.find(
           (track) =>
             track.source === Track.Source.Camera &&
@@ -86,7 +91,9 @@ export function Stage({ layout, showOwnShare = false }: StageProps) {
         tracks.find(
           (track) =>
             track.source === Track.Source.Camera && !track.participant.isLocal,
-        ))
+        ) ??
+        // Alone on a phone: still one big tile (yourself), never a grid.
+        (isMobile ? tracks[0] : undefined))
       : undefined;
 
   const focusTrack = pinnedTrack ?? speakerTrack;
@@ -126,10 +133,14 @@ export function Stage({ layout, showOwnShare = false }: StageProps) {
     <LayoutContextProvider value={layoutContext}>
       <div className="relative min-h-0 flex-1">
         {focusTrack ? (
-          <FocusLayoutContainer>
-            <CarouselLayout tracks={carouselTracks}>
-              <ParticipantTile />
-            </CarouselLayout>
+          <FocusLayoutContainer
+            data-solo={carouselTracks.length === 0 ? "true" : undefined}
+          >
+            {carouselTracks.length > 0 && (
+              <CarouselLayout tracks={carouselTracks}>
+                <ParticipantTile />
+              </CarouselLayout>
+            )}
             {/* LiveKit's FocusLayout renders its own prefab tile; we want ours. */}
             <TrackRefContext.Provider value={focusTrack}>
               <ParticipantTile
