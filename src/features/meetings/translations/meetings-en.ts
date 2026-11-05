@@ -145,6 +145,8 @@ export const meetingsEn = {
       "Keep seeing everyone in a small window that stays on top while you share.",
     popOutIdleHint:
       "Keep seeing everyone — and who is waiting to join — in a small window that stays on top of other tabs and apps.",
+    popOutIdleHintGuest:
+      "Keep seeing everyone in a small window that stays on top of other tabs and apps.",
     popOutMonitorShare:
       "You're sharing your whole screen, so the floating window stays closed — everyone would see it in your share.",
     popOutMonitorHint:
@@ -389,6 +391,15 @@ export const meetingsEn = {
     show: "Show",
     viewOnly: "View only",
     cleared: "Annotations were cleared",
+    tabControl: {
+      group: "Control the shared tab",
+      scroll: "Scroll the shared tab from here",
+      scrollOn: "Stop scrolling the shared tab",
+      zoomIn: "Zoom in on the shared tab",
+      zoomOut: "Zoom out on the shared tab",
+      denied:
+        "Your browser didn't allow controlling the shared tab. Switch to it to scroll or zoom.",
+    },
   },
   schedule: {
     title: "Schedule a meeting",

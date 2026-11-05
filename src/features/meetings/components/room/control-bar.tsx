@@ -42,6 +42,7 @@ import { DevicePickerMenu } from "./device-picker-menu";
 import { useHostAskBadge } from "./host-request-prompt";
 import { handleMediaShortcut, isShortcutKey } from "./media-shortcuts";
 import { ReactionPicker } from "./reactions";
+import { clearShareCapture, newShareCaptureOptions } from "./share-capture";
 import { useLocalHandRaise } from "./use-hand-raise";
 
 export type SidePanel = "chat" | "participants" | "breakouts" | null;
@@ -101,10 +102,15 @@ export function ControlBar({
     source: Track.Source.Camera,
     onDeviceError: onCameraError,
   });
-  const screen = useTrackToggle({
-    source: Track.Source.ScreenShare,
-    captureOptions: { audio: true, selfBrowserSurface: "include" },
-  });
+  const screen = useTrackToggle({ source: Track.Source.ScreenShare });
+  // A fresh capture controller per share (see share-capture.ts).
+  const toggleScreen = () => {
+    if (screen.enabled) {
+      clearShareCapture();
+      return screen.toggle(false);
+    }
+    return screen.toggle(true, newShareCaptureOptions());
+  };
 
   // Keyboard shortcuts: M (mic) / V (camera) / H (hand) — never while typing.
   useEffect(() => {
@@ -177,7 +183,7 @@ export function ControlBar({
           }
           active={screen.enabled}
           pending={screen.pending}
-          onClick={() => screen.toggle()}
+          onClick={() => void toggleScreen()}
           highlight={screen.enabled}
           className="hidden sm:grid"
         >
