@@ -10,9 +10,11 @@ import {
   POINTS_FLUSH_MS,
   type Point,
 } from "../protocol";
+import { canControlSurface, useShareCaptureController } from "../share-capture";
 import { type Box, contentBox, inkColour } from "./geometry";
 import { InkRecorder } from "./ink-recorder";
 import { type Laser, laserFrame, type Stroke } from "./store";
+import { TabControl } from "./tab-control";
 import { AnnotationToolbar, type Tool } from "./toolbar";
 import { useAnnotations, useAnnotationVersion } from "./use-annotations";
 import { ownerWindow, useOwnerWindow } from "./use-owner-window";
@@ -95,6 +97,20 @@ export function AnnotationLayer({
   const canDraw = annotations?.canDraw ?? false;
   const activeTool: Tool = canDraw && video ? tool : "none";
 
+  // Presenting a tab: scroll and zoom it from here (Captured Surface
+  // Control). Main meeting tab only — not the floating window's rail.
+  const captureController = useShareCaptureController();
+  const tabControl =
+    isOwnShare &&
+    toolbarVariant === "default" &&
+    canControlSurface(captureController, video)
+      ? captureController
+      : null;
+  const [scrollSurface, setScrollSurface] = useState<HTMLDivElement | null>(
+    null,
+  );
+  const [isScrollingTab, setIsScrollingTab] = useState(false);
+
   // No tools while paused or when the host turns annotations off.
   useEffect(() => {
     if (!canDraw || !video) setTool("none");
@@ -176,6 +192,20 @@ export function AnnotationLayer({
             height: box.height,
           }}
         >
+          {tabControl && (
+            // Wheel events here are forwarded to the shared tab; it only
+            // takes the pointer while scrolling is on and no tool is.
+            <div
+              ref={setScrollSurface}
+              data-tab-scroll
+              className={cn(
+                "absolute inset-0",
+                isScrollingTab && activeTool === "none"
+                  ? "pointer-events-auto"
+                  : "pointer-events-none",
+              )}
+            />
+          )}
           <Ink strokes={snapshot.strokes} />
           <Lasers lasers={snapshot.lasers} store={store} box={box} win={win} />
           {activeTool !== "none" && send && (
@@ -192,6 +222,14 @@ export function AnnotationLayer({
       )}
       {activeTool !== "none" && (
         <div className="pointer-events-none absolute inset-0 rounded-xl ring-2 ring-primary ring-inset" />
+      )}
+      {tabControl && (
+        <TabControl
+          controller={tabControl}
+          surface={scrollSurface}
+          isScrolling={isScrollingTab}
+          onScrollingChange={setIsScrollingTab}
+        />
       )}
       {canDraw ? (
         <AnnotationToolbar

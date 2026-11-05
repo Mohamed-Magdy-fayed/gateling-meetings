@@ -170,7 +170,7 @@ export function AnnotationToolbar({
   );
 }
 
-function ToolButton({
+export function ToolButton({
   label,
   pressed,
   compact,

@@ -26,9 +26,10 @@ export type PopOut = ReturnType<typeof usePopOut>;
 
 /**
  * The room's one floating window. It opens by itself when the viewer
- * starts sharing; the host may also open it without sharing (top bar
- * button, or the browser's auto pop-out on switching tabs) to keep seeing
- * everyone — and the waiting queue — from other tabs and apps.
+ * starts sharing; anyone may also open it without sharing (top bar
+ * button, or the browser's auto pop-out on switching tabs, the way Meet
+ * does it) to keep seeing everyone — and, for the host, the waiting
+ * queue — from other tabs and apps.
  */
 export function usePopOut({ isHost }: { isHost: boolean }) {
   const { t } = useTranslation();
@@ -44,7 +45,7 @@ export function usePopOut({ isHost }: { isHost: boolean }) {
       ?.track?.mediaStreamTrack.getSettings().displaySurface === "monitor";
   const pip = usePictureInPicture({
     active: isScreenShareEnabled,
-    allowIdle: isHost,
+    allowIdle: true,
     autoOpen: !isMonitorShare,
     // The host's window also carries the admit strip: give it room.
     large: pipAnnotateAvailable || isHost,
@@ -78,13 +79,14 @@ export function usePopOut({ isHost }: { isHost: boolean }) {
     isSharing: isScreenShareEnabled,
     /** The share is the whole screen: the floating window would be in it. */
     isMonitorShare,
-    /** Host or sharer: the only people the floating window is for. */
-    isAvailable: pip.mode != null && (isHost || isScreenShareEnabled),
+    /** Everyone, wherever the browser can float a window. */
+    isAvailable: pip.mode != null,
+    isHost,
     toggle,
   };
 }
 
-/** Top-bar "Pop out people" for the host when they are not sharing. */
+/** Top-bar "Pop out people" for anyone who is not sharing. */
 export function PopOutButton({ popOut }: { popOut: PopOut }) {
   const { t } = useTranslation();
   if (!popOut.isAvailable || popOut.isSharing) return null;
@@ -97,7 +99,13 @@ export function PopOutButton({ popOut }: { popOut: PopOut }) {
       onClick={popOut.toggle}
       aria-pressed={popOut.isOpen}
       aria-label={label}
-      title={popOut.isOpen ? label : t("meetings.room.popOutIdleHint")}
+      title={
+        popOut.isOpen
+          ? label
+          : popOut.isHost
+            ? t("meetings.room.popOutIdleHint")
+            : t("meetings.room.popOutIdleHintGuest")
+      }
       className="flex items-center gap-1.5 rounded-md bg-white/[0.06] px-2 py-1 text-neutral-300 transition-colors hover:bg-white/[0.12] aria-pressed:bg-primary/20 aria-pressed:text-primary [&_svg]:size-3.5"
     >
       <PictureInPicture2Icon aria-hidden />
